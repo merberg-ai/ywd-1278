@@ -77,6 +77,14 @@ jobs:
         run: |
           python tests/csma_policy_contract_test.py
 
+      - name: RSSI telemetry host regression
+        run: |
+          python tests/rssi_telemetry_test.py
+
+      - name: AX25R4 RSSI firmware build contract
+        run: |
+          python tests/rssi_firmware_build_contract_test.py
+
       - name: P13b one-shot TX qualification contract
         run: |
           python tests/single_tx_qualification_contract_test.py
@@ -148,6 +156,7 @@ jobs:
           json.load(open('firmware/targets.json', encoding='utf-8'))
           json.load(open('firmware/tooling/build-manifest.json', encoding='utf-8'))
           json.load(open('firmware/tooling/packet-build-manifest.json', encoding='utf-8'))
+          json.load(open('firmware/tooling/packet-rssi-build-manifest.json', encoding='utf-8'))
           json.load(open('firmware/qualification/p13b-single-tx.json', encoding='utf-8'))
           json.load(open('firmware/qualification/p13b-r1-three-tx.json', encoding='utf-8'))
           json.load(open('firmware/qualification/p13b-r2-three-tx.json', encoding='utf-8'))
