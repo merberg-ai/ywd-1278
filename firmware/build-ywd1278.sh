@@ -106,8 +106,25 @@ printf 'Flash operations : DISABLED\n\n'
 
 SEED="$WORK/upstream"
 echo "==> Fetch exact pinned upstream source"
-git clone --quiet --no-checkout "$UPSTREAM_REPO" "$SEED"
+git init -q "$SEED"
+git -C "$SEED" remote add origin "$UPSTREAM_REPO"
+export GIT_TERMINAL_PROMPT=0
+fetch_ok=0
+for attempt in 1 2 3; do
+  if git -C "$SEED" fetch --quiet --no-tags --depth=1 origin "$UPSTREAM_COMMIT"; then
+    fetch_ok=1
+    break
+  fi
+  echo "[WARN] Exact upstream fetch attempt $attempt failed" >&2
+  sleep "$attempt"
+done
+[[ $fetch_ok -eq 1 ]] || { echo "[FAIL] Could not fetch pinned upstream commit $UPSTREAM_COMMIT" >&2; exit 1; }
+
+git -C "$SEED" cat-file -e "$UPSTREAM_COMMIT^{commit}" || { echo "[FAIL] pinned upstream commit object is missing" >&2; exit 1; }
+git -C "$SEED" cat-file -e "$UPSTREAM_COMMIT^{tree}" || { echo "[FAIL] pinned upstream tree object is missing" >&2; exit 1; }
 git -C "$SEED" checkout --quiet --detach "$UPSTREAM_COMMIT"
+
+echo "==> Fetch exact pinned STM32F10X_Lib submodule"
 git -C "$SEED" submodule sync --quiet --recursive
 git -C "$SEED" submodule update --init --recursive
 
