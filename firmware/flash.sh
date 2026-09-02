@@ -13,6 +13,7 @@ TARGETS="$SCRIPT_DIR/targets.json"
 DEVICE=/dev/ttyAMA0
 TARGET_ID=""
 FIRMWARE=""
+STOCK_BACKUP_DIR=""
 MODE="${1:-probe}"
 [[ $# -gt 0 ]] && shift || true
 CONFIRM=""
@@ -25,14 +26,16 @@ YWD-1278 firmware tool
 Usage:
   sudo ./firmware/flash.sh probe [--device /dev/ttyAMA0]
   sudo ./firmware/flash.sh backup --target TARGET [--device DEVICE]
-  sudo ./firmware/flash.sh flash --target TARGET --firmware FILE [--device DEVICE] --confirm FLASH-YWD-1278
+  sudo ./firmware/flash.sh flash --target TARGET --firmware FILE [--device DEVICE] \
+    [--stock-backup-dir DIR] --confirm FLASH-YWD-1278
 
 Safety model:
   * only allowlisted targets are accepted
   * actual write requires target flash_enabled=true
   * target must specify nonzero flash geometry and an expected firmware SHA256
   * running application identity must match the target before bootloader entry
-  * a protected readback backup is mandatory when the target requires it
+  * when stock rollback is required, a true stock backup is mandatory
+  * an engineering/YWD firmware dump never satisfies the stock-backup gate
   * option-byte operations are never issued
   * unknown hardware fails closed
 EOF
@@ -43,6 +46,7 @@ while (($#)); do
     --device) DEVICE="${2:?missing --device value}"; shift ;;
     --target) TARGET_ID="${2:?missing --target value}"; shift ;;
     --firmware) FIRMWARE="${2:?missing --firmware value}"; shift ;;
+    --stock-backup-dir) STOCK_BACKUP_DIR="${2:?missing --stock-backup-dir value}"; shift ;;
     --confirm) CONFIRM="${2:?missing --confirm value}"; shift ;;
     -h|--help) usage; exit 0 ;;
     *) die "Unknown argument: $1" ;;
@@ -81,6 +85,36 @@ x=t[0]
 exact=x.get('accepted_running_identities') or []
 prefix=x.get('ywd1278_identity_prefix') or ''
 raise SystemExit(0 if identity in exact or (prefix and identity.startswith(prefix)) else 1)
+PY
+}
+
+identity_is_stock(){
+  local identity="$1"
+  python3 - "$TARGETS" "$TARGET_ID" "$identity" <<'PY'
+import json,sys
+data=json.load(open(sys.argv[1], encoding='utf-8'))
+t=[x for x in data.get('targets',[]) if x.get('id')==sys.argv[2]]
+assert len(t)==1
+raise SystemExit(0 if sys.argv[3] in (t[0].get('stock_identities') or []) else 1)
+PY
+}
+
+verify_stock_backup_dir(){
+  local dir="$1"
+  [[ -d "$dir" && -f "$dir/manifest.json" && -f "$dir/original-flash.bin" ]] || return 1
+  python3 - "$TARGETS" "$TARGET_ID" "$dir/manifest.json" "$dir/original-flash.bin" <<'PY'
+import hashlib,json,os,sys
+targets,target_id,meta_path,image_path=sys.argv[1:]
+data=json.load(open(targets, encoding='utf-8'))
+t=[x for x in data.get('targets',[]) if x.get('id')==target_id]
+if len(t)!=1: raise SystemExit(1)
+meta=json.load(open(meta_path, encoding='utf-8'))
+if meta.get('target_id') != target_id: raise SystemExit(1)
+if meta.get('captured_identity') not in (t[0].get('stock_identities') or []): raise SystemExit(1)
+if meta.get('option_bytes_read_or_written') not in (False, None): raise SystemExit(1)
+raw=open(image_path,'rb').read()
+if len(raw) != int(meta.get('flash_size_bytes',-1)): raise SystemExit(1)
+if hashlib.sha256(raw).hexdigest().lower() != str(meta.get('sha256','')).lower(): raise SystemExit(1)
 PY
 }
 
@@ -139,7 +173,6 @@ fi
 [[ "$MODE" == backup || "$MODE" == flash ]] || { usage; die "Unknown mode: $MODE"; }
 [[ -n "$TARGET_ID" ]] || die "--target is required for $MODE"
 
-# Ensure the target exists before doing anything else.
 description="$(json_target description)" || die "Unknown target: $TARGET_ID"
 status="$(json_target status)"
 flash_enabled="$(json_target flash_enabled)"
@@ -206,10 +239,16 @@ PY
   chmod 0600 "$dir/manifest.json"
   ok "Backup verified: $image"
   echo "BACKUP_DIR=$dir"
+  LAST_BACKUP_DIR="$dir"
 }
 
 if [[ "$MODE" == backup ]]; then
   make_backup
+  if identity_is_stock "$identity"; then
+    echo "BACKUP_CLASS=STOCK"
+  else
+    echo "BACKUP_CLASS=NON_STOCK"
+  fi
   echo "FLASH_WRITTEN=NO"
   echo "OPTION_BYTES_WRITTEN=NO"
   exit 0
@@ -225,10 +264,19 @@ actual_sha="$(sha256sum "$FIRMWARE" | awk '{print $1}')"
 [[ "${actual_sha,,}" == "${expected_sha,,}" ]] || die "Firmware SHA256 does not match allowlisted artifact"
 
 if [[ "$backup_required" == true ]]; then
-  make_backup
+  section "Stock rollback gate"
+  if identity_is_stock "$identity"; then
+    info "Current firmware is an allowlisted stock identity; capturing a protected stock backup now."
+    make_backup
+    verify_stock_backup_dir "$LAST_BACKUP_DIR" || die "New stock backup did not pass rollback verification"
+    ok "Fresh stock rollback backup verified"
+  else
+    [[ -n "$STOCK_BACKUP_DIR" ]] || die "Current firmware is not stock. Supply --stock-backup-dir with a previously captured verified stock backup before product flash."
+    verify_stock_backup_dir "$STOCK_BACKUP_DIR" || die "Supplied stock backup is invalid, mismatched, non-stock, or corrupt"
+    ok "Existing target-bound stock rollback backup verified: $STOCK_BACKUP_DIR"
+  fi
 fi
 
-# Re-enter because backup read may leave the bootloader/session in an unknown state.
 enter_bootloader
 section "WRITE YWD-1278 firmware"
 warn "Power loss during this step may require bootloader recovery."
@@ -242,7 +290,7 @@ ok "Programmer reported write/verify success"
 
 sleep 1
 section "Post-flash identity verification"
-post="$(probe_identity)" || die "Firmware was written but application identity could not be verified. Use restore-stock.sh with the protected backup before further experimentation."
+post="$(probe_identity)" || die "Firmware was written but application identity could not be verified. Use restore-stock.sh with the protected stock backup before further experimentation."
 post_identity="$(python3 -c 'import json,sys; print(json.load(sys.stdin)["identity"])' <<<"$post")"
 prefix="$(json_target ywd1278_identity_prefix)"
 [[ -n "$prefix" && "$post_identity" == "$prefix"* ]] || die "Unexpected post-flash identity: $post_identity"
