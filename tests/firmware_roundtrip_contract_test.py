@@ -45,7 +45,7 @@ assert 'QUALIFY-0B-P3' in s
 assert 'WRITE-YWD-THEN-RESTORE-STOCK' in s
 
 # Exact corrected artifact and exact P2 stock backup are mandatory.
-assert 'Firmware does not match the exact 0B-P1 qualified SHA256' in s
+assert 'Firmware does not match the exact 0B-P1R1 qualified SHA256' in s
 assert 'backup lacks two-pass qualification' in s
 assert 'backup does not match target stock SHA256' in s
 assert '0B-P3 must start from the exact stock identity' in s
@@ -53,7 +53,7 @@ assert '0B-P3 must start from the exact stock identity' in s
 # Both the YWD write and stock restore require readback verification.
 assert 'stm32flash -b 115200 -w "$FIRMWARE" -v "$DEVICE"' in s
 assert 'YWD_READBACK_SHA256=' in s
-assert 'Programmed YWD-1278 bytes match the exact 0B-P1 artifact' in s
+assert 'Programmed YWD-1278 bytes match the exact 0B-P1R1 artifact' in s
 assert 'stm32flash -b 115200 -w "$STOCK_IMAGE" -v "$DEVICE"' in s
 assert 'STOCK_RESTORE_READBACK_SHA256=' in s
 assert 'Complete restored stock flash matches the exact P2 SHA256' in s
