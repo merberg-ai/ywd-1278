@@ -40,9 +40,8 @@ def read_exact(fd: int, count: int, timeout: float = 1.0) -> bytes:
 
 class PosixSerialTransportTests(unittest.TestCase):
     def test_owner_opens_transacts_and_closes_real_posix_tty_in_owner_thread(self) -> None:
-        master_fd, slave_fd = pty.openpty()
-        slave_name = os.ttyname(slave_fd)
-        os.close(slave_fd)
+        master_fd, anchor_slave_fd = pty.openpty()
+        slave_name = os.ttyname(anchor_slave_fd)
         emulator_error: list[BaseException] = []
 
         def emulator() -> None:
@@ -57,11 +56,14 @@ class PosixSerialTransportTests(unittest.TestCase):
             except BaseException as exc:
                 emulator_error.append(exc)
 
-        peer = threading.Thread(target=emulator, name="pty-modem-emulator")
-        peer.start()
         owner = ModemOwner(posix_serial_transport_factory(slave_name))
+        peer = threading.Thread(target=emulator, name="pty-modem-emulator")
         try:
             owner.start()
+            # Keep the original slave FD open solely to anchor the PTY while
+            # the owner opens its own independent slave handle.  This avoids
+            # Linux returning EIO on the master during a no-slave-open gap.
+            peer.start()
             version = owner.get_version(timeout=1.0)
             self.assertEqual(version.protocol_version, 1)
             self.assertEqual(version.identity, IDENTITY)
@@ -70,7 +72,9 @@ class PosixSerialTransportTests(unittest.TestCase):
             self.assertNotEqual(owner.snapshot.owner_thread_id, threading.get_ident())
         finally:
             owner.stop()
-            peer.join(2.0)
+            if peer.ident is not None:
+                peer.join(2.0)
+            os.close(anchor_slave_fd)
             os.close(master_fd)
         self.assertFalse(peer.is_alive())
         self.assertEqual(emulator_error, [])
@@ -78,7 +82,6 @@ class PosixSerialTransportTests(unittest.TestCase):
     def test_transport_rejects_non_owner_thread_and_malformed_write(self) -> None:
         master_fd, slave_fd = pty.openpty()
         slave_name = os.ttyname(slave_fd)
-        os.close(slave_fd)
         transport = _PosixSerialTransport(slave_name)
         try:
             errors: list[BaseException] = []
@@ -103,6 +106,7 @@ class PosixSerialTransportTests(unittest.TestCase):
             self.assertNotIn(master_fd, ready)
         finally:
             transport.close()
+            os.close(slave_fd)
             os.close(master_fd)
 
 
