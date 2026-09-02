@@ -31,7 +31,11 @@ jobs:
 
       - name: Compile Python
         run: |
-          python -m compileall -q src firmware
+          python -m compileall -q src firmware tests
+
+      - name: Firmware identity classification
+        run: |
+          python tests/firmware_identity_test.py
 
       - name: Parse manifests and config
         run: |
