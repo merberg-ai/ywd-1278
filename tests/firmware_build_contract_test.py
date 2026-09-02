@@ -37,10 +37,12 @@ assert m["safety"] == {
 matches = [x for x in t["targets"] if x["id"] == m["target_id"]]
 assert len(matches) == 1
 target = matches[0]
-assert target["status"] == "0b-p3-roundtrip-qualified"
+assert target["status"] == "0b-p11-packet-roundtrip-qualified"
 assert target["flash_enabled"] is False
 assert target["qualification_write"]["phase"] == "0B-P3"
 assert target["qualification_write"]["enabled"] is False
+assert target["packet_qualification_write"]["phase"] == "0B-P11"
+assert target["packet_qualification_write"]["enabled"] is False
 assert target["option_bytes_permitted"] is False
 assert target["stm32_hse_hz"] == 8000000
 assert target["tcxo_mhz"] == 14.7456
@@ -111,7 +113,9 @@ print("OSC_OVERRIDE=ABSENT")
 print("READ_ONLY_ARTIFACT_REPUBLISH=PASS")
 print("P1R1_QUALIFIED_ARTIFACT_HASH=PASS")
 print("P3_RUNTIME_QUALIFICATION=PASS")
+print("P3_EVIDENCE_PRESERVED_AFTER_P11=PASS")
 print("FAILED_P1_ARTIFACT=REVOKED")
 print("P3_WRITE_GATE=CLOSED_AFTER_QUALIFICATION")
+print("P11_WRITE_GATE=CLOSED_AFTER_QUALIFICATION")
 print("NORMAL_FLASH_GATE_CLOSED=PASS")
 print("HARDWARE_ACCESS_PATH=ABSENT")
