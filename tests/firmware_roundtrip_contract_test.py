@@ -13,7 +13,7 @@ data = json.loads(TARGETS.read_text(encoding="utf-8"))
 t = data["targets"][0]
 
 assert t["id"] == "mmdvm-hs-hat-stm32f103-simplex-14.7456-adf7021"
-assert t["status"] == "0b-p2-read-only-qualified-p3-attempt2-armed"
+assert t["status"] == "0b-p3-roundtrip-qualified"
 assert t["flash_enabled"] is False
 assert t["option_bytes_permitted"] is False
 assert t["geometry_status"] == "0b-p2-physically-qualified-two-pass-stock-backup"
@@ -24,27 +24,45 @@ assert t["tcxo_mhz"] == 14.7456
 assert t["firmware_sha256"] == "b7ec163fc3a3cec395c0e3e3065f20c6dc6be186e32ccdcf9044c85ec681b9b8"
 assert t["firmware_identity"] == "MMDVM_HS_Hat-YWD-1278-v0.1.0-alpha0 14.7456MHz ADF7021 FW based on CA6JAU GitID #7ff74ed"
 assert t["firmware_artifact"] == "firmware/out/0b-p1r1-stm32f103-simplex-adf7021-14.7456tcxo-8mhz-hse/MMDVM_HS_Hat-YWD-1278-v0.1.0-alpha0-7ff74ed-hse8m.bin"
+assert t["firmware_identity"] in t["accepted_running_identities"]
 assert any(x["sha256"] == "db23bc84bd31828d8fb29d8e4164879b9e5e57a4b2ef2eb58c598c66a38420b3" for x in t["revoked_artifacts"])
 
 q = t["qualification_write"]
 assert q == {
     "phase": "0B-P3",
-    "enabled": True,
+    "enabled": False,
     "requires_exact_stock_start": True,
     "requires_verified_stock_backup": True,
     "requires_stock_restore_same_run": True,
 }
 
+rq = t["runtime_qualification"]
+assert rq == {
+    "phase": "0B-P3",
+    "status": "qualified",
+    "date": "2026-09-02",
+    "artifact_size_bytes": 57316,
+    "artifact_sha256": "b7ec163fc3a3cec395c0e3e3065f20c6dc6be186e32ccdcf9044c85ec681b9b8",
+    "programmed_readback_sha256": "b7ec163fc3a3cec395c0e3e3065f20c6dc6be186e32ccdcf9044c85ec681b9b8",
+    "ywd_identity_verified": True,
+    "stock_restore_sha256": "4981b35b2d50ada0b09322d9de19dd58a0cbd49eb005693499d1acae92f9d684",
+    "stock_identity_verified": True,
+    "main_flash_write_occurred": True,
+    "rf_transmitted": False,
+    "option_bytes_written": False,
+}
+
 s = SCRIPT.read_text(encoding="utf-8")
 r = RESTORE.read_text(encoding="utf-8")
 
-# The qualification path must remain distinct from normal product flashing.
+# The qualification path remains in-tree for audit/recovery work, but the
+# manifest gate is closed after the successful physical qualification.
 assert '[[ "$flash_enabled" == false ]]' in s
 assert '[[ "$q_phase" == 0B-P3 && "$q_enabled" == true ]]' in s
 assert 'QUALIFY-0B-P3' in s
 assert 'WRITE-YWD-THEN-RESTORE-STOCK' in s
 
-# Exact corrected artifact and exact P2 stock backup are mandatory.
+# Exact corrected artifact and exact P2 stock backup were mandatory.
 assert 'Firmware does not match the exact 0B-P1R1 qualified SHA256' in s
 assert 'backup lacks two-pass qualification' in s
 assert 'backup does not match target stock SHA256' in s
@@ -59,7 +77,8 @@ assert 'STOCK_RESTORE_READBACK_SHA256=' in s
 assert 'Complete restored stock flash matches the exact P2 SHA256' in s
 assert 'FINAL_IDENTITY=' in s
 
-# A failed qualification after YWD write must attempt stock recovery.
+# A failed qualification after YWD write must still have an automatic stock
+# recovery path if this harness is deliberately re-armed in future.
 assert 'emergency_stock_restore' in s
 assert 'EMERGENCY_STOCK_RESTORE=PASS' in s
 assert 'YWD_WRITTEN == 1 && STOCK_RESTORED == 0' in s
@@ -84,12 +103,13 @@ for text in (s, r):
 
 print("FIRMWARE_ROUNDTRIP_CONTRACT=PASS")
 print("NORMAL_FLASH_GATE_CLOSED=PASS")
-print("QUALIFICATION_WRITE_GATE=ARMED_FOR_P1R1")
+print("QUALIFICATION_WRITE_GATE=CLOSED_AFTER_P3")
 print("P1R1_ARTIFACT_HASH=PASS")
+print("P3_PROGRAMMED_READBACK=PASS")
+print("P3_YWD_IDENTITY=PASS")
+print("P3_STOCK_RESTORE_READBACK=PASS")
+print("P3_STOCK_IDENTITY=PASS")
+print("P3_MAIN_FLASH_WRITE_RECORDED=YES")
 print("FAILED_P1_ARTIFACT=REVOKED")
-print("VERIFIED_STOCK_BACKUP_REQUIRED=PASS")
-print("YWD_READBACK_REQUIRED=PASS")
-print("STOCK_READBACK_REQUIRED=PASS")
-print("EMERGENCY_STOCK_RECOVERY=REQUIRED")
 print("AUTOMATIC_STOCK_RECOVERY_TOOL=PASS")
 print("OPTION_BYTE_WRITE_PATH=ABSENT")
