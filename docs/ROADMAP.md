@@ -37,8 +37,10 @@
 - [x] 0B-P10 deterministic packet-capable YWD-1278 AX25R3 firmware build from frozen engineering source — exact `d25180ad663d781b761c525d1e699e7b052d6214` lineage reconstructed from pinned Git objects, product branding made no behavioral changes after AX25R3, two independent builds were byte-identical, artifact size `59812`, SHA256 `a069d9a9f1c3d5014984e5d73a5b57155ffa50f8908c9d80c5da221b8ea07310`
 - [x] 0B-P11 guarded packet-firmware write/readback/runtime-identity/exact-stock-restore round trip — exact P10 artifact programmed/read back to SHA `a069d9a9f1c3d5014984e5d73a5b57155ffa50f8908c9d80c5da221b8ea07310`, exact product AX25R3 GET_VERSION identity verified, exact protected 128 KiB stock image restored/read back to SHA `4981b35b2d50ada0b09322d9de19dd58a0cbd49eb005693499d1acae92f9d684`, final exact stock identity verified; GET_VERSION only, no RX start/TX/RF, P11 gate closed again
 - [x] 0B-P12a guarded packet activation + physical live RX owner/FIFO lifecycle — receive path physically qualified with zero FIFO drops and zero TX activity; exact packet firmware intentionally remains installed for P12b
-- [ ] 0B-P12b live over-air packet -> YWD_RX -> streaming Bell-202 -> AX.25 event -> TCP KISS qualification
-- [ ] productize bidirectional bounded RX/TX runtime
+- [x] 0B-P12b live over-air packet -> YWD_RX -> streaming Bell-202 -> AX.25 event -> TCP KISS qualification — physically qualified RX-only at 145.050 MHz with one live `KJ6YWD>JIM` UI frame delivered through TCP KISS; 27101 packed bytes, 2511 YWD_RX reads, 24 status checks, 216815 firmware samples, zero FIFO drops, zero KISS subscriber drops, inbound KISS DATA rejected exactly once, RF keyups `0->0`, RF TX generated samples `0->0`, UART released, no flash/GPIO/TX/option-byte activity
+- [ ] add bounded TX broker above the existing single modem owner; expose only a typed owner TX method behind the broker; reuse the qualified 0B-P5 serializer; keep inbound TCP KISS DATA disconnected
+- [ ] guarded single known-packet YWD TX on 145.050 MHz with independent external decoder/receiver proof
+- [ ] connect KISS-originated TX only through the bounded broker and subsequent CSMA/channel-access policy
 - [ ] requalify KISS-originated external-decode TX
 - [ ] freeze first product packet-engine checkpoint
 
