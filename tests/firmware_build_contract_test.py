@@ -32,8 +32,8 @@ assert len(matches) == 1
 target = matches[0]
 assert target["flash_enabled"] is False
 assert target["option_bytes_permitted"] is False
-assert target["firmware_artifact"] is None
-assert target["firmware_sha256"] is None
+assert target["firmware_artifact"].endswith("MMDVM_HS_Hat-YWD-1278-v0.1.0-alpha0-7ff74ed.bin")
+assert target["firmware_sha256"] == "db23bc84bd31828d8fb29d8e4164879b9e5e57a4b2ef2eb58c598c66a38420b3"
 assert m["branding"]["expected_identity"].startswith(target["ywd1278_identity_prefix"])
 
 builder = BUILDER.read_text(encoding="utf-8")
@@ -54,5 +54,6 @@ print("FIRMWARE_BUILD_CONTRACT=PASS")
 print("UPSTREAM_PIN=PASS")
 print("EXACT_COMMIT_FETCH=PASS")
 print("SUBMODULE_PIN=PASS")
+print("QUALIFIED_ARTIFACT_HASH=PASS")
 print("FLASH_GATE_CLOSED=PASS")
 print("HARDWARE_ACCESS_PATH=ABSENT")
