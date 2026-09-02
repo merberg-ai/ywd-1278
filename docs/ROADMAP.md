@@ -26,7 +26,7 @@
 - [x] qualify protected two-pass stock backup (0B-P2)
 - [x] guarded YWD-1278 flash/restore round trip (0B-P3) — corrected P1R1 image programmed and read back to its exact SHA, exact YWD-1278 GET_VERSION identity verified, exact 128 KiB protected stock image restored and read back to its qualified SHA, and exact stock identity verified; qualification-only write gate closed again and normal product `flash_enabled` remains false
 - [x] port AX.25 codec/FCS/parser (0B-P4) — frozen YWD-MMDVM source port; canonical CRC-16/X-25 vector, UI construction, common modulo-8 I/S/U parsing, and two previously physically captured FCS-valid AX.25 frames pass in CI; host-only, no UART/RF access
-- [ ] port Bell-202 TX serialization
+- [x] port Bell-202 TX serialization (0B-P5) — frozen HDLC/bit-stuff/NRZI/tone-selector implementation; the exact previously over-air-qualified AX25-5B frame still produces 691 selectors and a locked packed-selector SHA256; host-only, no modem command or RF
 - [ ] port realtime streaming Bell-202 RX
 - [ ] port modem protocol/UART owner
 - [ ] port TCP KISS framing/server
