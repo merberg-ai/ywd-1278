@@ -6,13 +6,15 @@ The project is inspired by classic hardware TNCs such as the MFJ-1278/TNC2 famil
 
 ## Project status
 
-YWD-1278 is in early development. There is no stable release or flashable image yet.
+YWD-1278 is in early development. There is no stable firmware release or flashable image yet.
 
 The initial implementation is being built from the physically qualified AX.25 RX/TX/KISS work developed in `merberg-ai/ywd-mmdvm`. The frozen engineering reference for the product foundation is:
 
 - repository: `merberg-ai/ywd-mmdvm`
 - checkpoint: `checkpoint/ax25-bidirectional-tnc-foundation`
 - qualification evidence commit: `d25180ad663d781b761c525d1e699e7b052d6214`
+
+The first physical YWD-1278 host milestone is also qualified: clean framework installation, cold-boot HAT application-state recovery, and exact stock-firmware identity detection with no RF configuration or firmware writes. See `docs/qualifications/0a-p1-clean-install-stock-hat-qualified-2026-09-02.md`.
 
 ## Goals
 
@@ -24,7 +26,7 @@ The initial implementation is being built from the physically qualified AX.25 RX
 - UNPROTO and configurable beaconing
 - bounded CSMA / p-persistence channel access
 - packet-node / mailbox features
-- GitHub-based install/update workflow
+- one-command GitHub/site install and update workflow
 - safe, target-validated firmware flashing and stock-firmware recovery
 - later: polished WebUI and flashable Raspberry Pi image
 
@@ -56,24 +58,35 @@ A core design rule is that **exactly one process owns the modem UART**. KISS cli
 - `dev` — active development
 - `checkpoint/*` — frozen qualification boundaries
 
-Do not treat development firmware as a generic MMDVM_HS image. Firmware support will be allowlisted by known hardware targets and must pass validation before flashing.
+Do not treat development firmware as a generic MMDVM_HS image. Firmware support is allowlisted by known hardware targets and must pass validation before flashing.
 
 ## Installation
 
-GitHub installation is planned for the first development releases. A flashable Raspberry Pi image will come later, after the software/firmware stack is stable.
+YWD-1278 now has a standalone bootstrap intended to become the single user-facing install entry point. Once the repository is public (or the same bootstrap is mirrored on kj6ywd.net), stable installation is intended to be one pasted command:
 
-The installer will eventually handle:
+```bash
+curl -fsSL https://raw.githubusercontent.com/merberg-ai/ywd-1278/main/installer/bootstrap.sh | sudo bash
+```
 
-- Raspberry Pi and HAT detection
-- dependencies
-- UART configuration
-- conflicting modem-service detection
-- YWD-1278 service installation
-- configuration creation
-- firmware compatibility checks
-- protected firmware backup
-- firmware flashing and verification
-- rollback / stock restoration tooling
+For development-channel testing once raw access is available:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/merberg-ai/ywd-1278/dev/installer/bootstrap.sh | sudo bash -s -- --branch dev
+```
+
+While the repository is private, use an authenticated checkout and run:
+
+```bash
+git clone -b dev https://github.com/merberg-ai/ywd-1278.git
+cd ywd-1278
+sudo ./installer/install.sh
+```
+
+The installer handles dependencies, preserves existing configuration, reuses a compatible Python venv, audits the Raspberry Pi UART, attempts supported-HAT detection, and can safely repair UART/serial-console boot settings. If a repair requires reboot, it saves a root-only checkpoint, offers to reboot, and continues automatically on the next boot through a temporary oneshot service.
+
+Existing callsign, SSID, frequency, UART, KISS-port, and console-port values become the defaults on later installer runs. Firmware is **never flashed as an installer side effect**, and the packet service remains disabled until its packet-engine/firmware stage is qualified.
+
+See `docs/installation.md` for the installer state machine and safety model.
 
 ## Licensing
 
