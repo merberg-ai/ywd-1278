@@ -125,7 +125,11 @@ jobs:
         run: |
           python tests/packet_firmware_build_contract_test.py
 
-      - name: Frozen engineering fetch wrapper contract
+      - name: Vendored engineering blob contract
+        run: |
+          python tests/vendored_engineering_contract_test.py
+
+      - name: Frozen engineering compatibility wrapper contract
         run: |
           python tests/packet_engineering_fetch_contract_test.py
 
