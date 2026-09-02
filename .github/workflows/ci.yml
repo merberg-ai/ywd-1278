@@ -49,6 +49,10 @@ jobs:
         run: |
           python tests/modem_protocol_test.py
 
+      - name: Single-owner modem regression
+        run: |
+          python tests/modem_owner_test.py
+
       - name: Firmware identity classification
         run: |
           python tests/firmware_identity_test.py
