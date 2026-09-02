@@ -54,10 +54,11 @@ assert 'BACKUP_TWO_PASS_IDENTICAL=YES' in flash
 assert 'STOCK_SHA256_MATCH=YES' in flash
 assert 'OPTION_BYTES_READ=NO' in flash
 
-# P2 remains qualified even while a later P3 candidate is revoked/reworked.
-assert t["qualification_write"]["enabled"] is False
-assert t["firmware_sha256"] is None
-assert t["firmware_artifact"] is None
+# P2 remains qualified while P3 attempt 2 is armed for one exact P1R1 artifact.
+assert t["qualification_write"]["enabled"] is True
+assert t["qualification_write"]["phase"] == "0B-P3"
+assert t["firmware_sha256"] == "b7ec163fc3a3cec395c0e3e3065f20c6dc6be186e32ccdcf9044c85ec681b9b8"
+assert t["firmware_artifact"].endswith("MMDVM_HS_Hat-YWD-1278-v0.1.0-alpha0-7ff74ed-hse8m.bin")
 assert t["revoked_artifacts"]
 
 # The main-flash backup range comes from the allowlisted target. There must be
@@ -65,7 +66,7 @@ assert t["revoked_artifacts"]
 for forbidden_address in ("0x1FFFF800", "0x1ffff800", "0x1FFFF7E0", "0x1ffff7e0"):
     assert forbidden_address not in flash
 
-# A write command may exist for the future guarded flash mode, but it must stay
+# A normal product write command may exist for future use, but it must stay
 # behind the manifest flash_enabled gate and the target is still false.
 gate = '[[ "$flash_enabled" == true ]] || die'
 write = 'stm32flash -b 115200 -w "$FIRMWARE" -v "$DEVICE"'
@@ -85,6 +86,6 @@ print("GEOMETRY_QUALIFIED=131072")
 print("STOCK_HASH_GATE=PASS")
 print("TWO_PASS_READ_REQUIRED=PASS")
 print("GPIO_BOOTLOADER_CONTROL=PASS")
-print("P2_QUALIFICATION_PRESERVED_DURING_P3_REWORK=PASS")
-print("FLASH_GATE_CLOSED=PASS")
+print("P2_QUALIFICATION_PRESERVED_WHILE_P3_RETRY_ARMED=PASS")
+print("NORMAL_FLASH_GATE_CLOSED=PASS")
 print("OPTION_BYTE_ACCESS=ABSENT")
