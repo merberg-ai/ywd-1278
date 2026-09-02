@@ -15,28 +15,21 @@ EXAMPLE="${YWD1278_SOURCE_ROOT:-$(cd "$SCRIPT_DIR/.." && pwd)}/config/ywd-1278.e
 
 [[ -f "$EXAMPLE" ]] || die "Example configuration not found: $EXAMPLE"
 
-read_default(){
-  local prompt="$1" default="$2" value
-  printf '%b' "${YWD_SILVER}${prompt}${YWD_RESET} [${default}]: "
-  IFS= read -r value
-  printf '%s' "${value:-$default}"
-}
-
 while true; do
-  callsign="$(read_default 'Station callsign (without SSID)' 'N0CALL')"
+  callsign="$(prompt_default 'Station callsign (without SSID)' 'N0CALL')"
   callsign="${callsign^^}"
   [[ "$callsign" =~ ^[A-Z0-9]{1,6}$ ]] && break
   warn "Callsign must be 1..6 alphanumeric characters."
 done
 
 while true; do
-  ssid="$(read_default 'SSID' '0')"
+  ssid="$(prompt_default 'SSID' '0')"
   [[ "$ssid" =~ ^[0-9]+$ ]] && (( ssid >= 0 && ssid <= 15 )) && break
   warn "SSID must be 0..15."
 done
 
 while true; do
-  frequency="$(read_default 'Packet frequency MHz (0 disables radio configuration)' '0.0')"
+  frequency="$(prompt_default 'Packet frequency MHz (0 disables radio configuration)' '0.0')"
   python3 - "$frequency" <<'PY' >/dev/null 2>&1 && break || true
 import sys
 f=float(sys.argv[1])
@@ -45,9 +38,9 @@ PY
   warn "Enter 0.0 or a numeric frequency between 100 and 1000 MHz. Band-plan/transmit validation is enforced separately."
 done
 
-device="$(read_default 'Modem UART' '/dev/ttyAMA0')"
-kiss_port="$(read_default 'TCP KISS port' '8001')"
-console_port="$(read_default 'TNC console/Telnet port' '8010')"
+device="$(prompt_default 'Modem UART' '/dev/ttyAMA0')"
+kiss_port="$(prompt_default 'TCP KISS port' '8001')"
+console_port="$(prompt_default 'TNC console/Telnet port' '8010')"
 
 [[ "$kiss_port" =~ ^[0-9]+$ ]] && (( kiss_port >= 1 && kiss_port <= 65535 )) || die "Invalid KISS port"
 [[ "$console_port" =~ ^[0-9]+$ ]] && (( console_port >= 1 && console_port <= 65535 )) || die "Invalid console port"
