@@ -12,18 +12,23 @@
 - [x] read-only HAT identity probe
 - [x] protected flash/stock-restore framework
 - [x] YWD-MMDVM porting manifest
-- [ ] shell/Python scaffold qualification on a clean Raspberry Pi
+- [x] clean Raspberry Pi install/framework qualification (0A-P1)
+- [x] stateful appliance installer/update qualification (0A-P2)
+- [x] supported-HAT + firmware discovery/setup UX qualification (0A-P3)
+- [x] installer resume state-machine qualification (0A-P4a)
+- [ ] unattended real-boot resume launch field test — deferred until physical recovery access is available; tracked in issue #1 and does not block 0B
 
 ## 0B — Qualified packet engine port
 
+- [ ] 0B-P1 deterministic `YWD-1278`-branded HAT firmware build from exact upstream `7ff74ed` — build/inspect only, no flashing
+- [ ] establish exact first supported target flash geometry/hash
+- [ ] qualify protected stock backup + guarded YWD-1278 flash/restore round trip
 - [ ] port AX.25 codec/FCS/parser
 - [ ] port Bell-202 TX serialization
 - [ ] port realtime streaming Bell-202 RX
 - [ ] port modem protocol/UART owner
 - [ ] port TCP KISS framing/server
 - [ ] productize bidirectional bounded RX/TX runtime
-- [ ] build deterministic `YWD-1278`-branded HAT firmware
-- [ ] establish exact first supported target flash geometry/hash
 - [ ] requalify physical RX
 - [ ] requalify KISS-originated external-decode TX
 - [ ] freeze first product packet-engine checkpoint
