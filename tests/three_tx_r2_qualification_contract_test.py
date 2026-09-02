@@ -27,16 +27,38 @@ tool = TOOL.read_text(encoding="utf-8")
 kiss = KISS.read_text(encoding="utf-8")
 daemon = DAEMON.read_text(encoding="utf-8")
 
-# R2 still starts from the frozen P12b physical boundary and does not claim
-# qualification until an independent decoder confirms at least one exact R2 frame.
-assert target["status"] == "0b-p12b-live-rf-kiss-qualified"
+# P13b is now the latest physical target boundary. Historical P12a/P12b
+# evidence must remain present and unchanged beneath the qualified TX result.
+assert target["status"] == "0b-p13b-known-packet-tx-qualified"
 assert target["flash_enabled"] is False
 assert target["option_bytes_permitted"] is False
 assert target["packet_live_rx_qualification"]["packet_firmware_left_installed"] is True
-assert target["packet_live_rf_kiss_qualification"]["receive_frequency_hz"] == 145050000
+p12b = target["packet_live_rf_kiss_qualification"]
+assert p12b["phase"] == "0B-P12b"
+assert p12b["status"] == "qualified"
+assert p12b["receive_frequency_hz"] == 145050000
+assert p12b["rf_transmitted"] is False
+p13b = target["packet_live_tx_qualification"]
+assert p13b["phase"] == "0B-P13b"
+assert p13b["status"] == "qualified"
+assert p13b["qualification_attempt"] == "0B-P13b-R2"
+assert p13b["transmit_frequency_hz"] == 145050000
+assert p13b["rf_power"] == 200
+assert p13b["transmit_submissions"] == 3
+assert p13b["completed_bursts"] == 3
+assert p13b["external_decodes_observed"] == 3
+assert p13b["all_three_exact_external_frames_observed"] is True
+assert p13b["uart_released"] is True
+assert p13b["kiss_tx_connected"] is False
+assert p13b["product_tx_enabled"] is False
+assert p13b["flash_written"] is False
+assert p13b["gpio_accessed"] is False
+assert p13b["option_bytes_written"] is False
+assert p13b["automatic_tx_retry"] is False
 
 assert stage["phase"] == "0B-P13b-R2"
-assert stage["status"] == "staged"
+assert stage["status"] == "qualified"
+assert stage["qualification_date"] == "2026-09-02"
 assert stage["target_id"] == "mmdvm-hs-hat-stm32f103-simplex-14.7456-adf7021"
 assert stage["transmit_frequency_hz"] == 145050000
 assert stage["rf_power"] == 200
@@ -98,6 +120,47 @@ for index, vector in enumerate(stage["frames"]):
     assert len(selectors) * 16 == 11920
     assert vector["expected_generated_samples"] == 11920
 
+# Lock the exact physical internal evidence from the successful R2 run.
+internal = stage["observed_internal_evidence"]
+assert internal["transmit_submissions"] == 3
+assert internal["completed_bursts"] == 3
+assert internal["packet_firmware_identity_verified"] is True
+assert internal["qualified_rf_power_profile_verified"] is True
+assert internal["reset_on_accept_counter_accounting_verified"] is True
+assert internal["fixed_five_second_gaps_verified"] is True
+assert len(internal["bursts"]) == 3
+for index, burst in enumerate(internal["bursts"], start=1):
+    assert burst == {
+        "sequence": index,
+        "keyups_absolute": 1,
+        "generated_samples_absolute": 11920,
+        "counters_reset_on_accept": True,
+    }
+assert internal["modem_uart_released"] is True
+assert internal["kiss_tx_connected"] is False
+assert internal["product_tx_enabled"] is False
+assert internal["flash_written"] is False
+assert internal["gpio_accessed"] is False
+assert internal["option_bytes_written"] is False
+assert internal["automatic_tx_retry"] is False
+
+# Lock the independent over-air decoder evidence. Qualification required one
+# exact R2 frame; the receiver decoded all three exact frames in sequence.
+external = stage["observed_external_decode_evidence"]
+assert external["decodes_observed"] == 3
+assert external["minimum_required"] == 1
+assert external["all_three_exact_frames_observed"] is True
+assert external["raw_decoder_lines"] == [
+    "15:50:47 RX vhf KJ6YWD-10>YWD13B: YWD-1278 P13B R2 VERIFY 1/3",
+    "15:50:53 RX vhf KJ6YWD-10>YWD13B: YWD-1278 P13B R2 VERIFY 2/3",
+    "15:50:59 RX vhf KJ6YWD-10>YWD13B: YWD-1278 P13B R2 VERIFY 3/3",
+]
+assert external["normalized_frames"] == [
+    "KJ6YWD-10>YWD13B:YWD-1278 P13B R2 VERIFY 1/3",
+    "KJ6YWD-10>YWD13B:YWD-1278 P13B R2 VERIFY 2/3",
+    "KJ6YWD-10>YWD13B:YWD-1278 P13B R2 VERIFY 3/3",
+]
+
 # Fixed RF setup reuses the previously independently decoded AX25-5B level.
 assert tx_config.P13B_TX_FREQUENCY_HZ == 145050000
 assert tx_config.P13B_TX_POWER == 200
@@ -135,9 +198,8 @@ assert "Never retry a failed call" in tool
 assert 'if index < 3:' in tool
 assert 'time.sleep(stage["inter_packet_pause_seconds"])' in tool
 
-# Most important R2 correction: firmware diagnostics are per accepted burst.
-# The tool must check absolute completed-burst values and must not use the R1
-# lifetime-delta model.
+# Firmware diagnostics are per accepted burst. The tool checks absolute
+# completed-burst values and never uses the invalid R1 lifetime-delta model.
 assert 'post_diag.keyups != stage["expected_keyups_per_completed_burst"]' in tool
 assert 'post_diag.generated_samples != vector["expected_generated_samples"]' in tool
 assert "counter_delta(" not in tool
@@ -160,7 +222,7 @@ for forbidden in (
 ):
     assert forbidden not in tool, forbidden
 
-# Dry-run must return before owner construction and therefore before UART open.
+# Dry-run returns before owner construction and therefore before UART open.
 dry_pos = tool.index("if not args.transmit:")
 owner_pos = tool.index("owner = TXModemOwner(")
 assert dry_pos < owner_pos
@@ -169,7 +231,8 @@ assert 'print("HARDWARE_UART_OPENED=NO")' in tool
 assert 'print("RF_TRANSMITTED=NO")' in tool
 
 print("P13B_R2_THREE_TX_CONTRACT=PASS")
-print("P12B_PHYSICAL_BOUNDARY_FROZEN=PASS")
+print("P13B_PHYSICAL_QUALIFICATION=PASS")
+print("P12B_HISTORICAL_EVIDENCE_FROZEN=PASS")
 print("P13B_R2_FREQUENCY_HZ=145050000")
 print("P13B_R2_RF_POWER=200")
 print("RESET_ON_ACCEPT_COUNTER_SEMANTICS=PASS")
@@ -177,6 +240,8 @@ print("R2_FIXED_FRAMES=3")
 print("R2_SELECTORS_PER_FRAME=745")
 print("R2_SAMPLES_PER_FRAME=11920")
 print("R2_INTER_PACKET_PAUSE_SECONDS=5.0")
+print("R2_EXTERNAL_DECODES=3")
+print("R2_ALL_EXACT_EXTERNAL_FRAMES=PASS")
 print("AUTOMATIC_TX_RETRY=NO")
 print("KISS_TX_CONNECTED=NO")
 print("PRODUCT_TX_ENABLED=NO")
