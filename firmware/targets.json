@@ -4,7 +4,7 @@
     {
       "id": "mmdvm-hs-hat-stm32f103-simplex-14.7456-adf7021",
       "description": "Reference simplex MMDVM_HS Hat lineage used for the qualified YWD AX.25 work",
-      "status": "0b-p2-read-only-candidate",
+      "status": "0b-p2-read-only-qualified",
       "flash_enabled": false,
       "mcu_family": "STM32F103",
       "rf_chip": "ADF7021",
@@ -30,7 +30,7 @@
       },
       "flash_base": "0x08000000",
       "flash_size_bytes": 131072,
-      "geometry_status": "candidate-from-qualified-golden-baseline-pending-ywd1278-backup-requalification",
+      "geometry_status": "0b-p2-physically-qualified-two-pass-stock-backup",
       "expected_bootloader_version": "0x22",
       "expected_device_id": "0x0410",
       "option_bytes_permitted": false,
@@ -49,7 +49,7 @@
       "ywd1278_identity_prefix": "MMDVM_HS_Hat-YWD-1278-",
       "firmware_artifact": "firmware/out/0b-p1-stm32f103-simplex-14.7456-adf7021/MMDVM_HS_Hat-YWD-1278-v0.1.0-alpha0-7ff74ed.bin",
       "firmware_sha256": "db23bc84bd31828d8fb29d8e4164879b9e5e57a4b2ef2eb58c598c66a38420b3",
-      "notes": "Write operations remain disabled. 0B-P1 qualified the deterministic YWD-1278 artifact hash. The 131072-byte geometry and exact stock main-flash SHA are inherited from the physically qualified golden baseline and must be requalified through the YWD-1278 protected two-pass backup path before geometry_status is promoted. GPIO20=BOOT0 and GPIO21=RESET were physically validated on the reference Pi 5/HAT. Normal application release is BOOT0 low and RESET high without a pulse; explicit bootloader entry uses BOOT0 high plus one RESET low/high pulse; returning from the system bootloader uses BOOT0 low plus one RESET low/high pulse. Option-byte operations are forbidden."
+      "notes": "Write operations remain disabled. 0B-P1 qualified the deterministic YWD-1278 artifact hash. 0B-P2 physically requalified the 131072-byte main-flash geometry using two independent full reads through the YWD-1278 backup path; both reads were byte-identical and matched stock SHA256 4981b35b2d50ada0b09322d9de19dd58a0cbd49eb005693499d1acae92f9d684. GPIO20=BOOT0 and GPIO21=RESET were physically validated on the reference Pi 5/HAT. Normal application release is BOOT0 low and RESET high without a pulse; explicit bootloader entry uses BOOT0 high plus one RESET low/high pulse; returning from the system bootloader uses BOOT0 low plus one RESET low/high pulse. Option-byte operations are forbidden. Flash remains disabled until the guarded YWD-1278 write plus exact stock restore round trip is qualified."
     }
   ]
 }
