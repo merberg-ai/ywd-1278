@@ -13,7 +13,7 @@ data = json.loads(TARGETS.read_text(encoding="utf-8"))
 t = data["targets"][0]
 
 assert t["id"] == "mmdvm-hs-hat-stm32f103-simplex-14.7456-adf7021"
-assert t["status"] == "0b-p3-roundtrip-qualified"
+assert t["status"] == "0b-p11-packet-roundtrip-qualified"
 assert t["flash_enabled"] is False
 assert t["option_bytes_permitted"] is False
 assert t["geometry_status"] == "0b-p2-physically-qualified-two-pass-stock-backup"
@@ -52,10 +52,15 @@ assert rq == {
     "option_bytes_written": False,
 }
 
+# P11 advances the target status without altering the frozen P3 evidence.
+assert t["packet_qualification_write"]["enabled"] is False
+assert t["packet_runtime_qualification"]["phase"] == "0B-P11"
+assert t["packet_runtime_qualification"]["status"] == "qualified"
+
 s = SCRIPT.read_text(encoding="utf-8")
 r = RESTORE.read_text(encoding="utf-8")
 
-# The qualification path remains in-tree for audit/recovery work, but the
+# The P3 qualification path remains in-tree for audit/recovery work, but its
 # manifest gate is closed after the successful physical qualification.
 assert '[[ "$flash_enabled" == false ]]' in s
 assert '[[ "$q_phase" == 0B-P3 && "$q_enabled" == true ]]' in s
@@ -110,6 +115,7 @@ print("P3_YWD_IDENTITY=PASS")
 print("P3_STOCK_RESTORE_READBACK=PASS")
 print("P3_STOCK_IDENTITY=PASS")
 print("P3_MAIN_FLASH_WRITE_RECORDED=YES")
+print("P3_EVIDENCE_PRESERVED_AFTER_P11=PASS")
 print("FAILED_P1_ARTIFACT=REVOKED")
 print("AUTOMATIC_STOCK_RECOVERY_TOOL=PASS")
 print("OPTION_BYTE_WRITE_PATH=ABSENT")
