@@ -69,6 +69,14 @@ jobs:
         run: |
           python tests/tx_broker_contract_test.py
 
+      - name: Deterministic CSMA policy regression
+        run: |
+          python tests/csma_policy_test.py
+
+      - name: Deterministic CSMA architecture contract
+        run: |
+          python tests/csma_policy_contract_test.py
+
       - name: P13b one-shot TX qualification contract
         run: |
           python tests/single_tx_qualification_contract_test.py
