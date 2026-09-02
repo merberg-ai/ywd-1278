@@ -25,6 +25,9 @@ WITH_FIRMWARE_TOOLCHAIN=1
 RUN_SETUP=1
 STAGING_ROOT=""
 DETECTED_TARGET=""
+DETECTED_IDENTITY=""
+FIRMWARE_CLASS=""
+FIRMWARE_DESCRIPTION=""
 ALLOW_CANDIDATE_RELEASE=0
 
 cleanup(){ [[ -z "$STAGING_ROOT" || ! -d "$STAGING_ROOT" ]] || rm -rf "$STAGING_ROOT"; }
@@ -150,7 +153,10 @@ try_detect(){
   [[ "$allow" == 1 ]] && detect_args+=(--allow-candidate-release)
   if out="$(YWD1278_SOURCE_ROOT="$SOURCE_ROOT" bash "$SOURCE_ROOT/installer/hardware-detect.sh" "${detect_args[@]}" 2>&1)"; then rc=0; else rc=$?; fi
   printf '%s\n' "$out"
-  if [[ $rc -eq 0 ]]; then DETECTED_TARGET="$(sed -n 's/^DETECTED_TARGET=//p' <<<"$out" | tail -1)"; return 0; fi
+  DETECTED_TARGET="$(sed -n 's/^DETECTED_TARGET=//p' <<<"$out" | tail -1)"
+  DETECTED_IDENTITY="$(sed -n 's/^DETECTED_IDENTITY=//p' <<<"$out" | tail -1)"
+  FIRMWARE_CLASS="$(sed -n 's/^FIRMWARE_CLASS=//p' <<<"$out" | tail -1)"
+  FIRMWARE_DESCRIPTION="$(sed -n 's/^FIRMWARE_DESCRIPTION=//p' <<<"$out" | tail -1)"
   return "$rc"
 }
 
@@ -163,6 +169,8 @@ if [[ $runtime_ready -eq 1 ]]; then
       ALLOW_CANDIDATE_RELEASE=1
       try_detect 1 || warn "No supported HAT was identified yet; setup can continue safely."
     fi
+  elif [[ $detect_rc -eq 22 ]]; then
+    warn "A HAT/modem answered GET_VERSION, but its firmware identity is not recognized. No GPIO or firmware action will be taken automatically."
   elif [[ $detect_rc -ne 0 ]]; then
     warn "No supported HAT was identified yet; setup can continue safely."
   fi
@@ -172,7 +180,12 @@ fi
 
 if [[ $RUN_SETUP -eq 1 ]]; then
   section "Interactive setup"
-  YWD1278_SOURCE_ROOT="$SOURCE_ROOT" YWD1278_DETECTED_TARGET="$DETECTED_TARGET" bash "$SOURCE_ROOT/installer/setup.sh"
+  YWD1278_SOURCE_ROOT="$SOURCE_ROOT" \
+  YWD1278_DETECTED_TARGET="$DETECTED_TARGET" \
+  YWD1278_DETECTED_IDENTITY="$DETECTED_IDENTITY" \
+  YWD1278_FIRMWARE_CLASS="$FIRMWARE_CLASS" \
+  YWD1278_FIRMWARE_DESCRIPTION="$FIRMWARE_DESCRIPTION" \
+  bash "$SOURCE_ROOT/installer/setup.sh"
 fi
 
 if [[ $reboot_needed -eq 1 ]]; then
@@ -211,6 +224,10 @@ fi
 section "Install complete"
 ok "YWD-1278 host framework installed"
 [[ -n "$DETECTED_TARGET" ]] && ok "Supported HAT: $DETECTED_TARGET" || warn "Supported HAT detection is still pending"
+if [[ -n "$DETECTED_IDENTITY" ]]; then
+  info "HAT firmware: ${FIRMWARE_CLASS:-UNKNOWN}"
+  step "$DETECTED_IDENTITY"
+fi
 info "CLI: ywd1278 --version"
 info "Config: $CONFIG_FILE"
 info "Packet service remains disabled until the packet engine/firmware port is qualified."
