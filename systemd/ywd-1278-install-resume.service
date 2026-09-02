@@ -6,7 +6,7 @@ ConditionPathExists=/var/lib/ywd-1278/install-resume.env
 
 [Service]
 Type=oneshot
-ExecStart=/opt/ywd-1278/source/installer/resume.sh --automatic
+ExecStart=/bin/bash /opt/ywd-1278/source/installer/resume.sh --automatic
 RemainAfterExit=no
 StandardOutput=journal
 StandardError=journal
