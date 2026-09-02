@@ -16,7 +16,7 @@ assert len(targets) == 1
 t = targets[0]
 
 assert t["id"] == "mmdvm-hs-hat-stm32f103-simplex-14.7456-adf7021"
-assert t["status"] == "0b-p11-packet-roundtrip-qualified"
+# Current phase/status may advance; frozen P2 geometry/backup evidence must not.
 assert t["flash_enabled"] is False
 assert t["option_bytes_permitted"] is False
 assert t["flash_base"] == "0x08000000"
@@ -43,8 +43,6 @@ assert hc["application_restart_pulses_reset"] is True
 flash = FLASH.read_text(encoding="utf-8")
 control = CONTROL.read_text(encoding="utf-8")
 
-# 0B-P2 backup must explicitly use target-aware GPIO entry/restart, two read
-# passes, a byte comparison, and the known stock SHA gate.
 assert 'bootloader-entry --targets "$TARGETS" --target "$TARGET_ID"' in flash
 assert 'application-restart --targets "$TARGETS" --target "$TARGET_ID"' in flash
 assert 'read-a.bin' in flash and 'read-b.bin' in flash
@@ -54,8 +52,6 @@ assert 'BACKUP_TWO_PASS_IDENTICAL=YES' in flash
 assert 'STOCK_SHA256_MATCH=YES' in flash
 assert 'OPTION_BYTES_READ=NO' in flash
 
-# P2 remains qualified after P3 and P11. All qualification-only write gates are
-# closed again and normal product flashing remains disabled.
 assert t["qualification_write"]["enabled"] is False
 assert t["qualification_write"]["phase"] == "0B-P3"
 assert t["packet_qualification_write"]["enabled"] is False
@@ -68,19 +64,14 @@ assert t["packet_runtime_qualification"]["status"] == "qualified"
 assert t["packet_runtime_qualification"]["stock_restore_sha256"] == t["stock_flash_sha256"]
 assert t["revoked_artifacts"]
 
-# The main-flash backup range comes from the allowlisted target. There must be
-# no option-byte/system-memory address in the backup tool.
 for forbidden_address in ("0x1FFFF800", "0x1ffff800", "0x1FFFF7E0", "0x1ffff7e0"):
     assert forbidden_address not in flash
 
-# A normal product write command may exist for future use, but it must stay
-# behind the manifest flash_enabled gate and the target is still false.
 gate = '[[ "$flash_enabled" == true ]] || die'
 write = 'stm32flash -b 115200 -w "$FIRMWARE" -v "$DEVICE"'
 assert gate in flash and write in flash
 assert flash.index(gate) < flash.index(write)
 
-# Control helper may pulse RESET only through the explicit qualified operations.
 assert 'choices=["application-release", "auto-detect-release", "bootloader-entry", "application-restart"]' in control
 assert 'HAT_BOOTLOADER_STATE_REQUESTED=YES' in control
 assert 'HAT_APPLICATION_RESTARTED=YES' in control
@@ -93,7 +84,7 @@ print("GEOMETRY_QUALIFIED=131072")
 print("STOCK_HASH_GATE=PASS")
 print("TWO_PASS_READ_REQUIRED=PASS")
 print("GPIO_BOOTLOADER_CONTROL=PASS")
-print("P2_QUALIFICATION_PRESERVED_AFTER_P11=PASS")
+print("P2_EVIDENCE_PHASE_INDEPENDENT=PASS")
 print("P3_WRITE_GATE=CLOSED_AFTER_QUALIFICATION")
 print("P11_WRITE_GATE=CLOSED_AFTER_QUALIFICATION")
 print("NORMAL_FLASH_GATE_CLOSED=PASS")
