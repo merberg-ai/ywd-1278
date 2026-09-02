@@ -7,84 +7,94 @@ source "$SCRIPT_DIR/lib/ui.sh"
 
 require_root
 banner
-section "Initial station configuration"
+section "Station configuration"
 
 SOURCE_ROOT="${YWD1278_SOURCE_ROOT:-$(cd "$SCRIPT_DIR/.." && pwd)}"
 CONFIG_DIR=/etc/ywd-1278
 CONFIG_FILE="$CONFIG_DIR/config.toml"
 EXAMPLE="$SOURCE_ROOT/config/ywd-1278.example.toml"
-TARGETS="$SOURCE_ROOT/firmware/targets.json"
-DEFAULT_TARGET="mmdvm-hs-hat-stm32f103-simplex-14.7456-adf7021"
-
+DETECTED_TARGET="${YWD1278_DETECTED_TARGET:-}"
 [[ -f "$EXAMPLE" ]] || die "Example configuration not found: $EXAMPLE"
-[[ -f "$TARGETS" ]] || die "Hardware target manifest not found: $TARGETS"
 
-target_exists(){
-  python3 - "$TARGETS" "$1" <<'PY'
-import json,sys
-data=json.load(open(sys.argv[1], encoding='utf-8'))
-items=[x for x in data.get('targets',[]) if x.get('id') == sys.argv[2]]
-raise SystemExit(0 if len(items)==1 else 1)
+toml_get(){
+  local section_name="$1" key="$2" fallback="$3"
+  python3 - "$CONFIG_FILE" "$section_name" "$key" "$fallback" <<'PY'
+import sys,tomllib
+from pathlib import Path
+p=Path(sys.argv[1]); section,key,fallback=sys.argv[2:]
+if not p.exists(): print(fallback); raise SystemExit
+try:
+    with p.open('rb') as f: data=tomllib.load(f)
+    value=data.get(section,{}).get(key,fallback)
+except Exception:
+    value=fallback
+if isinstance(value,bool): print('true' if value else 'false')
+else: print(value)
 PY
 }
 
+old_callsign="$(toml_get station callsign N0CALL)"
+old_ssid="$(toml_get station ssid 0)"
+old_target="$(toml_get hardware target '')"
+old_frequency="$(toml_get radio frequency_mhz 0.0)"
+old_device="$(toml_get radio device /dev/ttyAMA0)"
+old_kiss="$(toml_get kiss port 8001)"
+old_console="$(toml_get console port 8010)"
+
 while true; do
-  callsign="$(prompt_default 'Station callsign (without SSID)' 'N0CALL')"
+  callsign="$(prompt_default 'Station callsign (without SSID)' "$old_callsign")"
   callsign="${callsign^^}"
   [[ "$callsign" =~ ^[A-Z0-9]{1,6}$ ]] && break
   warn "Callsign must be 1..6 alphanumeric characters."
 done
 
 while true; do
-  ssid="$(prompt_default 'SSID' '0')"
+  ssid="$(prompt_default 'SSID' "$old_ssid")"
   [[ "$ssid" =~ ^[0-9]+$ ]] && (( ssid >= 0 && ssid <= 15 )) && break
   warn "SSID must be 0..15."
 done
 
-section "Hardware target"
-step "Initial qualified target: $DEFAULT_TARGET"
-warn "YWD-1278 will only manipulate HAT BOOT/RESET GPIOs for the explicitly selected allowlisted target."
-while true; do
-  hardware_target="$(prompt_default 'Hardware target' "$DEFAULT_TARGET")"
-  target_exists "$hardware_target" && break
-  warn "Unknown hardware target. Choose an ID present in firmware/targets.json."
-done
+hardware_target="$old_target"
+if [[ -n "$DETECTED_TARGET" ]]; then
+  hardware_target="$DETECTED_TARGET"
+  ok "Supported HAT detected: $hardware_target"
+elif [[ -n "$hardware_target" ]]; then
+  info "Using previously configured HAT target: $hardware_target"
+else
+  warn "No supported HAT has been identified yet; the installer will retry after platform setup/reboot."
+fi
 
 while true; do
-  frequency="$(prompt_default 'Packet frequency MHz (0 disables radio configuration)' '0.0')"
+  frequency="$(prompt_default 'Packet frequency MHz (0 disables radio configuration)' "$old_frequency")"
   python3 - "$frequency" <<'PY' >/dev/null 2>&1 && break || true
 import sys
 f=float(sys.argv[1])
 assert f == 0.0 or 100.0 <= f <= 1000.0
 PY
-  warn "Enter 0.0 or a numeric frequency between 100 and 1000 MHz. Band-plan/transmit validation is enforced separately."
+  warn "Enter 0.0 or a numeric frequency between 100 and 1000 MHz."
 done
 
-device="$(prompt_default 'Modem UART' '/dev/ttyAMA0')"
-kiss_port="$(prompt_default 'TCP KISS port' '8001')"
-console_port="$(prompt_default 'TNC console/Telnet port' '8010')"
-
+device="$(prompt_default 'Modem UART' "$old_device")"
+kiss_port="$(prompt_default 'TCP KISS port' "$old_kiss")"
+console_port="$(prompt_default 'TNC console/Telnet port' "$old_console")"
 [[ "$kiss_port" =~ ^[0-9]+$ ]] && (( kiss_port >= 1 && kiss_port <= 65535 )) || die "Invalid KISS port"
 [[ "$console_port" =~ ^[0-9]+$ ]] && (( console_port >= 1 && console_port <= 65535 )) || die "Invalid console port"
 [[ "$kiss_port" != "$console_port" ]] || die "KISS and console ports must differ"
 
 section "Configuration summary"
 step "Station: ${callsign}-${ssid}"
-step "Hardware: $hardware_target"
+step "Hardware: ${hardware_target:-auto-detect pending}"
 step "UART: $device"
 step "Frequency: $frequency MHz"
 step "KISS: 127.0.0.1:$kiss_port"
 step "Console: 127.0.0.1:$console_port"
-warn "RF transmit remains DISABLED after setup. Enabling TX is a later explicit configuration/qualification step."
+warn "RF transmit remains DISABLED after setup."
 
 confirm_exact "SAVE" "Write this configuration?" || die "Setup cancelled"
-
-mkdir -p "$CONFIG_DIR"
-chmod 0755 "$CONFIG_DIR"
+mkdir -p "$CONFIG_DIR"; chmod 0755 "$CONFIG_DIR"
 if [[ -f "$CONFIG_FILE" ]]; then
   backup="$CONFIG_FILE.pre-setup.$(date +%Y%m%d-%H%M%S)"
-  cp -a "$CONFIG_FILE" "$backup"
-  chmod 0600 "$backup"
+  cp -a "$CONFIG_FILE" "$backup"; chmod 0600 "$backup"
   info "Existing configuration backed up to $backup"
 fi
 
