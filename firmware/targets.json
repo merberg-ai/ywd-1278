@@ -4,7 +4,7 @@
     {
       "id": "mmdvm-hs-hat-stm32f103-simplex-14.7456-adf7021",
       "description": "Reference simplex MMDVM_HS Hat lineage used for the qualified YWD AX.25 work",
-      "status": "0b-p3-roundtrip-qualified",
+      "status": "0b-p11-packet-roundtrip-qualified",
       "flash_enabled": false,
       "qualification_write": {
         "phase": "0B-P3",
@@ -15,7 +15,7 @@
       },
       "packet_qualification_write": {
         "phase": "0B-P11",
-        "enabled": true,
+        "enabled": false,
         "requires_exact_stock_start": true,
         "requires_verified_stock_backup": true,
         "requires_stock_restore_same_run": true,
@@ -63,7 +63,8 @@
       "accepted_running_identities": [
         "MMDVM_HS_Hat-v1.6.1 20230526 14.7456MHz ADF7021 FW by CA6JAU GitID #7ff74ed",
         "MMDVM_HS_Hat-YWD-AX25R3-v0.2.2 14.7456MHz ADF7021 FW based on CA6JAU GitID #7ff74ed",
-        "MMDVM_HS_Hat-YWD-1278-v0.1.0-alpha0 14.7456MHz ADF7021 FW based on CA6JAU GitID #7ff74ed"
+        "MMDVM_HS_Hat-YWD-1278-v0.1.0-alpha0 14.7456MHz ADF7021 FW based on CA6JAU GitID #7ff74ed",
+        "MMDVM_HS_Hat-YWD-1278-AX25R3-v0.1.0-alpha0 14.7456MHz ADF7021 FW based on CA6JAU GitID #7ff74ed"
       ],
       "ywd1278_identity_prefix": "MMDVM_HS_Hat-YWD-1278-",
       "firmware_identity": "MMDVM_HS_Hat-YWD-1278-v0.1.0-alpha0 14.7456MHz ADF7021 FW based on CA6JAU GitID #7ff74ed",
@@ -85,7 +86,7 @@
       },
       "packet_firmware_candidate": {
         "phase": "0B-P10",
-        "status": "deterministic-build-qualified-runtime-unqualified",
+        "status": "deterministic-build-and-runtime-qualified",
         "date": "2026-09-02",
         "artifact": "firmware/out/0b-p10-ax25r3-stm32f103-simplex-adf7021-14.7456tcxo-8mhz-hse/MMDVM_HS_Hat-YWD-1278-AX25R3-v0.1.0-alpha0-7ff74ed-hse8m.bin",
         "artifact_size_bytes": 59812,
@@ -97,8 +98,27 @@
         "adf7021_tcxo_hz": 14745600,
         "osc_override": false,
         "reproducibility": "pass",
-        "runtime_identity_verified": false,
-        "accepted_running_identity": false
+        "runtime_identity_verified": true,
+        "accepted_running_identity": true
+      },
+      "packet_runtime_qualification": {
+        "phase": "0B-P11",
+        "status": "qualified",
+        "date": "2026-09-02",
+        "artifact_size_bytes": 59812,
+        "artifact_sha256": "a069d9a9f1c3d5014984e5d73a5b57155ffa50f8908c9d80c5da221b8ea07310",
+        "programmed_readback_sha256": "a069d9a9f1c3d5014984e5d73a5b57155ffa50f8908c9d80c5da221b8ea07310",
+        "packet_identity_verified": true,
+        "stock_restore_sha256": "4981b35b2d50ada0b09322d9de19dd58a0cbd49eb005693499d1acae92f9d684",
+        "stock_identity_verified": true,
+        "main_flash_write_occurred": true,
+        "application_commands_sent": [
+          "GET_VERSION"
+        ],
+        "rf_configured": false,
+        "rx_started": false,
+        "rf_transmitted": false,
+        "option_bytes_written": false
       },
       "revoked_artifacts": [
         {
@@ -107,7 +127,7 @@
           "reason": "Runtime-invalid build: ADF7021 14.7456 MHz TCXO was incorrectly passed as the STM32 HSE OSC value. 0B-P3 readback matched this artifact exactly but the application produced no GET_VERSION. Automatic exact-stock recovery passed."
         }
       ],
-      "notes": "Normal product flash operations remain disabled. 0B-P2 remains physically qualified: 131072-byte main-flash geometry, two byte-identical reads, and stock SHA256 4981b35b2d50ada0b09322d9de19dd58a0cbd49eb005693499d1acae92f9d684. The first 0B-P3 attempt safely failed using the revoked clock-misconfigured P1 artifact and automatic exact-stock recovery passed. Corrected 0B-P1R1 is qualified at SHA256 b7ec163fc3a3cec395c0e3e3065f20c6dc6be186e32ccdcf9044c85ec681b9b8 using STM32 HSE 8 MHz, ADF7021 TCXO 14.7456 MHz, and no OSC override. 0B-P3 attempt 2 physically qualified the corrected artifact: exact programmed readback matched, exact YWD-1278 GET_VERSION identity passed, the exact protected 131072-byte stock image was restored and read back to the qualified stock SHA, and exact stock GET_VERSION passed. The P3 qualification-only write gate is closed again after qualification; normal product flash_enabled remains false. 0B-P10 independently reconstructed the frozen AX25R3 engineering lineage and produced a deterministic 59812-byte packet-capable candidate at SHA256 a069d9a9f1c3d5014984e5d73a5b57155ffa50f8908c9d80c5da221b8ea07310. That packet candidate is build-qualified only and is not yet accepted as a running identity. The separate 0B-P11 packet qualification gate is armed only for a guarded write/readback/runtime-identity/exact-stock-restore proof; RF configuration, RX start, and TX commands are forbidden during P11. The GPIO helper's FLASH_WRITTEN=NO marker refers only to the helper itself; controlled qualification writes use stm32flash. GPIO20=BOOT0 and GPIO21=RESET remain physically qualified. Option-byte writes are forbidden."
+      "notes": "Normal product flash operations remain disabled. 0B-P2 remains physically qualified: 131072-byte main-flash geometry, two byte-identical reads, and stock SHA256 4981b35b2d50ada0b09322d9de19dd58a0cbd49eb005693499d1acae92f9d684. The first 0B-P3 attempt safely failed using the revoked clock-misconfigured P1 artifact and automatic exact-stock recovery passed. Corrected 0B-P1R1 is qualified at SHA256 b7ec163fc3a3cec395c0e3e3065f20c6dc6be186e32ccdcf9044c85ec681b9b8 using STM32 HSE 8 MHz, ADF7021 TCXO 14.7456 MHz, and no OSC override. 0B-P3 attempt 2 physically qualified the corrected non-packet artifact and restored exact stock; the P3 gate remains closed. 0B-P10 independently reconstructed the frozen AX25R3 engineering lineage and produced a deterministic 59812-byte packet-capable artifact at SHA256 a069d9a9f1c3d5014984e5d73a5b57155ffa50f8908c9d80c5da221b8ea07310. 0B-P11 physically qualified that exact packet artifact: exact programmed readback matched, exact product AX25R3 GET_VERSION identity passed, and the exact protected 131072-byte stock image was restored/read back to the qualified stock SHA with exact stock identity. P11 sent GET_VERSION only; RF configuration, RX start, TX commands, RF transmission, and option-byte writes did not occur. The P11 qualification gate is closed after proof; normal product flash_enabled remains false. The GPIO helper's FLASH_WRITTEN=NO marker refers only to the helper itself; controlled qualification writes use stm32flash. GPIO20=BOOT0 and GPIO21=RESET remain physically qualified. Option-byte writes are forbidden."
     }
   ]
 }
