@@ -1,9 +1,13 @@
 #!/usr/bin/env python3
 """Build-only deterministic 0C-P2 AX25R4 RSSI firmware candidate.
 
-This reconstructs the exact frozen AX25R3 engineering lineage from pinned Git
-objects, applies the one pinned AX25R4 RSSI telemetry transform, applies product
-branding, and builds twice for byte-for-byte reproducibility.
+This reconstructs the exact frozen AX25R3 engineering lineage from byte-pinned
+files vendored inside YWD-1278, applies the one pinned AX25R4 RSSI telemetry
+transform, applies product branding, and builds twice for byte-for-byte
+reproducibility.
+
+The original YWD-MMDVM commits remain manifest provenance only. No YWD-MMDVM
+checkout, local sibling repository, or YWD-MMDVM network fetch is required.
 
 It never opens a modem device, accesses GPIO, flashes firmware, or transmits RF.
 """
@@ -23,6 +27,7 @@ ROOT = Path(__file__).resolve().parents[1]
 MANIFEST = ROOT / "firmware" / "tooling" / "packet-rssi-build-manifest.json"
 BRANDER = ROOT / "firmware" / "tooling" / "apply_packet_rssi_branding.py"
 INSPECTOR = ROOT / "firmware" / "tooling" / "inspect_artifact.py"
+MATERIALIZER = ROOT / "firmware" / "tooling" / "materialize_vendored_engineering.py"
 
 
 def run(args: list[str], *, cwd: Path | None = None, capture: bool = False) -> str:
@@ -49,43 +54,6 @@ def require_tool(name: str) -> None:
         raise SystemExit(f"[FAIL] Missing build dependency: {name}")
 
 
-def materialize_engineering(manifest: dict, engineering_repo: Path, dest: Path) -> None:
-    eng = manifest["engineering"]
-    commit = eng["commit"]
-    git(engineering_repo, "cat-file", "-e", f"{commit}^{{commit}}", capture=False)
-
-    baseline_blob = git(
-        engineering_repo,
-        "rev-parse",
-        f"{commit}:{eng['baseline_qualification']}",
-    )
-    if baseline_blob != eng["baseline_qualification_blob"]:
-        raise RuntimeError("frozen baseline engineering qualification blob mismatch")
-
-    for rel, expected_blob in eng["files"].items():
-        actual_blob = git(engineering_repo, "rev-parse", f"{commit}:{rel}")
-        if actual_blob != expected_blob:
-            raise RuntimeError(
-                f"frozen engineering blob mismatch for {rel}: "
-                f"expected={expected_blob} actual={actual_blob}"
-            )
-        out = dest / rel
-        out.parent.mkdir(parents=True, exist_ok=True)
-        data = subprocess.check_output(
-            ["git", "-C", str(engineering_repo), "show", f"{commit}:{rel}"]
-        )
-        out.write_bytes(data)
-        local_blob = run(["git", "hash-object", str(out)], capture=True)
-        if local_blob != expected_blob:
-            raise RuntimeError(f"materialized engineering blob mismatch for {rel}")
-
-    print("FROZEN_ENGINEERING_OBJECTS=PASS")
-    print("ENGINEERING_WORKTREE_USED=NO")
-    print(f"ENGINEERING_TRANSFORM_FILES={len(eng['files'])}")
-    print(f"ENGINEERING_BASELINE={eng['baseline_qualified_commit']}")
-    print(f"ENGINEERING_RSSI_COMMIT={commit}")
-
-
 def fetch_upstream(manifest: dict, seed: Path) -> None:
     upstream = manifest["upstream"]
     run(["git", "init", "-q", str(seed)])
@@ -94,7 +62,17 @@ def fetch_upstream(manifest: dict, seed: Path) -> None:
     env = dict(os.environ)
     env["GIT_TERMINAL_PROMPT"] = "0"
     subprocess.check_call(
-        ["git", "-C", str(seed), "fetch", "--quiet", "--no-tags", "--depth=1", "origin", upstream["commit"]],
+        [
+            "git",
+            "-C",
+            str(seed),
+            "fetch",
+            "--quiet",
+            "--no-tags",
+            "--depth=1",
+            "origin",
+            upstream["commit"],
+        ],
         env=env,
     )
     git(seed, "checkout", "--quiet", "--detach", upstream["commit"], capture=False)
@@ -179,11 +157,6 @@ def build_one(
 
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument(
-        "--engineering-repo",
-        default=str(Path.home() / "mmdvm-lab" / "ywd-mmdvm"),
-        help="local ywd-mmdvm Git repository used only as a pinned object database",
-    )
     ap.add_argument("--jobs", type=int, default=max(1, os.cpu_count() or 1))
     ap.add_argument("--single", action="store_true", help="skip the second reproducibility build")
     ap.add_argument("--keep-work", action="store_true")
@@ -195,12 +168,14 @@ def main() -> int:
         raise SystemExit("[FAIL] --jobs must be positive")
     for tool in ("git", "make", "arm-none-eabi-gcc", "arm-none-eabi-g++", "arm-none-eabi-objcopy"):
         require_tool(tool)
-    if not MANIFEST.is_file() or not BRANDER.is_file() or not INSPECTOR.is_file():
+    if not MANIFEST.is_file() or not BRANDER.is_file() or not INSPECTOR.is_file() or not MATERIALIZER.is_file():
         raise SystemExit("[FAIL] 0C-P2 build tooling is incomplete")
 
     manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
     if manifest["schema"] != 1 or manifest["phase"] != "0C-P2":
         raise RuntimeError("unexpected RSSI build manifest")
+    if manifest["engineering"].get("source") != "vendored":
+        raise RuntimeError("0C-P2 engineering source must be vendored in YWD-1278")
     if manifest["build"]["stm32_hse_hz"] != 8_000_000:
         raise RuntimeError("0C-P2 requires STM32 HSE 8 MHz")
     if manifest["rf"]["tcxo_hz"] != 14_745_600:
@@ -220,23 +195,31 @@ def main() -> int:
     if manifest["telemetry"]["carrier_threshold_selected"] is not False:
         raise RuntimeError("raw RSSI candidate must not preselect a carrier threshold")
 
-    engineering_repo = Path(args.engineering_repo).expanduser().resolve()
-    if not (engineering_repo / ".git").exists():
-        raise SystemExit(f"[FAIL] Engineering Git repository not found: {engineering_repo}")
-
     out_dir = ROOT / "firmware" / "out" / manifest["profile_id"]
     out_dir.mkdir(parents=True, exist_ok=True)
     work = Path(tempfile.mkdtemp(prefix="ywd1278-rssi-fwbuild."))
     try:
         transforms = work / "engineering"
         transforms.mkdir()
-        materialize_engineering(manifest, engineering_repo, transforms)
+        run(
+            [
+                sys.executable,
+                str(MATERIALIZER),
+                "--manifest",
+                str(MANIFEST),
+                "--dest",
+                str(transforms),
+            ]
+        )
         seed = work / "upstream"
         fetch_upstream(manifest, seed)
 
         print("\n=== YWD-1278 0C-P2 AX25R4 RSSI FIRMWARE BUILD ===")
         print(f"PROFILE={manifest['profile_id']}")
         print(f"EXPECTED_IDENTITY={manifest['branding']['expected_identity']}")
+        print(f"ENGINEERING_PROVENANCE={manifest['engineering']['repository']}@{manifest['engineering']['commit']}")
+        print("ENGINEERING_SOURCE=VENDORED_IN_YWD1278")
+        print("ENGINEERING_EXTERNAL_REPO_REQUIRED=NO")
         print("HARDWARE_ACCESS=NO")
         print("FLASH_WRITTEN=NO")
         print("RF_TRANSMITTED=NO")
@@ -249,7 +232,6 @@ def main() -> int:
             manifest=manifest,
             jobs=args.jobs,
         )
-        artifacts = [a]
         if not args.single:
             b = build_one(
                 label="build-b",
@@ -259,7 +241,6 @@ def main() -> int:
                 manifest=manifest,
                 jobs=args.jobs,
             )
-            artifacts.append(b)
             if a.read_bytes() != b.read_bytes():
                 raise RuntimeError("independent RSSI firmware builds are not byte-identical")
             print("REPRODUCIBLE_BUILDS=PASS")
@@ -283,6 +264,7 @@ def main() -> int:
             "artifact_sha256": digest,
             "expected_identity": manifest["branding"]["expected_identity"],
             "upstream_commit": manifest["upstream"]["commit"],
+            "engineering_source": "vendored",
             "engineering_baseline_commit": manifest["engineering"]["baseline_qualified_commit"],
             "engineering_rssi_commit": manifest["engineering"]["commit"],
             "stm32_hse_hz": 8_000_000,
@@ -305,6 +287,7 @@ def main() -> int:
         print(f"ARTIFACT_SHA256={digest}")
         print("RSSI_SUBCOMMAND=0x05")
         print("RSSI_THRESHOLD_SELECTED=NO")
+        print("ENGINEERING_EXTERNAL_REPO_REQUIRED=NO")
         print("HARDWARE_ACCESS=NO")
         print("FLASH_WRITTEN=NO")
         print("RF_TRANSMITTED=NO")
