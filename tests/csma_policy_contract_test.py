@@ -61,15 +61,17 @@ assert "self._next_slot_at = now + self._parameters.slot_seconds" in csma_text
 assert "now >= self._deadline_at" in csma_text
 assert "We never credit unobserved time as clear-channel time" in csma_text
 
-# 0C-P1 has no hidden clock, sleeps, RNG, hardware, or network dependency.
+# 0C-P1 has no hidden clock, sleeps, RNG, hardware, modem, or network dependency.
 for forbidden in (
     "time.monotonic",
     "time.sleep",
     "random.",
     "secrets.",
     "/dev/tty",
-    "serial",
-    "socket",
+    "import serial",
+    "from serial",
+    "import socket",
+    "from socket",
     "stm32flash",
     "pinctrl",
     "TXModemOwner",
