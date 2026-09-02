@@ -9,11 +9,24 @@ require_root
 banner
 section "Initial station configuration"
 
+SOURCE_ROOT="${YWD1278_SOURCE_ROOT:-$(cd "$SCRIPT_DIR/.." && pwd)}"
 CONFIG_DIR=/etc/ywd-1278
 CONFIG_FILE="$CONFIG_DIR/config.toml"
-EXAMPLE="${YWD1278_SOURCE_ROOT:-$(cd "$SCRIPT_DIR/.." && pwd)}/config/ywd-1278.example.toml"
+EXAMPLE="$SOURCE_ROOT/config/ywd-1278.example.toml"
+TARGETS="$SOURCE_ROOT/firmware/targets.json"
+DEFAULT_TARGET="mmdvm-hs-hat-stm32f103-simplex-14.7456-adf7021"
 
 [[ -f "$EXAMPLE" ]] || die "Example configuration not found: $EXAMPLE"
+[[ -f "$TARGETS" ]] || die "Hardware target manifest not found: $TARGETS"
+
+target_exists(){
+  python3 - "$TARGETS" "$1" <<'PY'
+import json,sys
+data=json.load(open(sys.argv[1], encoding='utf-8'))
+items=[x for x in data.get('targets',[]) if x.get('id') == sys.argv[2]]
+raise SystemExit(0 if len(items)==1 else 1)
+PY
+}
 
 while true; do
   callsign="$(prompt_default 'Station callsign (without SSID)' 'N0CALL')"
@@ -26,6 +39,15 @@ while true; do
   ssid="$(prompt_default 'SSID' '0')"
   [[ "$ssid" =~ ^[0-9]+$ ]] && (( ssid >= 0 && ssid <= 15 )) && break
   warn "SSID must be 0..15."
+done
+
+section "Hardware target"
+step "Initial qualified target: $DEFAULT_TARGET"
+warn "YWD-1278 will only manipulate HAT BOOT/RESET GPIOs for the explicitly selected allowlisted target."
+while true; do
+  hardware_target="$(prompt_default 'Hardware target' "$DEFAULT_TARGET")"
+  target_exists "$hardware_target" && break
+  warn "Unknown hardware target. Choose an ID present in firmware/targets.json."
 done
 
 while true; do
@@ -48,6 +70,7 @@ console_port="$(prompt_default 'TNC console/Telnet port' '8010')"
 
 section "Configuration summary"
 step "Station: ${callsign}-${ssid}"
+step "Hardware: $hardware_target"
 step "UART: $device"
 step "Frequency: $frequency MHz"
 step "KISS: 127.0.0.1:$kiss_port"
@@ -69,6 +92,9 @@ cat >"$CONFIG_FILE" <<EOF
 [station]
 callsign = "$callsign"
 ssid = $ssid
+
+[hardware]
+target = "$hardware_target"
 
 [radio]
 device = "$device"
