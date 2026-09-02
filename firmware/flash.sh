@@ -230,10 +230,10 @@ command_exists stm32flash || die "stm32flash is required"
 
 validate_bootloader_info(){
   local text="$1"
-  python3 - "$expected_boot_version" "$expected_device_id" <<'PY' <<<"$text"
-import re,sys
+  STM32FLASH_INFO="$text" python3 - "$expected_boot_version" "$expected_device_id" <<'PY'
+import os,re,sys
 expected_version,expected_id=sys.argv[1:]
-text=sys.stdin.read()
+text=os.environ.get('STM32FLASH_INFO','')
 def grab(label):
     m=re.search(rf"{label}\s*:\s*(0x[0-9A-Fa-f]+)", text)
     return m.group(1).lower() if m else ''
