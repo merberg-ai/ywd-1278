@@ -31,10 +31,11 @@
 - [x] port modem wire protocol codec (0B-P7a) — preserves qualified `YWD_CONTROL`, `YWD_RF`, and RX3 `YWD_RX` opcodes/layouts; malformed frames fail closed; the frozen 691-selector AX25-5B request serializes exactly; pure bytes only, no UART/RF access
 - [x] bounded single-owner runtime architecture (0B-P7b-1) — transport created/used/closed in exactly one owner thread; typed receive/control API only; bounded queue fails closed; no raw client transact and no TX owner API; deterministic fake-transport qualification
 - [x] thread-bound POSIX serial transport + guarded live read-only owner identity proof (0B-P7b-2) — real `/dev/ttyAMA0`, exactly one owner thread and one `GET_VERSION` transaction, exact stock identity, UART released afterward; no GPIO/RX/TX/RF/flash
-- [ ] live YWD_RX owner qualification — deferred until packet-capable YWD-1278 firmware is built/qualified
+- [ ] live YWD_RX owner qualification — deferred until packet-capable YWD-1278 firmware is physically qualified
 - [x] port TCP KISS framing/server (0B-P8) — standard port-0 DATA framing and stream resynchronization; real localhost TCP delivery of all three saved physically sourced frames; bounded client queues with zero drops; inbound client DATA explicitly rejected; no UART/RF/TX path
 - [x] assemble RX-only product runtime (0B-P9) — single owner -> YWD_RX revision-3 FIFO -> Bell-202 -> AX.25 event bus -> TCP KISS; target-Pi replay consumed all 24,009 packed bytes, decoded/delivered the same three physical frames, rejected inbound KISS DATA, and reported zero FIFO/subscriber drops with no real UART/RF access
-- [ ] build and qualify packet-capable YWD-1278 firmware from frozen AX25R3 engineering source
+- [x] 0B-P10 deterministic packet-capable YWD-1278 AX25R3 firmware build from frozen engineering source — exact `d25180ad663d781b761c525d1e699e7b052d6214` lineage reconstructed from pinned Git objects, product branding made no behavioral changes after AX25R3, two independent builds were byte-identical, artifact size `59812`, SHA256 `a069d9a9f1c3d5014984e5d73a5b57155ffa50f8908c9d80c5da221b8ea07310`; build-qualified only, runtime still unqualified
+- [ ] 0B-P11 guarded packet-firmware write/readback/runtime-identity/exact-stock-restore round trip
 - [ ] requalify physical live RX through assembled product runtime
 - [ ] productize bidirectional bounded RX/TX runtime
 - [ ] requalify KISS-originated external-decode TX
