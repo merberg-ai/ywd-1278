@@ -12,6 +12,7 @@ from ywd1278.tx.csma import (  # noqa: E402
     DEFAULT_PERSIST,
     DEFAULT_SLOT_TIME_10MS,
     CSMAParameters,
+    CSMAState,
     PersistentCSMA,
 )
 
@@ -35,16 +36,30 @@ params = CSMAParameters()
 assert params.persistence_probability == 0.25
 assert params.slot_seconds == 0.1
 
-# The policy is explicitly driven by caller-supplied observations/time/randomness.
+# No channel state is assumed at construction. An explicit clear observation is
+# mandatory before the first slot begins.
 policy = PersistentCSMA(started_at=0.0)
-assert policy.decision.next_slot_at == 0.1
+assert policy.decision.state is CSMAState.WAIT_CLEAR
+assert policy.decision.channel_busy is None
+assert policy.decision.next_slot_at is None
+clear = policy.observe(now=0.0, channel_busy=False)
+assert clear.state is CSMAState.WAIT_SLOT
+assert clear.next_slot_at == 0.1
+
+# The policy is explicitly driven by caller-supplied observations/time/randomness.
+assert "class CSMAState" in csma_text
+assert 'WAIT_CLEAR = "wait-clear"' in csma_text
+assert 'WAIT_SLOT = "wait-slot"' in csma_text
 assert "def observe(" in csma_text
 assert "now: float" in csma_text
 assert "channel_busy: bool" in csma_text
 assert "random_byte: int | None = None" in csma_text
 assert "random_byte <= self._parameters.persist" in csma_text
+assert "self._state = CSMAState.WAIT_CLEAR" in csma_text
+assert "self._next_slot_at = None" in csma_text
 assert "self._next_slot_at = now + self._parameters.slot_seconds" in csma_text
 assert "now >= self._deadline_at" in csma_text
+assert "We never credit unobserved time as clear-channel time" in csma_text
 
 # 0C-P1 has no hidden clock, sleeps, RNG, hardware, or network dependency.
 for forbidden in (
@@ -99,6 +114,8 @@ print("DEFAULT_PERSIST_PROBABILITY=0.25")
 print("DEFAULT_SLOTTIME_10MS=10")
 print("DEFAULT_SLOT_SECONDS=0.1")
 print("DEFAULT_MAX_WAIT_SECONDS=30.0")
+print("INITIAL_CHANNEL_STATE_ASSUMED=NO")
+print("EXPLICIT_CLEAR_REQUIRED=YES")
 print("CALLER_SUPPLIED_TIME=YES")
 print("CALLER_SUPPLIED_RANDOMNESS=YES")
 print("LIVE_CHANNEL_SENSOR_CONNECTED=NO")
