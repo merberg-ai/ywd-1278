@@ -1,0 +1,34 @@
+{
+  "schema": 1,
+  "profile_id": "0b-p1-stm32f103-simplex-14.7456-adf7021",
+  "phase": "0B-P1",
+  "target_id": "mmdvm-hs-hat-stm32f103-simplex-14.7456-adf7021",
+  "upstream": {
+    "repository": "https://github.com/juribeparada/MMDVM_HS.git",
+    "commit": "7ff74ed1ba663a282edcbbb5e0ec3d7132e6f2f5",
+    "short_commit": "7ff74ed",
+    "submodules": {
+      "STM32F10X_Lib": "1debc23063f3942608e2bd62d04d5e1249c47fa3"
+    },
+    "config_template": "configs/MMDVM_HS_Hat.h",
+    "config_template_blob": "1c526b41dd96ea68823f2e83442a8a76fd59590a",
+    "version_blob": "4239a854ec09ee90847468f931e1455ee461e2de"
+  },
+  "build": {
+    "make_target": "hs",
+    "osc_hz": 14745600,
+    "binary_path": "bin/mmdvm_f1.bin",
+    "max_artifact_bytes": 131072
+  },
+  "branding": {
+    "firmware_version": "0.1.0-alpha0",
+    "identity_prefix": "MMDVM_HS_Hat-YWD-1278-",
+    "expected_identity": "MMDVM_HS_Hat-YWD-1278-v0.1.0-alpha0 14.7456MHz ADF7021 FW based on CA6JAU GitID #7ff74ed"
+  },
+  "safety": {
+    "hardware_access": false,
+    "flash_enabled": false,
+    "option_bytes_permitted": false,
+    "rf_transmit_possible": false
+  }
+}
