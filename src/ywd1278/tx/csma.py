@@ -1,17 +1,17 @@
 """Deterministic p-persistent CSMA policy for YWD-1278.
 
-0C-P1 is deliberately host-only.  This module decides *when* a caller may
-hand an already-qualified AX.25 frame to the bounded TX broker; it has no modem,
+0C-P1 is deliberately host-only. This module decides *when* a caller may hand
+an already-qualified AX.25 frame to the bounded TX broker; it has no modem,
 serial, RF, KISS, GPIO, or firmware dependencies.
 
 The policy follows classic p-persistent packet-radio channel access:
 
-* a busy observation blocks transmission and restarts the slot timer;
-* after the channel is observed clear for one complete slot, a persistence
-  trial is permitted;
+* no channel state is assumed at construction time;
+* an explicit clear observation starts one complete clear-channel slot;
+* any busy observation cancels that slot and returns to waiting for clear;
+* after one complete observed-clear slot, a persistence trial is permitted;
 * an 8-bit random value passes when ``random_byte <= persist``;
-* a failed persistence trial waits one more complete slot;
-* any new busy observation restarts the clear-slot wait;
+* a failed persistence trial waits one more complete clear slot;
 * an overall bounded wait timeout fails closed.
 
 ``persist`` and ``slot_time_10ms`` use the classic one-byte KISS/TNC units, but
@@ -39,6 +39,7 @@ class CSMATimedOut(CSMAError):
 
 
 class CSMAState(str, Enum):
+    WAIT_CLEAR = "wait-clear"
     WAIT_SLOT = "wait-slot"
     READY = "ready"
     TIMED_OUT = "timed-out"
@@ -48,9 +49,9 @@ class CSMAState(str, Enum):
 class CSMAParameters:
     """Fixed parameters for one p-persistent access attempt.
 
-    ``persist`` is an unsigned byte.  A persistence trial succeeds when an
+    ``persist`` is an unsigned byte. A persistence trial succeeds when an
     unsigned random byte is <= this value, giving an exact probability of
-    ``(persist + 1) / 256``.  Thus 255 always passes and 0 passes only for a
+    ``(persist + 1) / 256``. Thus 255 always passes and 0 passes only for a
     random byte of zero.
 
     ``slot_time_10ms`` is also an unsigned-byte-style TNC unit but zero is
@@ -82,10 +83,10 @@ class CSMAParameters:
 @dataclass(frozen=True)
 class CSMADecision:
     state: CSMAState
-    channel_busy: bool
+    channel_busy: bool | None
     persistence_trials: int
     busy_observations: int
-    next_slot_at: float
+    next_slot_at: float | None
     deadline_at: float
     random_byte: int | None
     reason: str
@@ -102,12 +103,16 @@ class CSMADecision:
 class PersistentCSMA:
     """One deterministic p-persistent channel-access attempt.
 
-    Time is supplied explicitly by the caller.  Randomness is also supplied
-    explicitly only when a clear-channel slot is due.  This makes the state
+    Time is supplied explicitly by the caller. Randomness is also supplied
+    explicitly only when a clear-channel slot is due. This makes the state
     machine deterministic in tests and prevents hidden sleeps/RNG calls from
     creeping into the safety boundary.
 
-    A policy object is single-use.  Once READY or TIMED_OUT is reached, future
+    No initial channel state is assumed. The first explicit clear observation
+    starts the first full slot; a constructor followed by silence can never
+    become READY on its own.
+
+    A policy object is single-use. Once READY or TIMED_OUT is reached, future
     observations return the same terminal state and can never reopen access.
     """
 
@@ -117,20 +122,20 @@ class PersistentCSMA:
         self._parameters = parameters or CSMAParameters()
         self._started_at = float(started_at)
         self._deadline_at = self._started_at + self._parameters.max_wait_seconds
-        self._next_slot_at = self._started_at + self._parameters.slot_seconds
-        self._state = CSMAState.WAIT_SLOT
+        self._next_slot_at: float | None = None
+        self._state = CSMAState.WAIT_CLEAR
         self._persistence_trials = 0
         self._busy_observations = 0
         self._last_now = self._started_at
         self._last_decision = CSMADecision(
             state=self._state,
-            channel_busy=False,
+            channel_busy=None,
             persistence_trials=0,
             busy_observations=0,
-            next_slot_at=self._next_slot_at,
+            next_slot_at=None,
             deadline_at=self._deadline_at,
             random_byte=None,
-            reason="initial clear-slot wait",
+            reason="awaiting first explicit channel observation",
         )
 
     @property
@@ -148,10 +153,10 @@ class PersistentCSMA:
         channel_busy: bool,
         random_byte: int | None = None,
     ) -> CSMADecision:
-        """Advance the access attempt using one channel observation.
+        """Advance the access attempt using one explicit channel observation.
 
         ``random_byte`` must be omitted unless a clear-channel persistence slot
-        is actually due.  When a trial is due it is mandatory.  This strictness
+        is actually due. When a trial is due it is mandatory. This strictness
         makes accidental or premature random draws visible in tests/callers.
         """
 
@@ -160,7 +165,7 @@ class PersistentCSMA:
             raise ValueError("now must be monotonic for one CSMA attempt")
         self._last_now = now
 
-        if self._state is not CSMAState.WAIT_SLOT:
+        if self._state in {CSMAState.READY, CSMAState.TIMED_OUT}:
             if random_byte is not None:
                 raise ValueError("random_byte is not accepted after CSMA reaches a terminal state")
             return self._last_decision
@@ -169,6 +174,7 @@ class PersistentCSMA:
             if random_byte is not None:
                 raise ValueError("random_byte is not accepted after CSMA timeout")
             self._state = CSMAState.TIMED_OUT
+            self._next_slot_at = None
             self._last_decision = self._make_decision(
                 channel_busy=bool(channel_busy),
                 random_byte=None,
@@ -180,13 +186,31 @@ class PersistentCSMA:
             if random_byte is not None:
                 raise ValueError("random_byte must not be supplied while channel is busy")
             self._busy_observations += 1
-            self._next_slot_at = now + self._parameters.slot_seconds
+            self._state = CSMAState.WAIT_CLEAR
+            self._next_slot_at = None
             self._last_decision = self._make_decision(
                 channel_busy=True,
                 random_byte=None,
-                reason="channel busy; clear-slot timer restarted",
+                reason="channel busy; waiting for an explicit clear observation",
             )
             return self._last_decision
+
+        # A clear observation after startup/busy begins a *new full slot* from
+        # this observation. We never credit unobserved time as clear-channel time.
+        if self._state is CSMAState.WAIT_CLEAR:
+            if random_byte is not None:
+                raise ValueError("random_byte must not be supplied on the clear observation that starts a slot")
+            self._state = CSMAState.WAIT_SLOT
+            self._next_slot_at = now + self._parameters.slot_seconds
+            self._last_decision = self._make_decision(
+                channel_busy=False,
+                random_byte=None,
+                reason="channel observed clear; full clear-channel slot started",
+            )
+            return self._last_decision
+
+        if self._next_slot_at is None:
+            raise RuntimeError("WAIT_SLOT state is missing its next-slot deadline")
 
         if now < self._next_slot_at:
             if random_byte is not None:
@@ -206,10 +230,11 @@ class PersistentCSMA:
         self._persistence_trials += 1
         if random_byte <= self._parameters.persist:
             self._state = CSMAState.READY
+            self._next_slot_at = None
             reason = "persistence trial passed"
         else:
             self._next_slot_at = now + self._parameters.slot_seconds
-            reason = "persistence trial deferred; waiting one more slot"
+            reason = "persistence trial deferred; waiting one more clear slot"
 
         self._last_decision = self._make_decision(
             channel_busy=False,
@@ -221,7 +246,7 @@ class PersistentCSMA:
     def _make_decision(
         self,
         *,
-        channel_busy: bool,
+        channel_busy: bool | None,
         random_byte: int | None,
         reason: str,
     ) -> CSMADecision:
