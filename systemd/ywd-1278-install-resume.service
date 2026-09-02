@@ -1,0 +1,15 @@
+[Unit]
+Description=Resume YWD-1278 installation after required reboot
+After=local-fs.target network-online.target
+Wants=network-online.target
+ConditionPathExists=/var/lib/ywd-1278/install-resume.env
+
+[Service]
+Type=oneshot
+ExecStart=/opt/ywd-1278/source/installer/resume.sh --automatic
+RemainAfterExit=no
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
