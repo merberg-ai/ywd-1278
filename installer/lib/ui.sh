@@ -33,6 +33,17 @@ fail(){ _ywd_printf "${YWD_RED}[FAIL]${YWD_RESET} $*" >&2; }
 die(){ fail "$*"; exit 1; }
 step(){ _ywd_printf "${YWD_SILVER}  •${YWD_RESET} $*"; }
 
+# Print the human-facing prompt to stderr so callers may safely capture the
+# selected value with command substitution without swallowing the question.
+# stdin remains the user's terminal/input stream; stdout contains only the
+# selected value.
+prompt_default(){
+  local prompt="$1" default="$2" value
+  printf '%b' "${YWD_SILVER}${prompt}${YWD_RESET} [${default}]: " >&2
+  IFS= read -r value
+  printf '%s' "${value:-$default}"
+}
+
 confirm_exact(){
   local expected="$1" prompt="$2" answer
   printf '%b' "${YWD_AMBER}${prompt}${YWD_RESET}\nType ${YWD_BOLD}${expected}${YWD_RESET} to continue: "
