@@ -5,10 +5,10 @@ ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 MANIFEST="$ROOT/firmware/tooling/packet-build-manifest.json"
 BRANDER="$ROOT/firmware/tooling/apply_packet_branding.py"
 INSPECTOR="$ROOT/firmware/tooling/inspect_artifact.py"
+MATERIALIZER="$ROOT/firmware/tooling/materialize_vendored_engineering.py"
 REPRO_CHECK=1
 KEEP_WORK=0
 JOBS="${YWD1278_BUILD_JOBS:-$(nproc 2>/dev/null || echo 2)}"
-ENGINEERING_REPO="${YWD1278_ENGINEERING_REPO:-$HOME/mmdvm-lab/ywd-mmdvm}"
 
 usage(){
   cat <<'EOF'
@@ -17,12 +17,12 @@ Usage: ./firmware/build-packet-ywd1278.sh [options]
 Build-only 0B-P10 packet-capable YWD-1278 AX25R3 firmware pipeline.
 It does not open the modem UART, touch GPIO, flash the STM32, or transmit RF.
 
-The qualified YWD-MMDVM engineering repository is used only as a Git object
-source. Its working tree is never checked out, modified, or trusted.
+The exact qualified YWD-MMDVM engineering files are vendored inside YWD-1278
+and verified against their original Git blob SHAs before every build. The
+YWD-MMDVM repository/commit remains provenance only; no external checkout or
+YWD-MMDVM fetch is required.
 
 Options:
-  --engineering-repo PATH  Local YWD-MMDVM Git repository containing frozen
-                           commit d25180... (default: ~/mmdvm-lab/ywd-mmdvm)
   --single                 Build once instead of the default two-build
                            byte-for-byte reproducibility check.
   --keep-work              Keep temporary build trees for inspection.
@@ -33,7 +33,6 @@ EOF
 
 while (($#)); do
   case "$1" in
-    --engineering-repo) ENGINEERING_REPO="${2:?missing engineering repo path}"; shift ;;
     --single) REPRO_CHECK=0 ;;
     --keep-work) KEEP_WORK=1 ;;
     --jobs) JOBS="${2:?missing job count}"; shift ;;
@@ -52,7 +51,7 @@ done
 for cmd in git make python3 arm-none-eabi-gcc arm-none-eabi-g++ arm-none-eabi-objcopy sha256sum cmp grep stat; do
   command -v "$cmd" >/dev/null 2>&1 || { echo "[FAIL] Missing build dependency: $cmd" >&2; exit 2; }
 done
-[[ -f "$MANIFEST" && -f "$BRANDER" && -f "$INSPECTOR" ]] || {
+[[ -f "$MANIFEST" && -f "$BRANDER" && -f "$INSPECTOR" && -f "$MATERIALIZER" ]] || {
   echo "[FAIL] Packet firmware build tooling is incomplete" >&2
   exit 2
 }
@@ -83,8 +82,7 @@ UPSTREAM_BUILD_SCRIPT="$(mget upstream.build_script)"
 UPSTREAM_BUILD_SCRIPT_BLOB="$(mget upstream.build_script_blob)"
 ENG_NAME="$(mget engineering.repository)"
 ENG_COMMIT="$(mget engineering.commit)"
-ENG_QUALIFICATION="$(mget engineering.qualification)"
-ENG_QUALIFICATION_BLOB="$(mget engineering.qualification_blob)"
+ENG_SOURCE="$(mget engineering.source)"
 MAKE_TARGET="$(mget build.make_target)"
 STM32_HSE_HZ="$(mget build.stm32_hse_hz)"
 OSC_OVERRIDE="$(mget build.osc_override)"
@@ -98,21 +96,10 @@ EXPECTED_INFO="$(mget branding.expected_info)"
 [[ "$(mget safety.flash_enabled)" == false ]] || { echo "[FAIL] packet build manifest unexpectedly enables flashing" >&2; exit 2; }
 [[ "$(mget safety.option_bytes_permitted)" == false ]] || { echo "[FAIL] packet build manifest permits option-byte writes" >&2; exit 2; }
 [[ "$(mget safety.rf_transmit_possible)" == false ]] || { echo "[FAIL] packet build manifest permits RF" >&2; exit 2; }
+[[ "$ENG_SOURCE" == vendored ]] || { echo "[FAIL] packet engineering source is not vendored" >&2; exit 2; }
 [[ "$OSC_OVERRIDE" == false ]] || { echo "[FAIL] packet HAT build must not pass OSC=" >&2; exit 2; }
 [[ "$STM32_HSE_HZ" == 8000000 ]] || { echo "[FAIL] packet HAT build requires STM32 HSE 8000000 Hz" >&2; exit 2; }
 [[ "$RF_TCXO_HZ" == 14745600 ]] || { echo "[FAIL] expected ADF7021 TCXO is 14745600 Hz" >&2; exit 2; }
-
-ENGINEERING_REPO="$(readlink -f "$ENGINEERING_REPO" 2>/dev/null || printf '%s' "$ENGINEERING_REPO")"
-[[ -d "$ENGINEERING_REPO/.git" || -f "$ENGINEERING_REPO/.git" ]] || {
-  echo "[FAIL] Engineering Git repository not found: $ENGINEERING_REPO" >&2
-  echo "       Use --engineering-repo PATH or set YWD1278_ENGINEERING_REPO." >&2
-  exit 2
-}
-
-git -C "$ENGINEERING_REPO" cat-file -e "$ENG_COMMIT^{commit}" 2>/dev/null || {
-  echo "[FAIL] Engineering repository does not contain frozen commit $ENG_COMMIT" >&2
-  exit 2
-}
 
 OUT_DIR="${YWD1278_PACKET_FIRMWARE_OUT:-$ROOT/firmware/out/$PROFILE}"
 mkdir -p "$OUT_DIR"
@@ -129,9 +116,10 @@ printf '\n=== YWD-1278 %s PACKET FIRMWARE BUILD ===\n' "$PHASE"
 printf 'Profile             : %s\n' "$PROFILE"
 printf 'Target              : %s\n' "$TARGET"
 printf 'Upstream commit     : %s\n' "$UPSTREAM_COMMIT"
-printf 'Engineering repo    : %s\n' "$ENG_NAME"
-printf 'Engineering commit  : %s\n' "$ENG_COMMIT"
-printf 'Engineering source  : %s (Git objects only)\n' "$ENGINEERING_REPO"
+printf 'Engineering repo    : %s (provenance only)\n' "$ENG_NAME"
+printf 'Engineering commit  : %s (provenance only)\n' "$ENG_COMMIT"
+printf 'Engineering source  : vendored inside YWD-1278\n'
+printf 'External eng. repo  : NOT REQUIRED\n'
 printf 'STM32 HSE           : %s Hz (upstream default; no OSC override)\n' "$STM32_HSE_HZ"
 printf 'ADF7021 TCXO        : %s Hz\n' "$RF_TCXO_HZ"
 printf 'Firmware identity   : %s\n' "$EXPECTED_IDENTITY"
@@ -140,43 +128,7 @@ printf 'Hardware access     : NO\n'
 printf 'Flash operations    : DISABLED\n'
 printf 'RF transmit         : IMPOSSIBLE DURING BUILD\n\n'
 
-# Validate and materialize every frozen engineering transform/support file from
-# the Git object database. The engineering working tree is never read.
-mapfile -t ENG_FILES < <(python3 - "$MANIFEST" <<'PY'
-import json,sys
-m=json.load(open(sys.argv[1],encoding='utf-8'))
-for path,sha in m['engineering']['files'].items():
-    print(f'{path}\t{sha}')
-PY
-)
-
-actual_qualification_blob="$(git -C "$ENGINEERING_REPO" rev-parse "$ENG_COMMIT:$ENG_QUALIFICATION")"
-[[ "$actual_qualification_blob" == "$ENG_QUALIFICATION_BLOB" ]] || {
-  echo "[FAIL] frozen engineering qualification blob mismatch" >&2
-  exit 1
-}
-
-for spec in "${ENG_FILES[@]}"; do
-  path="${spec%%$'\t'*}"
-  expected="${spec#*$'\t'}"
-  actual="$(git -C "$ENGINEERING_REPO" rev-parse "$ENG_COMMIT:$path")"
-  [[ "$actual" == "$expected" ]] || {
-    echo "[FAIL] frozen engineering blob mismatch: $path" >&2
-    echo "       expected=$expected actual=$actual" >&2
-    exit 1
-  }
-  dest="$TRANSFORMS/$path"
-  mkdir -p "$(dirname "$dest")"
-  git -C "$ENGINEERING_REPO" show "$ENG_COMMIT:$path" > "$dest"
-  [[ "$(git hash-object "$dest")" == "$expected" ]] || {
-    echo "[FAIL] materialized engineering blob mismatch: $path" >&2
-    exit 1
-  }
-done
-
-echo "FROZEN_ENGINEERING_OBJECTS=PASS"
-echo "ENGINEERING_WORKTREE_USED=NO"
-echo "ENGINEERING_TRANSFORM_FILES=${#ENG_FILES[@]}"
+python3 "$MATERIALIZER" --manifest "$MANIFEST" --dest "$TRANSFORMS"
 
 SEED="$WORK/upstream"
 echo "==> Fetch exact pinned upstream source"
@@ -264,6 +216,7 @@ build_one(){
     echo "YWD-1278 packet firmware build $label"
     echo "upstream=$UPSTREAM_COMMIT"
     echo "engineering=$ENG_COMMIT"
+    echo "engineering_source=vendored"
     echo "toolchain=$TOOLCHAIN"
     echo "make=$MAKE_VERSION"
     echo "SOURCE_DATE_EPOCH=$SOURCE_DATE_EPOCH"
@@ -326,6 +279,7 @@ out={
   'profile_id':m['profile_id'],
   'target_id':m['target_id'],
   'upstream_commit':m['upstream']['commit'],
+  'engineering_source':'vendored',
   'engineering_repository':m['engineering']['repository'],
   'engineering_commit':m['engineering']['commit'],
   'engineering_files':m['engineering']['files'],
@@ -367,6 +321,8 @@ echo "ARTIFACT_SHA256=$FINAL_SHA"
 echo "FIRMWARE_IDENTITY=$EXPECTED_IDENTITY"
 echo "PACKET_INFO=$EXPECTED_INFO"
 echo "ENGINEERING_COMMIT=$ENG_COMMIT"
+echo "ENGINEERING_SOURCE=VENDORED_IN_YWD1278"
+echo "ENGINEERING_EXTERNAL_REPO_REQUIRED=NO"
 echo "ENGINEERING_WORKTREE_USED=NO"
 echo "STM32_HSE_HZ=$STM32_HSE_HZ"
 echo "ADF7021_TCXO_HZ=$RF_TCXO_HZ"
