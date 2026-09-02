@@ -18,6 +18,8 @@
     "build_script_blob": "30257c0aea66695ed32877b8688daa835ee4f0e2"
   },
   "engineering": {
+    "source": "vendored",
+    "vendored_root": "firmware/vendor/ywd-mmdvm",
     "repository": "merberg-ai/ywd-mmdvm",
     "remote": "https://github.com/merberg-ai/ywd-mmdvm.git",
     "commit": "d25180ad663d781b761c525d1e699e7b052d6214",
