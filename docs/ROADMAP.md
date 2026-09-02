@@ -47,7 +47,7 @@
 ## 0C — Channel access / persistent bidirectional TNC
 
 - [x] deterministic CSMA state-machine tests (0C-P1) — host-qualified p-persistent policy with frozen `PERSIST=63` (25%), `SLOTTIME=10` (100 ms), 30 s bounded wait, explicit caller-supplied time/randomness, no assumed initial channel state, explicit clear required before a full slot begins, busy observations cancel/reset clear-slot timing, exhaustive PERSIST boundary tests, sticky terminal states, and no modem/KISS/RF integration
-- [ ] channel-busy/recent-RX detection (0C-P2)
+- [ ] channel-busy/recent-RX detection (0C-P2) — AX25R4 raw RSSI telemetry candidate is staged/CI-green: exact pinned AX25R3 lineage plus one read-only `YWD_RX/0x05` ADF7021 register-7 RSSI ADC readback, typed through the single owner, RX-active/TX-idle gated, status revision 3 unchanged, no carrier threshold/hysteresis selected yet, deterministic two-build candidate pipeline staged, firmware not yet built on the target Pi and not flashed; P13b remains the latest physical boundary and KISS/product TX stays disconnected
 - [ ] TXDELAY
 - [ ] PERSIST
 - [ ] SLOTTIME
