@@ -5,7 +5,6 @@ SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 # shellcheck source=lib/ui.sh
 source "$SCRIPT_DIR/lib/ui.sh"
-
 require_root
 banner
 
@@ -30,12 +29,9 @@ ALLOW_CANDIDATE_RELEASE=0
 
 cleanup(){ [[ -z "$STAGING_ROOT" || ! -d "$STAGING_ROOT" ]] || rm -rf "$STAGING_ROOT"; }
 trap cleanup EXIT
-
 usage(){
   cat <<'EOF'
 Usage: sudo ./installer/install.sh [options]
-
-Options:
   --skip-packages            Do not run apt-get
   --no-firmware-toolchain    Skip compiler/programmer packages
   --setup                    Run setup (default)
@@ -45,7 +41,6 @@ Options:
 The installer never flashes firmware and leaves ywd-1278.service disabled.
 EOF
 }
-
 while (($#)); do
   case "$1" in
     --skip-packages) SKIP_PACKAGES=1 ;;
@@ -83,13 +78,11 @@ esac
 if [[ $SKIP_PACKAGES -eq 0 ]]; then
   section "Dependencies"
   export DEBIAN_FRONTEND=noninteractive
-  step "Refreshing apt metadata"
-  apt-get update
+  step "Refreshing apt metadata"; apt-get update
   packages=(ca-certificates git python3 python3-venv python3-pip python3-setuptools python3-wheel sqlite3 build-essential pkg-config)
   apt-cache show raspi-utils >/dev/null 2>&1 && packages+=(raspi-utils)
-  if [[ $WITH_FIRMWARE_TOOLCHAIN -eq 1 ]]; then packages+=(gcc-arm-none-eabi binutils-arm-none-eabi stm32flash); fi
-  step "Installing required packages"
-  apt-get install -y --no-install-recommends "${packages[@]}"
+  [[ $WITH_FIRMWARE_TOOLCHAIN -eq 0 ]] || packages+=(gcc-arm-none-eabi binutils-arm-none-eabi stm32flash)
+  step "Installing required packages"; apt-get install -y --no-install-recommends "${packages[@]}"
   ok "Dependencies ready"
 else
   warn "Package installation skipped by request"
@@ -111,11 +104,8 @@ if [[ $reuse -eq 1 ]]; then
   ok "Reusing existing Python venv ($system_py)"
 else
   [[ ! -d "$VENV" ]] || info "Existing venv is missing/incompatible; rebuilding it once"
-  rm -rf "$VENV"
-  python3 -m venv "$VENV"
-  ok "Created Python venv ($system_py)"
+  rm -rf "$VENV"; python3 -m venv "$VENV"; ok "Created Python venv ($system_py)"
 fi
-
 install_package(){ "$VENV/bin/python" -m pip install --disable-pip-version-check --no-cache-dir --upgrade --force-reinstall "$STAGING_ROOT"; }
 if ! install_package; then
   [[ $reuse -eq 1 ]] || die "Package installation failed in newly created venv"
@@ -124,26 +114,19 @@ if ! install_package; then
 fi
 
 if [[ -d "$SOURCE_ROOT" && -n "$(find "$SOURCE_ROOT" -mindepth 1 -maxdepth 1 -print -quit 2>/dev/null)" ]]; then
-  old="$INSTALL_ROOT/source.pre-install.$(date +%Y%m%d-%H%M%S)"
-  mv "$SOURCE_ROOT" "$old"
-  info "Previous installed source preserved at $old"
+  old="$INSTALL_ROOT/source.pre-install.$(date +%Y%m%d-%H%M%S)"; mv "$SOURCE_ROOT" "$old"; info "Previous installed source preserved at $old"
 fi
 mv "$STAGING_ROOT" "$SOURCE_ROOT"; STAGING_ROOT=""
 printf '%s\n' "$version" >"$INSTALL_ROOT/installed-version"
 printf '%s\n' "$commit" >"$INSTALL_ROOT/installed-commit"
 ln -sfn "$VENV/bin/ywd1278" "$BIN_LINK"
-# Retain only the three newest source rollback copies.
 mapfile -t old_sources < <(ls -1dt "$INSTALL_ROOT"/source.pre-install.* 2>/dev/null || true)
 if ((${#old_sources[@]} > 3)); then rm -rf -- "${old_sources[@]:3}"; fi
 ok "Installed YWD-1278 $version ($commit)"
 
 section "Configuration"
-if [[ ! -f "$CONFIG_FILE" ]]; then
-  install -m 0640 "$SOURCE_ROOT/config/ywd-1278.example.toml" "$CONFIG_FILE"
-  ok "Installed safe default configuration"
-else
-  ok "Preserving existing configuration and using it as setup defaults"
-fi
+if [[ ! -f "$CONFIG_FILE" ]]; then install -m 0640 "$SOURCE_ROOT/config/ywd-1278.example.toml" "$CONFIG_FILE"; ok "Installed safe default configuration"
+else ok "Preserving existing configuration and using it as setup defaults"; fi
 
 section "systemd"
 install -m 0644 "$SOURCE_ROOT/systemd/ywd-1278.service" "$UNIT_DST"
@@ -157,29 +140,23 @@ section "Framework self-test"
 ok "Framework self-test passed"
 
 section "Raspberry Pi UART audit"
-audit="$(bash "$SOURCE_ROOT/installer/platform.sh" audit)"
-printf '%s\n' "$audit"
+audit="$(bash "$SOURCE_ROOT/installer/platform.sh" audit)"; printf '%s\n' "$audit"
 runtime_ready=0; grep -q '^RUNTIME_UART_READY=YES$' <<<"$audit" && runtime_ready=1
 reboot_needed=0; grep -q '^REBOOT_REQUIRED=YES$' <<<"$audit" && reboot_needed=1
 
 try_detect(){
   local allow="${1:-0}" out rc
-  args=(--device /dev/ttyAMA0)
-  [[ "$allow" == 1 ]] && args+=(--allow-candidate-release)
-  set +e
-  out="$(YWD1278_SOURCE_ROOT="$SOURCE_ROOT" bash "$SOURCE_ROOT/installer/hardware-detect.sh" "${args[@]}" 2>&1)"; rc=$?
-  set -e
+  local -a detect_args=(--device /dev/ttyAMA0)
+  [[ "$allow" == 1 ]] && detect_args+=(--allow-candidate-release)
+  if out="$(YWD1278_SOURCE_ROOT="$SOURCE_ROOT" bash "$SOURCE_ROOT/installer/hardware-detect.sh" "${detect_args[@]}" 2>&1)"; then rc=0; else rc=$?; fi
   printf '%s\n' "$out"
-  if [[ $rc -eq 0 ]]; then
-    DETECTED_TARGET="$(sed -n 's/^DETECTED_TARGET=//p' <<<"$out" | tail -1)"
-    return 0
-  fi
+  if [[ $rc -eq 0 ]]; then DETECTED_TARGET="$(sed -n 's/^DETECTED_TARGET=//p' <<<"$out" | tail -1)"; return 0; fi
   return "$rc"
 }
 
 if [[ $runtime_ready -eq 1 ]]; then
   section "Automatic HAT detection"
-  set +e; try_detect 0; detect_rc=$?; set -e
+  if try_detect 0; then detect_rc=0; else detect_rc=$?; fi
   if [[ $detect_rc -eq 20 ]]; then
     warn "The UART is healthy but the HAT did not answer. A supported HAT may be held in reset by Raspberry Pi GPIO defaults."
     if confirm_yes_no "Try the qualified supported-HAT application-release GPIO profile?" yes; then
@@ -203,8 +180,6 @@ if [[ $reboot_needed -eq 1 ]]; then
   warn "Raspberry Pi boot/UART settings need a one-time repair before reliable HAT access."
   if confirm_yes_no "Apply the required UART/serial-console changes?" yes; then
     bash "$SOURCE_ROOT/installer/platform.sh" apply
-    # If we do not yet have an explicit target, obtain authorization now for
-    # the automatic post-reboot candidate-release path.
     configured_target="$(python3 - "$CONFIG_FILE" <<'PY'
 import sys,tomllib
 with open(sys.argv[1],'rb') as f: d=tomllib.load(f)
@@ -212,9 +187,7 @@ print(d.get('hardware',{}).get('target',''))
 PY
 )"
     if [[ -z "$configured_target" && $ALLOW_CANDIDATE_RELEASE -eq 0 ]]; then
-      if confirm_yes_no "After reboot, allow the installer to try the single compatible supported-HAT GPIO release profile if the direct probe is silent?" yes; then
-        ALLOW_CANDIDATE_RELEASE=1
-      fi
+      confirm_yes_no "After reboot, allow the installer to try the single compatible supported-HAT GPIO release profile if the direct probe is silent?" yes && ALLOW_CANDIDATE_RELEASE=1
     fi
     cat >"$RESUME_STATE" <<EOF
 STATE_VERSION=1
@@ -226,10 +199,7 @@ EOF
     ok "Post-reboot continuation checkpoint saved"
     if confirm_yes_no "Reboot now and continue installation automatically?" yes; then
       info "Saving files and rebooting. After boot, ywd-1278-install-resume.service continues from this checkpoint."
-      sync
-      sleep 2
-      systemctl reboot
-      exit 0
+      sync; sleep 2; systemctl reboot; exit 0
     fi
     warn "Reboot deferred. The resume service is armed and will continue automatically on your next reboot."
     exit 0
