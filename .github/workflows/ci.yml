@@ -53,6 +53,10 @@ jobs:
         run: |
           python tests/modem_owner_test.py
 
+      - name: POSIX modem transport regression
+        run: |
+          python tests/modem_serial_transport_test.py
+
       - name: Firmware identity classification
         run: |
           python tests/firmware_identity_test.py
