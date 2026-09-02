@@ -16,7 +16,7 @@ assert len(targets) == 1
 t = targets[0]
 
 assert t["id"] == "mmdvm-hs-hat-stm32f103-simplex-14.7456-adf7021"
-assert t["status"] == "0b-p3-roundtrip-qualified"
+assert t["status"] == "0b-p11-packet-roundtrip-qualified"
 assert t["flash_enabled"] is False
 assert t["option_bytes_permitted"] is False
 assert t["flash_base"] == "0x08000000"
@@ -54,14 +54,18 @@ assert 'BACKUP_TWO_PASS_IDENTICAL=YES' in flash
 assert 'STOCK_SHA256_MATCH=YES' in flash
 assert 'OPTION_BYTES_READ=NO' in flash
 
-# P2 remains qualified after P3, while the qualification-only write gate is
+# P2 remains qualified after P3 and P11. All qualification-only write gates are
 # closed again and normal product flashing remains disabled.
 assert t["qualification_write"]["enabled"] is False
 assert t["qualification_write"]["phase"] == "0B-P3"
+assert t["packet_qualification_write"]["enabled"] is False
+assert t["packet_qualification_write"]["phase"] == "0B-P11"
 assert t["firmware_sha256"] == "b7ec163fc3a3cec395c0e3e3065f20c6dc6be186e32ccdcf9044c85ec681b9b8"
 assert t["firmware_artifact"].endswith("MMDVM_HS_Hat-YWD-1278-v0.1.0-alpha0-7ff74ed-hse8m.bin")
 assert t["runtime_qualification"]["status"] == "qualified"
 assert t["runtime_qualification"]["stock_restore_sha256"] == t["stock_flash_sha256"]
+assert t["packet_runtime_qualification"]["status"] == "qualified"
+assert t["packet_runtime_qualification"]["stock_restore_sha256"] == t["stock_flash_sha256"]
 assert t["revoked_artifacts"]
 
 # The main-flash backup range comes from the allowlisted target. There must be
@@ -89,7 +93,8 @@ print("GEOMETRY_QUALIFIED=131072")
 print("STOCK_HASH_GATE=PASS")
 print("TWO_PASS_READ_REQUIRED=PASS")
 print("GPIO_BOOTLOADER_CONTROL=PASS")
-print("P2_QUALIFICATION_PRESERVED_AFTER_P3=PASS")
+print("P2_QUALIFICATION_PRESERVED_AFTER_P11=PASS")
 print("P3_WRITE_GATE=CLOSED_AFTER_QUALIFICATION")
+print("P11_WRITE_GATE=CLOSED_AFTER_QUALIFICATION")
 print("NORMAL_FLASH_GATE_CLOSED=PASS")
 print("OPTION_BYTE_ACCESS=ABSENT")
