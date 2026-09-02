@@ -2,8 +2,8 @@
 """Read-only MMDVM_HS application identity probe for YWD-1278.
 
 This probe sends only MMDVM GET_VERSION (0x00). It does not configure the RF
-engine, change frequency, enter bootloader mode, write flash, or write option
-bytes.
+engine, change frequency, reset the STM32, enter bootloader mode, write flash,
+or write option bytes.
 """
 from __future__ import annotations
 
@@ -17,6 +17,7 @@ import time
 
 START = 0xE0
 GET_VERSION = 0x00
+REQUEST = bytes([START, 3, GET_VERSION])
 
 
 def configure(fd: int) -> None:
@@ -34,43 +35,95 @@ def configure(fd: int) -> None:
 
 
 def read_frame(fd: int, timeout: float) -> bytes:
+    """Read one MMDVM frame, tolerating junk/partial data before START."""
     data = bytearray()
     target: int | None = None
     deadline = time.monotonic() + timeout
+
     while time.monotonic() < deadline:
-        ready, _, _ = select.select([fd], [], [], min(0.1, max(0.0, deadline - time.monotonic())))
+        remaining = max(0.0, deadline - time.monotonic())
+        ready, _, _ = select.select([fd], [], [], min(0.1, remaining))
         if fd not in ready:
             continue
+
         chunk = os.read(fd, 512)
         for byte in chunk:
             if not data:
-                if byte != START:
+                if byte == START:
+                    data.append(byte)
+                continue
+
+            if len(data) == 1:
+                # The second byte is the complete MMDVM frame length. Invalid
+                # lengths mean we hit noise/stale data; resynchronise instead
+                # of poisoning the rest of the attempt.
+                if byte < 3:
+                    data.clear()
+                    target = None
+                    if byte == START:
+                        data.append(byte)
                     continue
                 data.append(byte)
+                target = byte
                 continue
+
             data.append(byte)
-            if len(data) == 2:
-                target = data[1]
-                if target < 3:
-                    break
             if target is not None and len(data) >= target:
                 return bytes(data[:target])
+
     return bytes(data)
 
 
-def get_identity(device: str, timeout: float) -> str:
+def parse_identity(reply: bytes) -> str | None:
+    if len(reply) < 5 or reply[0] != START or reply[2] != GET_VERSION:
+        return None
+    return reply[4:].split(b"\0", 1)[0].decode("ascii", "replace").strip()
+
+
+def get_identity(
+    device: str,
+    timeout: float,
+    attempts: int = 3,
+    settle_seconds: float = 0.10,
+) -> str:
+    if attempts < 1:
+        raise ValueError("attempts must be >= 1")
+
     fd = os.open(device, os.O_RDWR | os.O_NOCTTY | os.O_NONBLOCK)
+    observed: list[bytes] = []
     try:
         configure(fd)
-        termios.tcflush(fd, termios.TCIFLUSH)
-        os.write(fd, bytes([START, 3, GET_VERSION]))
-        reply = read_frame(fd, timeout)
+        # Some HAT/application combinations are not ready for the first byte
+        # immediately after the host UART is reopened. A short bounded settle
+        # delay plus retries makes identity probing robust without resetting or
+        # otherwise changing the modem state.
+        time.sleep(max(0.0, settle_seconds))
+
+        for attempt in range(1, attempts + 1):
+            termios.tcflush(fd, termios.TCIOFLUSH)
+            written = os.write(fd, REQUEST)
+            if written != len(REQUEST):
+                raise RuntimeError(
+                    f"short GET_VERSION write on attempt {attempt}: {written}/{len(REQUEST)}"
+                )
+            termios.tcdrain(fd)
+
+            reply = read_frame(fd, timeout)
+            observed.append(reply)
+            identity = parse_identity(reply)
+            if identity:
+                return identity
+
+            if attempt < attempts:
+                time.sleep(0.10)
     finally:
         os.close(fd)
 
-    if len(reply) < 5 or reply[0] != START or reply[2] != GET_VERSION:
-        raise RuntimeError(f"invalid/no GET_VERSION response: {reply.hex(' ') if reply else '<none>'}")
-    return reply[4:].split(b"\0", 1)[0].decode("ascii", "replace").strip()
+    details = ", ".join(
+        f"attempt{i + 1}={frame.hex(' ') if frame else '<none>'}"
+        for i, frame in enumerate(observed)
+    )
+    raise RuntimeError(f"invalid/no GET_VERSION response after {attempts} attempts: {details}")
 
 
 def load_targets(path: Path) -> list[dict]:
@@ -94,11 +147,12 @@ def main() -> int:
     ap = argparse.ArgumentParser(description="Read-only YWD-1278 MMDVM HAT identity probe")
     ap.add_argument("--device", default="/dev/ttyAMA0")
     ap.add_argument("--targets", default=str(Path(__file__).with_name("targets.json")))
-    ap.add_argument("--timeout", type=float, default=2.5)
+    ap.add_argument("--timeout", type=float, default=1.25, help="per-attempt response timeout")
+    ap.add_argument("--attempts", type=int, default=3)
     ap.add_argument("--json", action="store_true")
     args = ap.parse_args()
 
-    identity = get_identity(args.device, args.timeout)
+    identity = get_identity(args.device, args.timeout, args.attempts)
     matches = match_targets(identity, load_targets(Path(args.targets)))
 
     result = {
