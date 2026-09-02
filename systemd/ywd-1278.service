@@ -3,14 +3,14 @@ Description=YWD-1278 Packet TNC/Node
 Documentation=https://github.com/merberg-ai/ywd-1278
 After=local-fs.target network.target
 Conflicts=MMDVMHost.service mmdvmhost.service ywd-mmdvmhost.service ywd-hotspot-mmdvmhost.service
+StartLimitIntervalSec=30
+StartLimitBurst=3
 
 [Service]
 Type=simple
 ExecStart=/opt/ywd-1278/venv/bin/ywd1278d --config /etc/ywd-1278/config.toml
 Restart=on-failure
 RestartSec=2s
-StartLimitIntervalSec=30
-StartLimitBurst=3
 KillSignal=SIGTERM
 TimeoutStopSec=20
 RuntimeDirectory=ywd-1278
