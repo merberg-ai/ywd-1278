@@ -16,7 +16,7 @@ assert len(targets) == 1
 t = targets[0]
 
 assert t["id"] == "mmdvm-hs-hat-stm32f103-simplex-14.7456-adf7021"
-assert t["status"] == "0b-p2-read-only-qualified"
+assert t["status"].startswith("0b-p2-read-only-qualified")
 assert t["flash_enabled"] is False
 assert t["option_bytes_permitted"] is False
 assert t["flash_base"] == "0x08000000"
@@ -54,6 +54,12 @@ assert 'BACKUP_TWO_PASS_IDENTICAL=YES' in flash
 assert 'STOCK_SHA256_MATCH=YES' in flash
 assert 'OPTION_BYTES_READ=NO' in flash
 
+# P2 remains qualified even while a later P3 candidate is revoked/reworked.
+assert t["qualification_write"]["enabled"] is False
+assert t["firmware_sha256"] is None
+assert t["firmware_artifact"] is None
+assert t["revoked_artifacts"]
+
 # The main-flash backup range comes from the allowlisted target. There must be
 # no option-byte/system-memory address in the backup tool.
 for forbidden_address in ("0x1FFFF800", "0x1ffff800", "0x1FFFF7E0", "0x1ffff7e0"):
@@ -79,5 +85,6 @@ print("GEOMETRY_QUALIFIED=131072")
 print("STOCK_HASH_GATE=PASS")
 print("TWO_PASS_READ_REQUIRED=PASS")
 print("GPIO_BOOTLOADER_CONTROL=PASS")
+print("P2_QUALIFICATION_PRESERVED_DURING_P3_REWORK=PASS")
 print("FLASH_GATE_CLOSED=PASS")
 print("OPTION_BYTE_ACCESS=ABSENT")
