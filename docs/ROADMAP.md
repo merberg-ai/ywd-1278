@@ -21,10 +21,10 @@
 ## 0B — Qualified packet engine port
 
 - [x] 0B-P1 deterministic `YWD-1278`-branded build reproducibility — historical checkpoint retained, but its artifact is **revoked for runtime use** because the build incorrectly passed the ADF7021 14.7456 MHz TCXO as the STM32 HSE/OSC value
-- [ ] 0B-P1R1 corrected deterministic branded build using pinned upstream MMDVM_HS_Hat recipe: STM32 HSE default 8 MHz, ADF7021 TCXO 14.7456 MHz, no OSC override
+- [x] 0B-P1R1 corrected deterministic branded build using pinned upstream MMDVM_HS_Hat recipe: STM32 HSE default 8 MHz, ADF7021 TCXO 14.7456 MHz, no OSC override; qualified SHA256 `b7ec163fc3a3cec395c0e3e3065f20c6dc6be186e32ccdcf9044c85ec681b9b8`
 - [x] establish exact first supported target flash geometry/hash (0B-P2)
 - [x] qualify protected two-pass stock backup (0B-P2)
-- [ ] guarded YWD-1278 flash/restore round trip (0B-P3) — first attempt failed safely at YWD GET_VERSION; exact programmed readback matched the revoked P1 artifact and automatic exact-stock recovery passed; retry blocked until P1R1 is qualified
+- [ ] guarded YWD-1278 flash/restore round trip (0B-P3) — attempt 1 failed safely using the now-revoked clock-misconfigured P1 artifact and automatic exact-stock recovery passed; attempt 2 is armed only for the qualified P1R1 artifact while normal product `flash_enabled` remains false
 - [ ] port AX.25 codec/FCS/parser
 - [ ] port Bell-202 TX serialization
 - [ ] port realtime streaming Bell-202 RX
