@@ -20,7 +20,7 @@ The YWD-1278 product must port from this frozen boundary, not from whichever exp
 | `tools/packetd/ywd_packetd.py` | split into `kiss/server.py` + event model | TCP KISS and RX publication | remove lab naming; preserve frame semantics |
 | `tools/packetd/tx_pipeline.py` | `src/ywd1278/phy/tx_pipeline.py` | KISS DATA -> qualified TX representation | preserve FCS/selector equivalence gate |
 | `tools/packetd/tx_backend.py` | `src/ywd1278/service/tx_broker.py` | bounded TX request handoff | evolve only after CSMA design |
-| `tools/packetd/bidirectional_runtime.py` | `src/ywd1278/modem/owner.py` | single UART owner RX/TX sequencing | 0B-P7b; preserve single-owner invariant and keep non-owner threads away from the transport |
+| `tools/packetd/bidirectional_runtime.py` | `src/ywd1278/modem/owner.py` | single UART owner RX/TX sequencing | **ownership architecture ported in 0B-P7b-1** from source blob `e05750c18ccf5224e8cf082dfb3ad203b9d52f4b`; preserve single-owner invariant; TX sequencing remains later |
 | `tools/ax25/ax25_classic_test.py` protocol pieces | `src/ywd1278/modem/protocol.py` | MMDVM/YWD control/RF protocol | **ported in 0B-P7a** from source blob `9e3ec6b431a7324d8ae5cbb7901156e33c62fd4b`; preserve qualified opcodes and frame layouts |
 | `tools/ax25/ax25_rx_capture.py` + `ax25_rx3_capture.py` protocol pieces | `src/ywd1278/modem/protocol.py` | RX3 start/read/stop/status protocol | **ported in 0B-P7a** from blobs `115473e0ea741210aa074f955fbb69cc87d6a416` and `29d064b8b0d2be84eef749dc06d7a7d12309d0bc`; preserve revision-3 checks and FIFO counters |
 
@@ -149,6 +149,25 @@ The codec validates the start byte and exact declared frame length, enforces exp
 A regression reconnects P7a to the physically-qualified AX25-5B path without transmitting: the P5 packet `KJ6YWD-10>APYWD1: AX25-5B KISS TX TEST` still produces 691 selectors, which serialize into the expected 93-byte `YWD_RF/TX_TONES` host request with the packed selector payload unchanged.
 
 P7a contains no serial transport and opens no device. UART ownership is intentionally deferred to P7b so the byte protocol can remain frozen underneath it.
+
+## 0B-P7b-1 bounded single-owner runtime
+
+Source architectural reference:
+
+- `tools/packetd/bidirectional_runtime.py` — blob `e05750c18ccf5224e8cf082dfb3ad203b9d52f4b`
+
+YWD-1278 destination:
+
+- `src/ywd1278/modem/owner.py`
+- `tests/modem_owner_test.py`
+
+P7b-1 turns the earlier single-owner convention into a structural API boundary. The transport factory runs inside one dedicated owner thread, and the transport instance is created, used, and closed there. Callers cannot submit raw MMDVM frames; the public surface contains typed GET_VERSION, RX start/read/status/stop, and read-only RF-diagnostic calls only.
+
+A bounded `queue.Queue` mediates client requests. The regression deliberately blocks the owner inside a fake transaction, fills a one-entry queue, and requires the next request to fail closed with `ModemOwnerQueueFull`. The fake transport also binds to its construction thread and rejects direct calls from the test/client thread.
+
+There is intentionally no owner API for `YWD_RF/TX_TONES`, arbitrary raw transact, RF abort, or RF exit at this gate. TX ownership will be added only after its bounded broker and lifecycle sequencing are separately qualified.
+
+P7b-1 is device-free. A thread-bound POSIX serial transport and guarded live read-only GET_VERSION proof are P7b-2. Live YWD_RX remains deferred until a packet-capable YWD-1278 firmware image is built and qualified.
 
 ## Firmware lineage
 
