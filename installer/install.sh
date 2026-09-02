@@ -18,15 +18,17 @@ STATE_DIR=/var/lib/ywd-1278
 BACKUP_DIR="$STATE_DIR/firmware-backups"
 LOG_DIR=/var/log/ywd-1278
 UNIT_DST=/etc/systemd/system/ywd-1278.service
+RESUME_UNIT_DST=/etc/systemd/system/ywd-1278-install-resume.service
+RESUME_STATE="$STATE_DIR/install-resume.env"
 BIN_LINK=/usr/local/bin/ywd1278
 SKIP_PACKAGES=0
 WITH_FIRMWARE_TOOLCHAIN=1
-RUN_SETUP=0
+RUN_SETUP=1
 STAGING_ROOT=""
+DETECTED_TARGET=""
+ALLOW_CANDIDATE_RELEASE=0
 
-cleanup(){
-  [[ -z "$STAGING_ROOT" || ! -d "$STAGING_ROOT" ]] || rm -rf "$STAGING_ROOT"
-}
+cleanup(){ [[ -z "$STAGING_ROOT" || ! -d "$STAGING_ROOT" ]] || rm -rf "$STAGING_ROOT"; }
 trap cleanup EXIT
 
 usage(){
@@ -36,11 +38,11 @@ Usage: sudo ./installer/install.sh [options]
 Options:
   --skip-packages            Do not run apt-get
   --no-firmware-toolchain    Skip compiler/programmer packages
-  --setup                    Run the interactive setup wizard after install
+  --setup                    Run setup (default)
+  --no-setup                 Preserve configuration without prompting
   -h, --help                 Show this help
 
-The alpha0 installer installs the framework and systemd unit but deliberately
-leaves ywd-1278.service DISABLED. It does not flash firmware.
+The installer never flashes firmware and leaves ywd-1278.service disabled.
 EOF
 }
 
@@ -49,85 +51,90 @@ while (($#)); do
     --skip-packages) SKIP_PACKAGES=1 ;;
     --no-firmware-toolchain) WITH_FIRMWARE_TOOLCHAIN=0 ;;
     --setup) RUN_SETUP=1 ;;
+    --no-setup) RUN_SETUP=0 ;;
     -h|--help) usage; exit 0 ;;
     *) die "Unknown option: $1" ;;
   esac
   shift
 done
 
-[[ -f "$REPO_ROOT/VERSION" && -f "$REPO_ROOT/pyproject.toml" ]] || die "Run the installer from a complete YWD-1278 source checkout"
+[[ -f "$REPO_ROOT/VERSION" && -f "$REPO_ROOT/pyproject.toml" ]] || die "Run the installer from a complete YWD-1278 source tree"
 version="$(tr -d '[:space:]' <"$REPO_ROOT/VERSION")"
-commit="$(git -C "$REPO_ROOT" rev-parse HEAD 2>/dev/null || printf 'unknown')"
+commit="$(git -C "$REPO_ROOT" rev-parse HEAD 2>/dev/null || printf 'source-tree')"
 
 section "Stage source"
 STAGING_ROOT="$(mktemp -d /tmp/ywd1278-install.XXXXXX)"
 tar -C "$REPO_ROOT" --exclude=.git --exclude='__pycache__' --exclude='*.pyc' -cf - . | tar -C "$STAGING_ROOT" -xf -
-ok "Staged YWD-1278 $version ($commit) before modifying the installed tree"
+ok "Staged YWD-1278 $version ($commit)"
 
 section "Platform preflight"
-[[ -r /proc/device-tree/model ]] || die "Unable to identify Raspberry Pi model (/proc/device-tree/model missing)"
+[[ -r /proc/device-tree/model ]] || die "Unable to identify Raspberry Pi model"
 model="$(tr -d '\0' </proc/device-tree/model)"
-[[ "$model" == *"Raspberry Pi"* ]] || die "Unsupported host for the initial YWD-1278 installer: $model"
+[[ "$model" == *"Raspberry Pi"* ]] || die "Unsupported host: $model"
 ok "Detected: $model"
-
 [[ -r /etc/os-release ]] || die "/etc/os-release not found"
 # shellcheck disable=SC1091
 source /etc/os-release
 case "${ID:-}:${ID_LIKE:-}" in
   debian:*|raspbian:*|*:debian*) ok "Debian-family OS: ${PRETTY_NAME:-unknown}" ;;
-  *) die "Initial installer supports Raspberry Pi OS/Debian-family systems only: ${PRETTY_NAME:-unknown}" ;;
+  *) die "Initial installer supports Raspberry Pi OS/Debian-family systems only" ;;
 esac
-
-command_exists systemctl || die "systemd is required"
-command_exists python3 || [[ $SKIP_PACKAGES -eq 0 ]] || die "python3 missing and --skip-packages was requested"
 
 if [[ $SKIP_PACKAGES -eq 0 ]]; then
   section "Dependencies"
   export DEBIAN_FRONTEND=noninteractive
   step "Refreshing apt metadata"
   apt-get update
-  packages=(
-    ca-certificates git python3 python3-venv python3-pip python3-setuptools
-    python3-wheel sqlite3 build-essential pkg-config
-  )
-  if [[ $WITH_FIRMWARE_TOOLCHAIN -eq 1 ]]; then
-    packages+=(gcc-arm-none-eabi binutils-arm-none-eabi stm32flash)
-  fi
-  step "Installing: ${packages[*]}"
+  packages=(ca-certificates git python3 python3-venv python3-pip python3-setuptools python3-wheel sqlite3 build-essential pkg-config)
+  apt-cache show raspi-utils >/dev/null 2>&1 && packages+=(raspi-utils)
+  if [[ $WITH_FIRMWARE_TOOLCHAIN -eq 1 ]]; then packages+=(gcc-arm-none-eabi binutils-arm-none-eabi stm32flash); fi
+  step "Installing required packages"
   apt-get install -y --no-install-recommends "${packages[@]}"
-  ok "Dependencies installed"
+  ok "Dependencies ready"
 else
   warn "Package installation skipped by request"
 fi
-
-for cmd in python3 git systemctl tar sha256sum; do
-  command_exists "$cmd" || die "Required command missing after dependency step: $cmd"
-done
+for cmd in python3 git systemctl tar sha256sum; do command_exists "$cmd" || die "Required command missing: $cmd"; done
 
 section "Filesystem layout"
 install -d -m 0755 "$INSTALL_ROOT" "$CONFIG_DIR" "$STATE_DIR" "$BACKUP_DIR" "$LOG_DIR"
 chmod 0700 "$BACKUP_DIR"
 
-if [[ -d "$SOURCE_ROOT" && -n "$(find "$SOURCE_ROOT" -mindepth 1 -maxdepth 1 -print -quit 2>/dev/null)" ]]; then
-  stamp="$(date +%Y%m%d-%H%M%S)"
-  old="$INSTALL_ROOT/source.pre-install.$stamp"
-  mv "$SOURCE_ROOT" "$old"
-  info "Previous installed source preserved at $old"
+section "Python environment"
+system_py="$(python3 -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')"
+reuse=0
+if [[ -x "$VENV/bin/python" ]]; then
+  venv_py="$($VENV/bin/python -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")' 2>/dev/null || true)"
+  [[ "$venv_py" == "$system_py" ]] && reuse=1
+fi
+if [[ $reuse -eq 1 ]]; then
+  ok "Reusing existing Python venv ($system_py)"
 else
-  rm -rf "$SOURCE_ROOT"
+  [[ ! -d "$VENV" ]] || info "Existing venv is missing/incompatible; rebuilding it once"
+  rm -rf "$VENV"
+  python3 -m venv "$VENV"
+  ok "Created Python venv ($system_py)"
 fi
 
-step "Installing staged source into $SOURCE_ROOT"
-mv "$STAGING_ROOT" "$SOURCE_ROOT"
-STAGING_ROOT=""
+install_package(){ "$VENV/bin/python" -m pip install --disable-pip-version-check --no-cache-dir --upgrade --force-reinstall "$STAGING_ROOT"; }
+if ! install_package; then
+  [[ $reuse -eq 1 ]] || die "Package installation failed in newly created venv"
+  warn "In-place venv refresh failed; rebuilding venv and retrying once"
+  rm -rf "$VENV"; python3 -m venv "$VENV"; install_package
+fi
+
+if [[ -d "$SOURCE_ROOT" && -n "$(find "$SOURCE_ROOT" -mindepth 1 -maxdepth 1 -print -quit 2>/dev/null)" ]]; then
+  old="$INSTALL_ROOT/source.pre-install.$(date +%Y%m%d-%H%M%S)"
+  mv "$SOURCE_ROOT" "$old"
+  info "Previous installed source preserved at $old"
+fi
+mv "$STAGING_ROOT" "$SOURCE_ROOT"; STAGING_ROOT=""
 printf '%s\n' "$version" >"$INSTALL_ROOT/installed-version"
 printf '%s\n' "$commit" >"$INSTALL_ROOT/installed-commit"
-
-section "Python environment"
-rm -rf "$VENV"
-python3 -m venv "$VENV"
-"$VENV/bin/python" -m pip install --disable-pip-version-check --no-cache-dir "$SOURCE_ROOT"
 ln -sfn "$VENV/bin/ywd1278" "$BIN_LINK"
+# Retain only the three newest source rollback copies.
+mapfile -t old_sources < <(ls -1dt "$INSTALL_ROOT"/source.pre-install.* 2>/dev/null || true)
+if ((${#old_sources[@]} > 3)); then rm -rf -- "${old_sources[@]:3}"; fi
 ok "Installed YWD-1278 $version ($commit)"
 
 section "Configuration"
@@ -135,34 +142,108 @@ if [[ ! -f "$CONFIG_FILE" ]]; then
   install -m 0640 "$SOURCE_ROOT/config/ywd-1278.example.toml" "$CONFIG_FILE"
   ok "Installed safe default configuration"
 else
-  ok "Preserved existing configuration: $CONFIG_FILE"
+  ok "Preserving existing configuration and using it as setup defaults"
 fi
 
 section "systemd"
 install -m 0644 "$SOURCE_ROOT/systemd/ywd-1278.service" "$UNIT_DST"
+install -m 0644 "$SOURCE_ROOT/systemd/ywd-1278-install-resume.service" "$RESUME_UNIT_DST"
 systemctl daemon-reload
 systemctl disable --now ywd-1278.service >/dev/null 2>&1 || true
-ok "Installed ywd-1278.service (disabled/inactive by design)"
+ok "Installed YWD-1278 services; packet service remains disabled/inactive"
 
 section "Framework self-test"
 "$VENV/bin/ywd1278d" --config "$CONFIG_FILE" --framework-self-test
 ok "Framework self-test passed"
 
-section "Firmware safety state"
-warn "No firmware was flashed."
-warn "The alpha0 flash tool refuses writes until an allowlisted target has a qualified firmware artifact and checksum."
-step "Probe/flash tooling: $SOURCE_ROOT/firmware/flash.sh"
-step "Stock restore tooling: $SOURCE_ROOT/firmware/restore-stock.sh"
-step "Protected firmware backups: $BACKUP_DIR"
+section "Raspberry Pi UART audit"
+audit="$(bash "$SOURCE_ROOT/installer/platform.sh" audit)"
+printf '%s\n' "$audit"
+runtime_ready=0; grep -q '^RUNTIME_UART_READY=YES$' <<<"$audit" && runtime_ready=1
+reboot_needed=0; grep -q '^REBOOT_REQUIRED=YES$' <<<"$audit" && reboot_needed=1
+
+try_detect(){
+  local allow="${1:-0}" out rc
+  args=(--device /dev/ttyAMA0)
+  [[ "$allow" == 1 ]] && args+=(--allow-candidate-release)
+  set +e
+  out="$(YWD1278_SOURCE_ROOT="$SOURCE_ROOT" bash "$SOURCE_ROOT/installer/hardware-detect.sh" "${args[@]}" 2>&1)"; rc=$?
+  set -e
+  printf '%s\n' "$out"
+  if [[ $rc -eq 0 ]]; then
+    DETECTED_TARGET="$(sed -n 's/^DETECTED_TARGET=//p' <<<"$out" | tail -1)"
+    return 0
+  fi
+  return "$rc"
+}
+
+if [[ $runtime_ready -eq 1 ]]; then
+  section "Automatic HAT detection"
+  set +e; try_detect 0; detect_rc=$?; set -e
+  if [[ $detect_rc -eq 20 ]]; then
+    warn "The UART is healthy but the HAT did not answer. A supported HAT may be held in reset by Raspberry Pi GPIO defaults."
+    if confirm_yes_no "Try the qualified supported-HAT application-release GPIO profile?" yes; then
+      ALLOW_CANDIDATE_RELEASE=1
+      try_detect 1 || warn "No supported HAT was identified yet; setup can continue safely."
+    fi
+  elif [[ $detect_rc -ne 0 ]]; then
+    warn "No supported HAT was identified yet; setup can continue safely."
+  fi
+else
+  warn "UART is not runtime-ready, so HAT detection will resume after platform repair/reboot."
+fi
 
 if [[ $RUN_SETUP -eq 1 ]]; then
   section "Interactive setup"
-  YWD1278_SOURCE_ROOT="$SOURCE_ROOT" bash "$SOURCE_ROOT/installer/setup.sh"
+  YWD1278_SOURCE_ROOT="$SOURCE_ROOT" YWD1278_DETECTED_TARGET="$DETECTED_TARGET" bash "$SOURCE_ROOT/installer/setup.sh"
+fi
+
+if [[ $reboot_needed -eq 1 ]]; then
+  section "Platform repair"
+  warn "Raspberry Pi boot/UART settings need a one-time repair before reliable HAT access."
+  if confirm_yes_no "Apply the required UART/serial-console changes?" yes; then
+    bash "$SOURCE_ROOT/installer/platform.sh" apply
+    # If we do not yet have an explicit target, obtain authorization now for
+    # the automatic post-reboot candidate-release path.
+    configured_target="$(python3 - "$CONFIG_FILE" <<'PY'
+import sys,tomllib
+with open(sys.argv[1],'rb') as f: d=tomllib.load(f)
+print(d.get('hardware',{}).get('target',''))
+PY
+)"
+    if [[ -z "$configured_target" && $ALLOW_CANDIDATE_RELEASE -eq 0 ]]; then
+      if confirm_yes_no "After reboot, allow the installer to try the single compatible supported-HAT GPIO release profile if the direct probe is silent?" yes; then
+        ALLOW_CANDIDATE_RELEASE=1
+      fi
+    fi
+    cat >"$RESUME_STATE" <<EOF
+STATE_VERSION=1
+DEVICE=/dev/ttyAMA0
+ALLOW_CANDIDATE_RELEASE=$ALLOW_CANDIDATE_RELEASE
+EOF
+    chmod 0600 "$RESUME_STATE"
+    systemctl enable ywd-1278-install-resume.service >/dev/null
+    ok "Post-reboot continuation checkpoint saved"
+    if confirm_yes_no "Reboot now and continue installation automatically?" yes; then
+      info "Saving files and rebooting. After boot, ywd-1278-install-resume.service continues from this checkpoint."
+      sync
+      sleep 2
+      systemctl reboot
+      exit 0
+    fi
+    warn "Reboot deferred. The resume service is armed and will continue automatically on your next reboot."
+    exit 0
+  else
+    warn "Platform repair declined; installation is safe but HAT access may remain unavailable."
+  fi
 fi
 
 section "Install complete"
-ok "YWD-1278 framework installed"
+ok "YWD-1278 host framework installed"
+[[ -n "$DETECTED_TARGET" ]] && ok "Supported HAT: $DETECTED_TARGET" || warn "Supported HAT detection is still pending"
 info "CLI: ywd1278 --version"
 info "Config: $CONFIG_FILE"
-info "Service remains disabled until the packet engine/firmware port is qualified."
-info "Run setup later with: sudo $SOURCE_ROOT/installer/setup.sh"
+info "Packet service remains disabled until the packet engine/firmware port is qualified."
+echo "YWD1278_INSTALL=PASS"
+echo "RF_TRANSMITTED=NO"
+echo "FLASH_WRITTEN=NO"
