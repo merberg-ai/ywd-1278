@@ -7,13 +7,15 @@ source "$SCRIPT_DIR/lib/ui.sh"
 
 require_root
 banner
-section "Station configuration"
 
 SOURCE_ROOT="${YWD1278_SOURCE_ROOT:-$(cd "$SCRIPT_DIR/.." && pwd)}"
 CONFIG_DIR=/etc/ywd-1278
 CONFIG_FILE="$CONFIG_DIR/config.toml"
 EXAMPLE="$SOURCE_ROOT/config/ywd-1278.example.toml"
 DETECTED_TARGET="${YWD1278_DETECTED_TARGET:-}"
+DETECTED_IDENTITY="${YWD1278_DETECTED_IDENTITY:-}"
+FIRMWARE_CLASS="${YWD1278_FIRMWARE_CLASS:-}"
+FIRMWARE_DESCRIPTION="${YWD1278_FIRMWARE_DESCRIPTION:-}"
 [[ -f "$EXAMPLE" ]] || die "Example configuration not found: $EXAMPLE"
 
 toml_get(){
@@ -41,6 +43,63 @@ old_device="$(toml_get radio device /dev/ttyAMA0)"
 old_kiss="$(toml_get kiss port 8001)"
 old_console="$(toml_get console port 8010)"
 
+parse_detection(){
+  local out="$1"
+  DETECTED_TARGET="$(sed -n 's/^DETECTED_TARGET=//p' <<<"$out" | tail -1)"
+  DETECTED_IDENTITY="$(sed -n 's/^DETECTED_IDENTITY=//p' <<<"$out" | tail -1)"
+  FIRMWARE_CLASS="$(sed -n 's/^FIRMWARE_CLASS=//p' <<<"$out" | tail -1)"
+  FIRMWARE_DESCRIPTION="$(sed -n 's/^FIRMWARE_DESCRIPTION=//p' <<<"$out" | tail -1)"
+}
+
+try_setup_detect(){
+  local allow="${1:-0}" out rc
+  local -a args=(--device "$old_device")
+  [[ "$allow" == 1 ]] && args+=(--allow-candidate-release)
+  if out="$(YWD1278_SOURCE_ROOT="$SOURCE_ROOT" bash "$SCRIPT_DIR/hardware-detect.sh" "${args[@]}" 2>&1)"; then rc=0; else rc=$?; fi
+  printf '%s\n' "$out"
+  parse_detection "$out"
+  return "$rc"
+}
+
+section "Hardware discovery"
+if [[ -z "$DETECTED_IDENTITY" ]]; then
+  if try_setup_detect 0; then
+    detect_rc=0
+  else
+    detect_rc=$?
+  fi
+
+  if [[ $detect_rc -eq 20 ]]; then
+    warn "The UART is available but the HAT did not answer. It may be a supported HAT held in reset by Raspberry Pi GPIO defaults."
+    if confirm_yes_no "Try the qualified supported-HAT application-release GPIO profile?" yes; then
+      try_setup_detect 1 || true
+    fi
+  elif [[ $detect_rc -eq 22 ]]; then
+    warn "A modem answered GET_VERSION, but its firmware identity is not recognized by this YWD-1278 build."
+  elif [[ $detect_rc -ne 0 ]]; then
+    warn "No supported HAT was identified during setup. Configuration can still be saved safely."
+  fi
+else
+  ok "Installer already identified the attached HAT; reusing that live detection result."
+fi
+
+if [[ -n "$DETECTED_TARGET" ]]; then
+  ok "Hardware target: $DETECTED_TARGET"
+fi
+if [[ -n "$DETECTED_IDENTITY" ]]; then
+  step "Firmware identity: $DETECTED_IDENTITY"
+  step "Firmware class: ${FIRMWARE_CLASS:-UNKNOWN}"
+  [[ -z "$FIRMWARE_DESCRIPTION" ]] || step "$FIRMWARE_DESCRIPTION"
+  case "${FIRMWARE_CLASS:-UNKNOWN}" in
+    STOCK) ok "Recognized stock firmware is currently installed on the HAT" ;;
+    YWD1278) ok "Recognized YWD-1278 firmware is currently installed on the HAT" ;;
+    YWD_ENGINEERING) warn "A recognized pre-product YWD engineering firmware is installed; it is not the final YWD-1278 product firmware" ;;
+    KNOWN_OTHER) info "The HAT is running another explicitly allowlisted firmware identity" ;;
+    UNKNOWN|AMBIGUOUS|*) warn "Firmware identity is not a uniquely supported YWD-1278 firmware state; no firmware action will be taken" ;;
+  esac
+fi
+
+section "Station configuration"
 while true; do
   callsign="$(prompt_default 'Station callsign (without SSID)' "$old_callsign")"
   callsign="${callsign^^}"
@@ -57,11 +116,11 @@ done
 hardware_target="$old_target"
 if [[ -n "$DETECTED_TARGET" ]]; then
   hardware_target="$DETECTED_TARGET"
-  ok "Supported HAT detected: $hardware_target"
+  ok "Using detected supported HAT target: $hardware_target"
 elif [[ -n "$hardware_target" ]]; then
-  info "Using previously configured HAT target: $hardware_target"
+  info "Retaining previously configured HAT target: $hardware_target"
 else
-  warn "No supported HAT has been identified yet; the installer will retry after platform setup/reboot."
+  warn "No supported HAT target is bound yet; hardware auto-detection will be retried later."
 fi
 
 while true; do
@@ -84,6 +143,7 @@ console_port="$(prompt_default 'TNC console/Telnet port' "$old_console")"
 section "Configuration summary"
 step "Station: ${callsign}-${ssid}"
 step "Hardware: ${hardware_target:-auto-detect pending}"
+[[ -z "$DETECTED_IDENTITY" ]] || step "Current HAT firmware: ${FIRMWARE_CLASS:-UNKNOWN} — $DETECTED_IDENTITY"
 step "UART: $device"
 step "Frequency: $frequency MHz"
 step "KISS: 127.0.0.1:$kiss_port"
