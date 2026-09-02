@@ -1,0 +1,31 @@
+[Unit]
+Description=YWD-1278 Packet TNC/Node
+Documentation=https://github.com/merberg-ai/ywd-1278
+After=local-fs.target network.target
+Conflicts=MMDVMHost.service mmdvmhost.service ywd-mmdvmhost.service ywd-hotspot-mmdvmhost.service
+
+[Service]
+Type=simple
+ExecStart=/opt/ywd-1278/venv/bin/ywd1278d --config /etc/ywd-1278/config.toml
+Restart=on-failure
+RestartSec=2s
+StartLimitIntervalSec=30
+StartLimitBurst=3
+KillSignal=SIGTERM
+TimeoutStopSec=20
+RuntimeDirectory=ywd-1278
+RuntimeDirectoryMode=0755
+StateDirectory=ywd-1278
+StateDirectoryMode=0750
+LogsDirectory=ywd-1278
+LogsDirectoryMode=0750
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=full
+ReadWritePaths=/var/lib/ywd-1278 /var/log/ywd-1278 /run/ywd-1278
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
