@@ -30,7 +30,7 @@
 - [x] port realtime streaming Bell-202 RX (0B-P6) — frozen one-pass 144-hypothesis decoder; exact three-frame physical AX25R3 replay at 1.00x on the target Pi passed with 52.5% processing duty, 47.5% headroom, zero late chunks, negligible drain, no UART access, and no RF
 - [x] port modem wire protocol codec (0B-P7a) — preserves qualified `YWD_CONTROL`, `YWD_RF`, and RX3 `YWD_RX` opcodes/layouts; malformed frames fail closed; the frozen 691-selector AX25-5B request serializes exactly; pure bytes only, no UART/RF access
 - [x] bounded single-owner runtime architecture (0B-P7b-1) — transport created/used/closed in exactly one owner thread; typed receive/control API only; bounded queue fails closed; no raw client transact and no TX owner API; deterministic fake-transport qualification
-- [ ] thread-bound POSIX serial transport + guarded live read-only owner identity proof (0B-P7b-2)
+- [x] thread-bound POSIX serial transport + guarded live read-only owner identity proof (0B-P7b-2) — real `/dev/ttyAMA0`, exactly one owner thread and one `GET_VERSION` transaction, exact stock identity, UART released afterward; no GPIO/RX/TX/RF/flash
 - [ ] live YWD_RX owner qualification — deferred until packet-capable YWD-1278 firmware is built/qualified
 - [ ] port TCP KISS framing/server
 - [ ] productize bidirectional bounded RX/TX runtime
