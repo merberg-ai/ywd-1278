@@ -49,6 +49,13 @@ def rx_status_response() -> bytes:
     )
 
 
+def rf_status_response() -> bytes:
+    return protocol.build_frame(
+        protocol.YWD_RF,
+        bytes((protocol.RF_GET_STATUS, 1, 0x08, 0, 0, 0)),
+    )
+
+
 def rf_diag_response() -> bytes:
     return protocol.build_frame(
         protocol.YWD_RF,
@@ -85,6 +92,10 @@ class ThreadBoundFakeTransport:
         frame = protocol.parse_frame(request)
         if frame.command == protocol.GET_VERSION:
             return version_response()
+        if frame.command == protocol.SET_FREQ:
+            return protocol.ack_for(protocol.SET_FREQ)
+        if frame.command == protocol.SET_CONFIG:
+            return protocol.ack_for(protocol.SET_CONFIG)
         if frame.command == protocol.YWD_RX:
             subcommand = frame.payload[0]
             if subcommand in (protocol.RX_START, protocol.RX_STOP):
@@ -96,6 +107,8 @@ class ThreadBoundFakeTransport:
                     protocol.YWD_RX,
                     bytes((protocol.RX_READ, 3, 0xAA, 0xBB, 0xCC)),
                 )
+        if frame.command == protocol.YWD_RF and frame.payload == bytes((protocol.RF_GET_STATUS,)):
+            return rf_status_response()
         if frame.command == protocol.YWD_RF and frame.payload == bytes((protocol.RF_GET_DIAG,)):
             return rf_diag_response()
         raise AssertionError(f"unexpected fake-modem request: {request.hex()}")
@@ -127,6 +140,11 @@ class ModemOwnerTests(unittest.TestCase):
             version = owner.get_version()
             self.assertEqual(version.identity, IDENTITY)
 
+            owner.set_rx_frequency(144_390_000)
+            owner.arm_rx_modem_io()
+            rf_status = owner.rf_status()
+            self.assertEqual((rf_status.flags, rf_status.remaining_selectors, rf_status.mode), (0x08, 0, 0))
+
             owner.rx_start()
             status = owner.rx_status()
             self.assertEqual(status.flags, 0x0D)
@@ -144,12 +162,10 @@ class ModemOwnerTests(unittest.TestCase):
 
             self.assertFalse(hasattr(owner, "rf_tx_tones"))
             self.assertFalse(hasattr(owner, "transact"))
-            self.assertEqual(len(fake.call_thread_ids), 6)
+            self.assertEqual(len(fake.call_thread_ids), 9)
             self.assertEqual(set(fake.call_thread_ids), {fake.owner_thread_id})
-            self.assertEqual(owner.snapshot.transactions, 6)
+            self.assertEqual(owner.snapshot.transactions, 9)
 
-            # Even if another component somehow retains a transport reference,
-            # the transport-level thread binding still rejects direct access.
             with self.assertRaisesRegex(RuntimeError, "outside owner thread"):
                 fake.transact(protocol.get_version_request(), timeout=0.1)
         finally:
@@ -186,7 +202,6 @@ class ModemOwnerTests(unittest.TestCase):
         second = threading.Thread(target=call_version)
         first.start()
 
-        # Wait until the owner is inside the first blocked transaction.
         deadline = time.monotonic() + 1.0
         while len(created[0].requests) < 1 and time.monotonic() < deadline:
             time.sleep(0.005)
