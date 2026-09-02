@@ -37,11 +37,16 @@ jobs:
         run: |
           python tests/firmware_identity_test.py
 
+      - name: Firmware build contract
+        run: |
+          python tests/firmware_build_contract_test.py
+
       - name: Parse manifests and config
         run: |
           python - <<'PY'
-          import json, pathlib, tomllib
+          import json, tomllib
           json.load(open('firmware/targets.json', encoding='utf-8'))
+          json.load(open('firmware/tooling/build-manifest.json', encoding='utf-8'))
           with open('config/ywd-1278.example.toml', 'rb') as f:
               tomllib.load(f)
           print('MANIFEST_CONFIG_PARSE=PASS')
