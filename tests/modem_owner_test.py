@@ -1,11 +1,20 @@
 from __future__ import annotations
 
+import pathlib
+import sys
 import threading
 import time
 import unittest
 
-from ywd1278.modem import protocol
-from ywd1278.modem.owner import ModemOwner, ModemOwnerError, ModemOwnerQueueFull
+ROOT = pathlib.Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "src"))
+
+from ywd1278.modem import protocol  # noqa: E402
+from ywd1278.modem.owner import (  # noqa: E402
+    ModemOwner,
+    ModemOwnerError,
+    ModemOwnerQueueFull,
+)
 
 
 IDENTITY = "MMDVM_HS_Hat-YWD-AX25R3-v0.2.2"
