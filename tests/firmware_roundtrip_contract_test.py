@@ -18,13 +18,17 @@ assert t["option_bytes_permitted"] is False
 assert t["geometry_status"] == "0b-p2-physically-qualified-two-pass-stock-backup"
 assert t["flash_size_bytes"] == 131072
 assert t["stock_flash_sha256"] == "4981b35b2d50ada0b09322d9de19dd58a0cbd49eb005693499d1acae92f9d684"
-assert t["firmware_sha256"] == "db23bc84bd31828d8fb29d8e4164879b9e5e57a4b2ef2eb58c598c66a38420b3"
-assert t["firmware_identity"] == "MMDVM_HS_Hat-YWD-1278-v0.1.0-alpha0 14.7456MHz ADF7021 FW based on CA6JAU GitID #7ff74ed"
+assert t["stm32_hse_hz"] == 8000000
+assert t["tcxo_mhz"] == 14.7456
+assert t["firmware_sha256"] is None
+assert t["firmware_identity"] is None
+assert t["firmware_artifact"] is None
+assert any(x["sha256"] == "db23bc84bd31828d8fb29d8e4164879b9e5e57a4b2ef2eb58c598c66a38420b3" for x in t["revoked_artifacts"])
 
 q = t["qualification_write"]
 assert q == {
     "phase": "0B-P3",
-    "enabled": True,
+    "enabled": False,
     "requires_exact_stock_start": True,
     "requires_verified_stock_backup": True,
     "requires_stock_restore_same_run": True,
@@ -33,13 +37,15 @@ assert q == {
 s = SCRIPT.read_text(encoding="utf-8")
 r = RESTORE.read_text(encoding="utf-8")
 
-# The qualification path must be distinct from normal product flashing.
+# The qualification path must be distinct from normal product flashing and is
+# intentionally unreachable until the corrected deterministic artifact has
+# been rebuilt, recorded, and explicitly promoted.
 assert '[[ "$flash_enabled" == false ]]' in s
 assert '[[ "$q_phase" == 0B-P3 && "$q_enabled" == true ]]' in s
 assert 'QUALIFY-0B-P3' in s
 assert 'WRITE-YWD-THEN-RESTORE-STOCK' in s
 
-# Exact artifact and exact P2 stock backup are mandatory.
+# Exact artifact and exact P2 stock backup are mandatory when the gate reopens.
 assert 'Firmware does not match the exact 0B-P1 qualified SHA256' in s
 assert 'backup lacks two-pass qualification' in s
 assert 'backup does not match target stock SHA256' in s
@@ -79,8 +85,8 @@ for text in (s, r):
 
 print("FIRMWARE_ROUNDTRIP_CONTRACT=PASS")
 print("NORMAL_FLASH_GATE_CLOSED=PASS")
-print("QUALIFICATION_WRITE_GATE=PASS")
-print("EXACT_YWD_HASH_REQUIRED=PASS")
+print("QUALIFICATION_WRITE_GATE=CLOSED_FOR_REWORK")
+print("FAILED_P1_ARTIFACT=REVOKED")
 print("VERIFIED_STOCK_BACKUP_REQUIRED=PASS")
 print("YWD_READBACK_REQUIRED=PASS")
 print("STOCK_READBACK_REQUIRED=PASS")
