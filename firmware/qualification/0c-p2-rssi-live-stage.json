@@ -1,0 +1,50 @@
+{
+  "schema": 1,
+  "phase": "0C-P2",
+  "stage": "live-rssi-activation",
+  "status": "staged",
+  "date": "2026-09-02",
+  "target_id": "mmdvm-hs-hat-stm32f103-simplex-14.7456-adf7021",
+  "physical_base": {
+    "status": "0b-p13b-known-packet-tx-qualified",
+    "artifact": "firmware/out/0b-p10-ax25r3-stm32f103-simplex-adf7021-14.7456tcxo-8mhz-hse/MMDVM_HS_Hat-YWD-1278-AX25R3-v0.1.0-alpha0-7ff74ed-hse8m.bin",
+    "artifact_size_bytes": 59812,
+    "artifact_sha256": "a069d9a9f1c3d5014984e5d73a5b57155ffa50f8908c9d80c5da221b8ea07310",
+    "identity": "MMDVM_HS_Hat-YWD-1278-AX25R3-v0.1.0-alpha0 14.7456MHz ADF7021 FW based on CA6JAU GitID #7ff74ed"
+  },
+  "candidate": {
+    "profile_id": "0c-p2-rssi-ax25r4-stm32f103-simplex-adf7021-14.7456tcxo-8mhz-hse",
+    "artifact": "firmware/out/0c-p2-rssi-ax25r4-stm32f103-simplex-adf7021-14.7456tcxo-8mhz-hse/MMDVM_HS_Hat-YWD-1278-AX25R4-v0.1.0-alpha1-7ff74ed-hse8m.bin",
+    "artifact_size_bytes": 59892,
+    "artifact_sha256": "b06fcbf0baa36e865198091cee27c66e1624ef08117ee685253a7a5613c7c616",
+    "identity": "MMDVM_HS_Hat-YWD-1278-AX25R4-v0.1.0-alpha1 14.7456MHz ADF7021 FW based on CA6JAU GitID #7ff74ed",
+    "reproducible_builds": true,
+    "rssi_subcommand": 5,
+    "carrier_threshold_selected": false
+  },
+  "activation": {
+    "device": "/dev/ttyAMA0",
+    "frequency_hz": 145050000,
+    "duration_seconds": 20.0,
+    "rssi_poll_interval_seconds": 0.05,
+    "requires_exact_physical_base": true,
+    "requires_verified_stock_backup": true,
+    "automatic_base_restore_on_failure": true,
+    "fallback_stock_restore_on_base_restore_failure": true,
+    "leave_candidate_installed_on_success": true,
+    "confirmation_token": "QUALIFY-0C-P2-RSSI-RX-ONLY"
+  },
+  "safety": {
+    "normal_product_flash_enabled": false,
+    "qualification_write_only": true,
+    "rx_configuration_permitted": true,
+    "rssi_read_permitted": true,
+    "tx_command_permitted": false,
+    "kiss_tx_connected": false,
+    "product_tx_enabled": false,
+    "automatic_tx_retry": false,
+    "option_bytes_permitted": false,
+    "carrier_threshold_selected": false,
+    "hysteresis_selected": false
+  }
+}
