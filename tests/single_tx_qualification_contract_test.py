@@ -24,9 +24,9 @@ tool = TOOL.read_text(encoding="utf-8")
 kiss = KISS_SERVER.read_text(encoding="utf-8")
 daemon = DAEMON.read_text(encoding="utf-8")
 
-# P13b staging must not claim a physical result before the one-shot test and
-# independent external decode actually happen.
-assert target["status"] == "0b-p12b-live-rf-kiss-qualified"
+# The original one-shot remains a frozen historical vector even after P13b was
+# ultimately qualified by the corrected R2 external-decode sequence.
+assert target["status"] == "0b-p13b-known-packet-tx-qualified"
 assert target["flash_enabled"] is False
 assert target["option_bytes_permitted"] is False
 assert target["packet_live_rx_qualification"]["packet_firmware_left_installed"] is True
@@ -35,6 +35,7 @@ assert p12b["phase"] == "0B-P12b"
 assert p12b["status"] == "qualified"
 assert p12b["receive_frequency_hz"] == 145050000
 assert p12b["rf_transmitted"] is False
+assert target["packet_live_tx_qualification"]["status"] == "qualified"
 
 assert stage == {
     "schema": 1,
@@ -106,7 +107,7 @@ assert 'transmit_enabled=True' in tool
 assert 'queue_capacity=1' in tool
 
 # Real UART access remains exclusively through TXModemOwner and the private
-# single-owner POSIX transport factory.  Setup is the frozen simplex profile.
+# single-owner POSIX transport factory. Setup is the original frozen simplex profile.
 assert "TXModemOwner(" in tool
 assert "posix_serial_transport_factory(args.device)" in tool
 assert "owner.get_version" in tool
@@ -139,7 +140,8 @@ for forbidden in ("TXBroker", "TXModemOwner", "transmit_selector_burst", "RF_TX_
     assert forbidden not in daemon, forbidden
 
 # Dry-run is guaranteed to return before TXModemOwner construction/opening the
-# serial transport.  Full P13b still requires independent receiver evidence.
+# serial transport. Independent receiver evidence was supplied by R2, not by
+# retroactively changing this original one-shot harness.
 dry_run_pos = tool.index('if not args.transmit:')
 owner_construct_pos = tool.index('owner = TXModemOwner(')
 assert dry_run_pos < owner_construct_pos
@@ -150,7 +152,8 @@ assert 'print("EXTERNAL_DECODE_REQUIRED=YES")' in tool
 assert 'print("YWD1278_0B_P13B_INTERNAL_SINGLE_TX=PASS")' in tool
 
 print("P13B_SINGLE_TX_CONTRACT=PASS")
-print("P12B_PHYSICAL_BOUNDARY_FROZEN=PASS")
+print("ORIGINAL_P13B_ONE_SHOT_PRESERVED=PASS")
+print("P12B_HISTORICAL_EVIDENCE_FROZEN=PASS")
 print("P13B_FREQUENCY_HZ=145050000")
 print("P13B_FRAME_VECTOR=PASS")
 print("P13B_SELECTOR_COUNT=753")
@@ -163,5 +166,4 @@ print("PRODUCT_TX_ENABLED=NO")
 print("FLASH_PATH=ABSENT")
 print("GPIO_RESET_PATH=ABSENT")
 print("OPTION_BYTE_PATH=ABSENT")
-print("EXTERNAL_DECODE_REQUIRED=YES")
 print("RF_TRANSMITTED_BY_CI=NO")
