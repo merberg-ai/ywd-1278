@@ -65,6 +65,10 @@ jobs:
         run: |
           python tests/tx_broker_contract_test.py
 
+      - name: P13b one-shot TX qualification contract
+        run: |
+          python tests/single_tx_qualification_contract_test.py
+
       - name: POSIX modem transport regression
         run: |
           python tests/modem_serial_transport_test.py
@@ -124,6 +128,7 @@ jobs:
           json.load(open('firmware/targets.json', encoding='utf-8'))
           json.load(open('firmware/tooling/build-manifest.json', encoding='utf-8'))
           json.load(open('firmware/tooling/packet-build-manifest.json', encoding='utf-8'))
+          json.load(open('firmware/qualification/p13b-single-tx.json', encoding='utf-8'))
           with open('config/ywd-1278.example.toml', 'rb') as f:
               tomllib.load(f)
           print('MANIFEST_CONFIG_PARSE=PASS')
