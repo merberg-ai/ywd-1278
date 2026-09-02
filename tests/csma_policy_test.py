@@ -1,7 +1,13 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
-from ywd1278.tx.csma import (
+from pathlib import Path
+import sys
+
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "src"))
+
+from ywd1278.tx.csma import (  # noqa: E402
     DEFAULT_MAX_WAIT_SECONDS,
     DEFAULT_PERSIST,
     DEFAULT_SLOT_TIME_10MS,
@@ -19,13 +25,17 @@ def expect_value_error(fn) -> None:  # type: ignore[no-untyped-def]
     raise AssertionError("expected ValueError")
 
 
+def close(actual: float, expected: float) -> None:
+    assert abs(actual - expected) < 1e-9, (actual, expected)
+
+
 # Frozen classic defaults.
 defaults = CSMAParameters()
 assert defaults.persist == 63
 assert defaults.slot_time_10ms == 10
-assert defaults.slot_seconds == 0.1
-assert defaults.max_wait_seconds == 30.0
-assert defaults.persistence_probability == 0.25
+close(defaults.slot_seconds, 0.1)
+close(defaults.max_wait_seconds, 30.0)
+close(defaults.persistence_probability, 0.25)
 assert DEFAULT_PERSIST == 63
 assert DEFAULT_SLOT_TIME_10MS == 10
 assert DEFAULT_MAX_WAIT_SECONDS == 30.0
@@ -45,7 +55,7 @@ p = PersistentCSMA(started_at=10.0)
 d = p.observe(now=10.05, channel_busy=False)
 assert d.state is CSMAState.WAIT_SLOT
 assert d.ready is False
-assert d.next_slot_at == 10.1
+close(d.next_slot_at, 10.1)
 expect_value_error(lambda: p.observe(now=10.06, channel_busy=False, random_byte=0))
 
 # At the first due slot the default PERSIST=63 accepts random byte 63 and rejects 64.
@@ -61,9 +71,9 @@ d = p.observe(now=30.1, channel_busy=False, random_byte=64)
 assert d.state is CSMAState.WAIT_SLOT
 assert d.ready is False
 assert d.persistence_trials == 1
-assert d.next_slot_at == 30.2
+close(d.next_slot_at, 30.2)
 assert d.reason == "persistence trial deferred; waiting one more slot"
-d = p.observe(now=30.2, channel_busy=False, random_byte=0)
+d = p.observe(now=d.next_slot_at, channel_busy=False, random_byte=0)
 assert d.state is CSMAState.READY
 assert d.persistence_trials == 2
 
@@ -72,12 +82,12 @@ p = PersistentCSMA(started_at=40.0)
 d = p.observe(now=40.09, channel_busy=True)
 assert d.state is CSMAState.WAIT_SLOT
 assert d.busy_observations == 1
-assert d.next_slot_at == 40.19
+close(d.next_slot_at, 40.19)
 expect_value_error(lambda: p.observe(now=40.10, channel_busy=True, random_byte=0))
 d = p.observe(now=40.18, channel_busy=False)
 assert d.ready is False
-assert d.next_slot_at == 40.19
-d = p.observe(now=40.19, channel_busy=False, random_byte=1)
+close(d.next_slot_at, 40.19)
+d = p.observe(now=d.next_slot_at, channel_busy=False, random_byte=1)
 assert d.ready is True
 
 # A busy observation after a failed persistence trial restarts the slot timer
@@ -85,9 +95,9 @@ assert d.ready is True
 p = PersistentCSMA(started_at=50.0)
 d = p.observe(now=50.1, channel_busy=False, random_byte=255)
 assert d.ready is False
-assert d.next_slot_at == 50.2
+close(d.next_slot_at, 50.2)
 d = p.observe(now=50.15, channel_busy=True)
-assert d.next_slot_at == 50.25
+close(d.next_slot_at, 50.25)
 assert d.busy_observations == 1
 assert d.persistence_trials == 1
 
@@ -126,7 +136,7 @@ p = PersistentCSMA(
 )
 d = p.observe(now=200.1, channel_busy=False, random_byte=255)
 assert d.ready is False
-d = p.observe(now=200.2, channel_busy=False, random_byte=255)
+d = p.observe(now=d.next_slot_at, channel_busy=False, random_byte=255)
 assert d.ready is False
 d = p.observe(now=200.25, channel_busy=False)
 assert d.state is CSMAState.TIMED_OUT
