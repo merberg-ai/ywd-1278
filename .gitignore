@@ -1,0 +1,37 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+
+# Local configuration / runtime
+*.local.toml
+.env
+logs/
+*.log
+*.sqlite3
+*.db
+
+# Firmware build output and device dumps
+firmware/build/
+firmware/out/
+firmware/local/
+firmware/backups/
+*.bin
+*.hex
+*.elf
+*.map
+*.dfu
+
+# Qualification captures
+captures/
+*.raw
+*.capture
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
+*~
