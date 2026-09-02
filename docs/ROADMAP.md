@@ -28,7 +28,8 @@
 - [x] port AX.25 codec/FCS/parser (0B-P4) — frozen YWD-MMDVM source port; canonical CRC-16/X-25 vector, UI construction, common modulo-8 I/S/U parsing, and two previously physically captured FCS-valid AX.25 frames pass in CI; host-only, no UART/RF access
 - [x] port Bell-202 TX serialization (0B-P5) — frozen HDLC/bit-stuff/NRZI/tone-selector implementation; the exact previously over-air-qualified AX25-5B frame still produces 691 selectors and a locked packed-selector SHA256; host-only, no modem command or RF
 - [x] port realtime streaming Bell-202 RX (0B-P6) — frozen one-pass 144-hypothesis decoder; exact three-frame physical AX25R3 replay at 1.00x on the target Pi passed with 52.5% processing duty, 47.5% headroom, zero late chunks, negligible drain, no UART access, and no RF
-- [ ] port modem protocol/UART owner
+- [x] port modem wire protocol codec (0B-P7a) — preserves qualified `YWD_CONTROL`, `YWD_RF`, and RX3 `YWD_RX` opcodes/layouts; malformed frames fail closed; the frozen 691-selector AX25-5B request serializes exactly; pure bytes only, no UART/RF access
+- [ ] port single-UART owner transport/runtime (0B-P7b)
 - [ ] port TCP KISS framing/server
 - [ ] productize bidirectional bounded RX/TX runtime
 - [ ] requalify physical RX
