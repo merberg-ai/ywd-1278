@@ -7,6 +7,12 @@
 callsign = "N0CALL"
 ssid = 0
 
+[hardware]
+# Intentionally blank until the operator selects an allowlisted HAT target.
+# YWD-1278 will not manipulate HAT BOOT/RESET control lines for an unspecified
+# or unknown target.
+target = ""
+
 [radio]
 device = "/dev/ttyAMA0"
 frequency_mhz = 0.0
