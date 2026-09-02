@@ -65,6 +65,10 @@ jobs:
         run: |
           python tests/kiss_server_test.py
 
+      - name: Assembled RX product runtime regression
+        run: |
+          python tests/rx_product_runtime_test.py
+
       - name: Firmware identity classification
         run: |
           python tests/firmware_identity_test.py
