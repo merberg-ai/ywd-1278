@@ -13,10 +13,10 @@ The YWD-1278 product must port from this frozen boundary, not from whichever exp
 
 | Qualified source | YWD-1278 destination | Purpose | Port rule |
 |---|---|---|---|
-| `tools/ax25/ax25.py` | `src/ywd1278/ax25/codec.py` | AX.25 addresses, FCS, modulo-8 I/S/U parsing, KISS helpers | preserve reference vectors/tests |
+| `tools/ax25/ax25.py` | `src/ywd1278/ax25/codec.py` | AX.25 addresses, FCS, modulo-8 I/S/U parsing | **ported in 0B-P4** from source blob `d708f3b5f355c4a16bd917fd8b992d47f7008a1d`; preserve canonical CRC and frozen physical-capture vectors |
+| `tools/ax25/ax25.py` KISS helpers + `tools/ax25/kiss_stream.py` | `src/ywd1278/kiss/framing.py` | KISS packet/stream framing | later phase; preserve escaping and stream resynchronization behavior |
 | `tools/ax25/afsk1200.py` | `src/ywd1278/phy/bell202_tx.py` | HDLC/NRZI/Bell-202 TX selector generation | preserve physical selector equivalence |
 | `tools/packetd/streaming_rx.py` | `src/ywd1278/phy/bell202_rx.py` | realtime 19.2ksps Bell-202 RX | preserve 144-hypothesis qualified bank and duty gate |
-| `tools/packetd/kiss_stream.py` | `src/ywd1278/kiss/framing.py` | streaming KISS framing | preserve resynchronization behavior |
 | `tools/packetd/ywd_packetd.py` | split into `kiss/server.py` + event model | TCP KISS and RX publication | remove lab naming; preserve frame semantics |
 | `tools/packetd/tx_pipeline.py` | `src/ywd1278/phy/tx_pipeline.py` | KISS DATA -> qualified TX representation | preserve FCS/selector equivalence gate |
 | `tools/packetd/tx_backend.py` | `src/ywd1278/service/tx_broker.py` | bounded TX request handoff | evolve only after CSMA design |
@@ -24,9 +24,40 @@ The YWD-1278 product must port from this frozen boundary, not from whichever exp
 | `tools/ax25/ax25_classic_test.py` protocol pieces | `src/ywd1278/modem/protocol.py` | MMDVM/YWD control protocol | productize without changing proven opcodes |
 | `tools/ax25/ax25_rx3_capture.py` protocol pieces | `src/ywd1278/modem/protocol.py` | RX3 status/read protocol | preserve protocol revision checks |
 
+## 0B-P4 AX.25 codec port
+
+The first host-side port is intentionally narrow and hardware-independent.
+
+Source implementation:
+
+- `tools/ax25/ax25.py`
+- source blob: `d708f3b5f355c4a16bd917fd8b992d47f7008a1d`
+
+Source regression vectors:
+
+- `tools/ax25/test_ax25.py`
+- source blob: `47311cbe167a9d62195eb3987aefd4630569f86b`
+
+YWD-1278 destination:
+
+- `src/ywd1278/ax25/codec.py`
+- `tests/ax25_codec_test.py`
+
+P4 preserves:
+
+- AX.25 shifted callsign/SSID encoding and decoding;
+- CRC-16/X-25 / AX.25 FCS generation and verification;
+- UI-frame construction;
+- common one-octet-control modulo-8 I frame parsing;
+- RR/RNR/REJ/SREJ supervisory parsing;
+- UI/DM/SABM/DISC/UA/SABME/FRMR/XID/TEST unnumbered parsing;
+- two FCS-valid physical AX25R3 capture vectors that were independently decoded by Direwolf.
+
+P4 deliberately does **not** contain KISS stream logic, Bell-202 modulation/demodulation, UART ownership, GPIO access, or RF operations.
+
 ## Firmware lineage
 
-The product firmware will be rebuilt deterministically from the pinned upstream MMDVM_HS lineage rather than copying an opaque binary.
+The product firmware is rebuilt deterministically from the pinned upstream MMDVM_HS lineage rather than copying an opaque binary.
 
 Relevant qualified engineering layers include:
 
