@@ -2,8 +2,12 @@
 from __future__ import annotations
 
 from pathlib import Path
+import sys
 
-from ywd1278.tx.csma import (
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "src"))
+
+from ywd1278.tx.csma import (  # noqa: E402
     DEFAULT_MAX_WAIT_SECONDS,
     DEFAULT_PERSIST,
     DEFAULT_SLOT_TIME_10MS,
@@ -11,7 +15,6 @@ from ywd1278.tx.csma import (
     PersistentCSMA,
 )
 
-ROOT = Path(__file__).resolve().parents[1]
 CSMA = ROOT / "src" / "ywd1278" / "tx" / "csma.py"
 BROKER = ROOT / "src" / "ywd1278" / "tx" / "broker.py"
 KISS = ROOT / "src" / "ywd1278" / "kiss" / "server.py"
@@ -24,7 +27,7 @@ kiss_text = KISS.read_text(encoding="utf-8")
 daemon_text = DAEMON.read_text(encoding="utf-8")
 targets_text = TARGETS.read_text(encoding="utf-8")
 
-# Frozen first policy profile.  Parameter transport/configuration is a later gate.
+# Frozen first policy profile. Parameter transport/configuration is a later gate.
 assert DEFAULT_PERSIST == 63
 assert DEFAULT_SLOT_TIME_10MS == 10
 assert DEFAULT_MAX_WAIT_SECONDS == 30.0
