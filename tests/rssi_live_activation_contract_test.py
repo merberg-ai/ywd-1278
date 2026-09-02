@@ -77,17 +77,17 @@ assert stage["candidate"]["artifact_size_bytes"] - stage["physical_base"]["artif
 
 # Activation is intentionally one-purpose. No operator-selected target, device,
 # frequency, firmware, threshold, or timing knobs can redirect the physical run.
-for forbidden_cli in (
+for forbidden_cli_case in (
     "--target)",
     "--device)",
-    "--frequency",
-    "--firmware",
+    "--frequency-hz)",
+    "--firmware)",
     "--seconds)",
     "--poll-interval)",
-    "--threshold",
-    "--hysteresis",
+    "--threshold)",
+    "--hysteresis)",
 ):
-    assert forbidden_cli not in activate, forbidden_cli
+    assert forbidden_cli_case not in activate, forbidden_cli_case
 for required in (
     "--stock-backup-dir)",
     "--confirm)",
@@ -103,6 +103,15 @@ for required in (
     "OPTION_BYTES_WRITTEN=NO",
 ):
     assert required in activate, required
+
+# The wrapper must pass only manifest-derived fixed values to the live probe.
+for fixed_forward in (
+    '--device "$DEVICE"',
+    '--frequency-hz "$FREQUENCY_HZ"',
+    '--seconds "$DURATION_SECONDS"',
+    '--poll-interval "$POLL_INTERVAL"',
+):
+    assert fixed_forward in activate, fixed_forward
 
 # A write attempt is marked before stm32flash runs, so a partial/failed flash
 # still triggers rollback rather than being mistaken for a no-write failure.
