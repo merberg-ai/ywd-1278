@@ -17,13 +17,28 @@ assert target["option_bytes_permitted"] is False
 assert target["packet_live_rx_activation"]["enabled"] is False
 assert target["packet_live_rx_qualification"]["phase"] == "0B-P12a"
 assert target["packet_live_rx_qualification"]["status"] == "qualified"
+assert target["packet_live_rx_qualification"]["receive_frequency_hz"] == 144390000
 assert target["packet_live_rx_qualification"]["fifo_dropped_bytes"] == 0
 assert target["packet_live_rx_qualification"]["packet_firmware_left_installed"] is True
 assert target["packet_live_rx_qualification"]["rf_transmitted"] is False
 
+# P12b has its own staging object. The P12a 144.390 MHz value above is frozen
+# historical evidence and must not be repurposed as the P12b live test input.
+p12b = target["packet_live_rf_kiss_qualification"]
+assert p12b["phase"] == "0B-P12b"
+assert p12b["status"] == "staged"
+assert p12b["receive_frequency_hz"] == 145050000
+assert p12b["tx_command_permitted"] is False
+assert p12b["option_bytes_permitted"] is False
+
 # P12b must use the already-qualified packet firmware and assembled RX runtime.
 assert 'target.get("status") != "0b-p12a-live-rx-qualified"' in text
+assert 'P12A_HISTORICAL_RECEIVE_FREQUENCY_HZ = 144390000' in text
+assert 'P12B_RECEIVE_FREQUENCY_HZ = 145050000' in text
 assert 'packet_live_rx_qualification' in text
+assert 'staging = target.get("packet_live_rf_kiss_qualification") or {}' in text
+assert 'frequency_hz = int(target["packet_live_rf_kiss_qualification"]["receive_frequency_hz"])' in text
+assert 'target["packet_live_rx_qualification"]["receive_frequency_hz"]' not in text
 assert 'RXOnlyPacketRuntime(' in text
 assert 'posix_serial_transport_factory(args.device)' in text
 assert 'ModemOwner(' in text
@@ -72,6 +87,8 @@ assert 'KISS_SUBSCRIBER_DROPS=' in text
 
 print("LIVE_RX_KISS_CONTRACT=PASS")
 print("P12A_PHYSICAL_PREREQUISITE=PASS")
+print("P12A_144390_EVIDENCE_FROZEN=PASS")
+print("P12B_145050_STAGING=PASS")
 print("REAL_UART_SINGLE_OWNER=PASS")
 print("LIVE_RX_RUNTIME=PASS")
 print("LOOPBACK_KISS_ONLY=PASS")
