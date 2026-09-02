@@ -29,11 +29,17 @@ The full installer:
 5. preserves the existing `/etc/ywd-1278/config.toml`;
 6. uses existing station, SSID, frequency, UART, KISS-port, and console-port values as setup defaults;
 7. audits the Raspberry Pi modem UART and serial-console ownership;
-8. performs a read-only supported-HAT probe;
-9. if a configured HAT is held in reset, releases only that allowlisted target's application-state GPIOs;
-10. on a fresh install, asks once before using a manifest-qualified compatible application-release GPIO candidate after a silent direct probe;
-11. installs the systemd units but leaves the packet service disabled while the packet engine/firmware stages remain unqualified;
-12. never flashes firmware as a side effect of installation.
+8. performs a read-only supported-HAT `GET_VERSION` probe;
+9. classifies a detected firmware identity as `STOCK`, `YWD1278`, `YWD_ENGINEERING`, `KNOWN_OTHER`, `UNKNOWN`, or `AMBIGUOUS`;
+10. shows the live firmware identity and class during setup so the operator can see whether the HAT is running recognized stock firmware, YWD-1278 firmware, an older YWD engineering build, or something unrecognized;
+11. if a configured HAT is genuinely silent, releases only that allowlisted target's application-state GPIOs;
+12. on a fresh install, asks once before using a manifest-qualified compatible application-release GPIO candidate after a silent direct probe;
+13. installs the systemd units but leaves the packet service disabled while the packet engine/firmware stages remain unqualified;
+14. never flashes firmware as a side effect of installation.
+
+A valid but unfamiliar `GET_VERSION` response is **not** treated as UART silence. If a modem answers with an identity that is not in the target manifest, the installer reports the literal identity as `UNKNOWN`, does not manipulate GPIO merely because the string is unfamiliar, does not bind a new hardware target automatically, and performs no firmware action.
+
+Firmware classification is live detection state, not a permanent claim stored in the station configuration. The hardware target may be persisted once it has been safely identified, but the current firmware identity should be re-read whenever its state matters because firmware can later be upgraded or restored.
 
 ## Reboot continuation
 
@@ -46,7 +52,7 @@ Before rebooting, the installer:
 - installs/enables `ywd-1278-install-resume.service`;
 - asks whether to reboot now.
 
-If accepted, the machine is synced and rebooted. On the next boot the oneshot resume service verifies the repaired UART, continues supported-HAT detection, records the detected target in the existing configuration, runs the framework self-test, removes the resume marker, and disables itself. It does not enable the packet service or transmit RF.
+If accepted, the machine is synced and rebooted. On the next boot the oneshot resume service verifies the repaired UART, continues supported-HAT detection, reports the detected firmware identity/class, records a safely identified target in the existing configuration, runs the framework self-test, removes the resume marker, and disables itself. It does not enable the packet service or transmit RF.
 
 If the automatic continuation cannot prove a safe state, it fails closed and leaves the resume marker in place for diagnosis rather than guessing.
 
