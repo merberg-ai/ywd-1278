@@ -20,9 +20,9 @@ The YWD-1278 product must port from this frozen boundary, not from whichever exp
 | `tools/packetd/ywd_packetd.py` | split into `kiss/server.py` + event model | TCP KISS and RX publication | remove lab naming; preserve frame semantics |
 | `tools/packetd/tx_pipeline.py` | `src/ywd1278/phy/tx_pipeline.py` | KISS DATA -> qualified TX representation | preserve FCS/selector equivalence gate |
 | `tools/packetd/tx_backend.py` | `src/ywd1278/service/tx_broker.py` | bounded TX request handoff | evolve only after CSMA design |
-| `tools/packetd/bidirectional_runtime.py` | `src/ywd1278/modem/owner.py` | single UART owner RX/TX sequencing | preserve single-owner invariant |
-| `tools/ax25/ax25_classic_test.py` protocol pieces | `src/ywd1278/modem/protocol.py` | MMDVM/YWD control protocol | productize without changing proven opcodes |
-| `tools/ax25/ax25_rx3_capture.py` protocol pieces | `src/ywd1278/modem/protocol.py` | RX3 status/read protocol | preserve protocol revision checks |
+| `tools/packetd/bidirectional_runtime.py` | `src/ywd1278/modem/owner.py` | single UART owner RX/TX sequencing | 0B-P7b; preserve single-owner invariant and keep non-owner threads away from the transport |
+| `tools/ax25/ax25_classic_test.py` protocol pieces | `src/ywd1278/modem/protocol.py` | MMDVM/YWD control/RF protocol | **ported in 0B-P7a** from source blob `9e3ec6b431a7324d8ae5cbb7901156e33c62fd4b`; preserve qualified opcodes and frame layouts |
+| `tools/ax25/ax25_rx_capture.py` + `ax25_rx3_capture.py` protocol pieces | `src/ywd1278/modem/protocol.py` | RX3 start/read/stop/status protocol | **ported in 0B-P7a** from blobs `115473e0ea741210aa074f955fbb69cc87d6a416` and `29d064b8b0d2be84eef749dc06d7a7d12309d0bc`; preserve revision-3 checks and FIFO counters |
 
 ## 0B-P4 AX.25 codec port
 
@@ -126,6 +126,29 @@ P6 preserves:
 The productized decoder passed the same saved 10.004-second physical AX25R3 capture at exactly 1.00x source rate on the target Raspberry Pi. It recovered the exact three frozen physical frame vectors at sample starts `998`, `56008`, and `154432`, with **52.5% processing duty**, **47.5% measured headroom**, zero late chunks, `0.0001 s` schedule slip, and `0.000002 s` post-stream drain.
 
 P6 is host-side replay qualification only. The replay harness explicitly reports `MODEM_UART_OPENED=NO` and `RF_TRANSMITTED=NO`. Live UART ownership and live RF receive remain later gates.
+
+## 0B-P7a modem wire protocol port
+
+Source protocol pieces:
+
+- `tools/ax25/ax25_classic_test.py` — blob `9e3ec6b431a7324d8ae5cbb7901156e33c62fd4b`
+- `tools/ax25/ax25_rx_capture.py` — blob `115473e0ea741210aa074f955fbb69cc87d6a416`
+- `tools/ax25/ax25_rx3_capture.py` — blob `29d064b8b0d2be84eef749dc06d7a7d12309d0bc`
+- `tools/packetd/bidirectional_runtime.py` framing use — blob `e05750c18ccf5224e8cf082dfb3ad203b9d52f4b`
+
+YWD-1278 destination:
+
+- `src/ywd1278/modem/protocol.py`
+- `src/ywd1278/modem/__init__.py`
+- `tests/modem_protocol_test.py`
+
+P7a preserves the proven MMDVM/YWD byte protocol, including `YWD_CONTROL=0x56`, `YWD_DATA=0x57`, `YWD_RF=0x58`, `YWD_RX=0x59`, RF status/diagnostic/TX/abort/exit subcommands, RX start/read/stop/status subcommands, and RX protocol revision 3.
+
+The codec validates the start byte and exact declared frame length, enforces expected command responses, validates ACK/NAK payloads, rejects malformed RX reads and wrong RX protocol revisions, and keeps all serialization pure and deterministic.
+
+A regression reconnects P7a to the physically-qualified AX25-5B path without transmitting: the P5 packet `KJ6YWD-10>APYWD1: AX25-5B KISS TX TEST` still produces 691 selectors, which serialize into the expected 93-byte `YWD_RF/TX_TONES` host request with the packed selector payload unchanged.
+
+P7a contains no serial transport and opens no device. UART ownership is intentionally deferred to P7b so the byte protocol can remain frozen underneath it.
 
 ## Firmware lineage
 
