@@ -57,6 +57,14 @@ jobs:
         run: |
           python tests/modem_serial_transport_test.py
 
+      - name: KISS framing regression
+        run: |
+          python tests/kiss_framing_test.py
+
+      - name: RX-only TCP KISS server regression
+        run: |
+          python tests/kiss_server_test.py
+
       - name: Firmware identity classification
         run: |
           python tests/firmware_identity_test.py
