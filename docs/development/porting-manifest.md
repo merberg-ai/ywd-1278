@@ -16,7 +16,7 @@ The YWD-1278 product must port from this frozen boundary, not from whichever exp
 | `tools/ax25/ax25.py` | `src/ywd1278/ax25/codec.py` | AX.25 addresses, FCS, modulo-8 I/S/U parsing | **ported in 0B-P4** from source blob `d708f3b5f355c4a16bd917fd8b992d47f7008a1d`; preserve canonical CRC and frozen physical-capture vectors |
 | `tools/ax25/ax25.py` KISS helpers + `tools/ax25/kiss_stream.py` | `src/ywd1278/kiss/framing.py` | KISS packet/stream framing | later phase; preserve escaping and stream resynchronization behavior |
 | `tools/ax25/afsk1200.py` | `src/ywd1278/phy/bell202_tx.py` | HDLC/NRZI/Bell-202 TX selector generation | **ported in 0B-P5** from source blob `c3aecf7a8f22ef0f051177873482538dddbd6828`; preserve exact AX25-5B selector count and packed-selector representation |
-| `tools/packetd/streaming_rx.py` | `src/ywd1278/phy/bell202_rx.py` | realtime 19.2ksps Bell-202 RX | preserve 144-hypothesis qualified bank and duty gate |
+| `tools/packetd/streaming_rx.py` | `src/ywd1278/phy/bell202_rx.py` | realtime 19.2ksps Bell-202 RX | **ported in 0B-P6** from source blob `5f31d97a264557ca985e028b50dcbdeda05672ab`; preserve 144-hypothesis bank, exact physical-frame replay, and realtime duty gate |
 | `tools/packetd/ywd_packetd.py` | split into `kiss/server.py` + event model | TCP KISS and RX publication | remove lab naming; preserve frame semantics |
 | `tools/packetd/tx_pipeline.py` | `src/ywd1278/phy/tx_pipeline.py` | KISS DATA -> qualified TX representation | preserve FCS/selector equivalence gate |
 | `tools/packetd/tx_backend.py` | `src/ywd1278/service/tx_broker.py` | bounded TX request handoff | evolve only after CSMA design |
@@ -92,6 +92,40 @@ The frozen physical qualification reported exactly **691 selectors** and `691 * 
 `30718ba5a4368e82bab69e6343f95c7e226cd08426844ed328ad8c52fbfd750e`
 
 This P5 gate does not open the modem UART, expand samples, key RF, or issue a modem TX command. Physical YWD-1278 transmission remains a later requalification step.
+
+## 0B-P6 realtime streaming Bell-202 RX port
+
+Source implementation:
+
+- `tools/packetd/streaming_rx.py`
+- source blob: `5f31d97a264557ca985e028b50dcbdeda05672ab`
+
+Relevant frozen source qualifications:
+
+- `docs/qualifications/ax25-3c-streaming-realtime-qualified-2026-09-01.md`
+- source qualification blob: `cfd73f6c3b3ce9de2778ff852c0336bcf4b000c5`
+
+YWD-1278 destination:
+
+- `src/ywd1278/phy/bell202_rx.py`
+- `tests/bell202_rx_test.py`
+- `tools/qualify_bell202_rx_replay.py`
+
+P6 preserves:
+
+- 19.2 ksps one-bit slicer input semantics;
+- exact 12-sample Bell-202 correlation metric represented by a 4096-entry lookup table;
+- persistent 1196..1204 baud x 16-phase acquisition coverage;
+- exactly 144 persistent timing hypotheses;
+- heap-scheduled symbol decisions rather than per-sample full-bank scanning;
+- persistent NRZI and streaming HDLC state across arbitrary feed boundaries;
+- AX.25 FCS plus structural frame validation;
+- physical-occurrence dedupe without collapsing identical packets heard at separate times;
+- no queued DSP drain at `finish()`.
+
+The productized decoder passed the same saved 10.004-second physical AX25R3 capture at exactly 1.00x source rate on the target Raspberry Pi. It recovered the exact three frozen physical frame vectors at sample starts `998`, `56008`, and `154432`, with **52.5% processing duty**, **47.5% measured headroom**, zero late chunks, `0.0001 s` schedule slip, and `0.000002 s` post-stream drain.
+
+P6 is host-side replay qualification only. The replay harness explicitly reports `MODEM_UART_OPENED=NO` and `RF_TRANSMITTED=NO`. Live UART ownership and live RF receive remain later gates.
 
 ## Firmware lineage
 
