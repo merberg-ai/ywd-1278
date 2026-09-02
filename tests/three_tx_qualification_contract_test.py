@@ -28,14 +28,15 @@ tool = TOOL.read_text(encoding="utf-8")
 kiss = KISS_SERVER.read_text(encoding="utf-8")
 daemon = DAEMON.read_text(encoding="utf-8")
 
-# P13b remains physically incomplete until independent over-air decode exists.
-# The user's first physical run is recorded separately as valid internal
-# one-shot evidence, so the hardware target must not be advanced yet.
-assert target["status"] == "0b-p12b-live-rf-kiss-qualified"
+# R1 is retained exactly as the historical partial physical attempt. P13b was
+# ultimately qualified by R2, so the current target advances while P12b and R1
+# evidence remain frozen rather than being rewritten.
+assert target["status"] == "0b-p13b-known-packet-tx-qualified"
 assert target["flash_enabled"] is False
 assert target["option_bytes_permitted"] is False
 assert target["packet_live_rx_qualification"]["packet_firmware_left_installed"] is True
 assert target["packet_live_rf_kiss_qualification"]["receive_frequency_hz"] == 145050000
+assert target["packet_live_tx_qualification"]["status"] == "qualified"
 
 # Preserve the exact original one-shot staging vector and tool rather than
 # silently repurposing the already-executed test.
@@ -117,7 +118,7 @@ expected_stage = {
 }
 assert stage == expected_stage
 
-# Independently reconstruct and lock all three AX.25/P5 vectors.
+# Independently reconstruct and lock all three historical R1 AX.25/P5 vectors.
 for vector in stage["frames"]:
     frame = build_ui_frame(
         source=Address.parse(stage["source"]),
@@ -165,16 +166,17 @@ assert 'generated_delta != stage["expected_generated_samples_delta"]' in tool
 assert 'queue_capacity=1' in tool
 assert 'transmit_enabled=True' in tool
 
-# Every actual burst gets its own internal +1 keyup and exact generated-sample
-# proof before the fixed pause/next frame may occur.
+# These assertions intentionally preserve the R1 checker implementation that
+# produced the known false-negative. R2 corrects the diagnostic semantics; R1
+# is historical evidence and must not be silently rewritten.
 assert 'if burst_keyups != 1:' in tool
 assert 'if burst_samples != vector["expected_generated_samples"]:' in tool
 assert 'print(f"BURST[{index}]_RF_KEYUP_DELTA={burst_keyups}")' in tool
 assert 'print(f"BURST[{index}]_GENERATED_SAMPLES_DELTA={burst_samples}")' in tool
 assert 'print(f"PAUSE_AFTER[{index}]={stage[\'inter_packet_pause_seconds\']:.1f}s")' in tool
 
-# Dry-run exits before owner/UART construction.  The real path still goes only
-# through TXModemOwner + P13a TXBroker and uses the frozen simplex setup.
+# Dry-run exits before owner/UART construction. The real path still goes only
+# through TXModemOwner + P13a TXBroker and uses the original simplex setup.
 dry_run_pos = tool.index('if not args.transmit:')
 owner_construct_pos = tool.index('owner = TXModemOwner(')
 assert dry_run_pos < owner_construct_pos
@@ -207,16 +209,13 @@ for forbidden in ("TXBroker", "TXModemOwner", "transmit_selector_burst", "RF_TX_
 
 print("P13B_R1_THREE_TX_CONTRACT=PASS")
 print("ORIGINAL_P13B_ONE_SHOT_PRESERVED=PASS")
-print("P13B_FIRST_INTERNAL_RF_EVIDENCE_RECORDED=YES")
+print("P13B_R1_HISTORICAL_PARTIAL_ATTEMPT=PASS")
 print("P13B_R1_FREQUENCY_HZ=145050000")
 print("P13B_R1_FIXED_FRAMES=3")
 print("P13B_R1_SELECTOR_COUNT_EACH=721")
 print("P13B_R1_SAMPLES_EACH=11536")
-print("P13B_R1_EXPECTED_KEYUP_DELTA=3")
-print("P13B_R1_EXPECTED_GENERATED_SAMPLES=34608")
 print("P13B_R1_INTER_PACKET_PAUSE_SECONDS=5.0")
 print("AUTOMATIC_TX_RETRY=NO")
 print("KISS_TX_CONNECTED=NO")
 print("PRODUCT_TX_ENABLED=NO")
-print("EXTERNAL_DECODE_REQUIRED=YES")
 print("RF_TRANSMITTED_BY_CI=NO")
