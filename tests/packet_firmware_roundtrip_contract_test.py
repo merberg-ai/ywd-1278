@@ -13,17 +13,18 @@ data = json.loads(TARGETS.read_text(encoding="utf-8"))
 t = data["targets"][0]
 
 assert t["id"] == "mmdvm-hs-hat-stm32f103-simplex-14.7456-adf7021"
+assert t["status"] == "0b-p11-packet-roundtrip-qualified"
 assert t["flash_enabled"] is False
 assert t["option_bytes_permitted"] is False
 assert t["flash_size_bytes"] == 131072
 assert t["stock_flash_sha256"] == "4981b35b2d50ada0b09322d9de19dd58a0cbd49eb005693499d1acae92f9d684"
 
-# P3 remains frozen/closed. P11 gets a separate one-purpose gate.
+# P3 remains frozen/closed. P11 is separately closed after successful proof.
 assert t["qualification_write"]["phase"] == "0B-P3"
 assert t["qualification_write"]["enabled"] is False
 assert t["packet_qualification_write"] == {
     "phase": "0B-P11",
-    "enabled": True,
+    "enabled": False,
     "requires_exact_stock_start": True,
     "requires_verified_stock_backup": True,
     "requires_stock_restore_same_run": True,
@@ -35,7 +36,7 @@ assert t["packet_qualification_write"] == {
 p = t["packet_firmware_candidate"]
 assert p == {
     "phase": "0B-P10",
-    "status": "deterministic-build-qualified-runtime-unqualified",
+    "status": "deterministic-build-and-runtime-qualified",
     "date": "2026-09-02",
     "artifact": "firmware/out/0b-p10-ax25r3-stm32f103-simplex-adf7021-14.7456tcxo-8mhz-hse/MMDVM_HS_Hat-YWD-1278-AX25R3-v0.1.0-alpha0-7ff74ed-hse8m.bin",
     "artifact_size_bytes": 59812,
@@ -47,15 +48,34 @@ assert p == {
     "adf7021_tcxo_hz": 14745600,
     "osc_override": False,
     "reproducibility": "pass",
-    "runtime_identity_verified": False,
-    "accepted_running_identity": False,
+    "runtime_identity_verified": True,
+    "accepted_running_identity": True,
 }
-assert p["expected_identity"] not in t["accepted_running_identities"]
+assert p["expected_identity"] in t["accepted_running_identities"]
+
+rq = t["packet_runtime_qualification"]
+assert rq == {
+    "phase": "0B-P11",
+    "status": "qualified",
+    "date": "2026-09-02",
+    "artifact_size_bytes": 59812,
+    "artifact_sha256": "a069d9a9f1c3d5014984e5d73a5b57155ffa50f8908c9d80c5da221b8ea07310",
+    "programmed_readback_sha256": "a069d9a9f1c3d5014984e5d73a5b57155ffa50f8908c9d80c5da221b8ea07310",
+    "packet_identity_verified": True,
+    "stock_restore_sha256": "4981b35b2d50ada0b09322d9de19dd58a0cbd49eb005693499d1acae92f9d684",
+    "stock_identity_verified": True,
+    "main_flash_write_occurred": True,
+    "application_commands_sent": ["GET_VERSION"],
+    "rf_configured": False,
+    "rx_started": False,
+    "rf_transmitted": False,
+    "option_bytes_written": False,
+}
 
 s = SCRIPT.read_text(encoding="utf-8")
 r = RESTORE.read_text(encoding="utf-8")
 
-# Exact gate and explicit confirmations.
+# Exact gate and explicit confirmations remain in-tree for audit/recovery.
 assert '[[ "$flash_enabled" == false ]]' in s
 assert '[[ "$p3_enabled" == false ]]' in s
 assert '[[ "$q_phase" == 0B-P11 && "$q_enabled" == true ]]' in s
@@ -109,9 +129,10 @@ for text in (s, r):
 print("PACKET_FIRMWARE_ROUNDTRIP_CONTRACT=PASS")
 print("NORMAL_FLASH_GATE=CLOSED")
 print("P3_QUALIFICATION_GATE=CLOSED")
-print("P11_PACKET_QUALIFICATION_GATE=ARMED")
+print("P11_PACKET_QUALIFICATION_GATE=CLOSED_AFTER_PROOF")
 print("P10_PACKET_SHA=PASS")
-print("PACKET_RUNTIME_IDENTITY=UNQUALIFIED_UNTIL_PHYSICAL_P11")
+print("PACKET_RUNTIME_IDENTITY=QUALIFIED")
+print("PACKET_RUNNING_IDENTITY=ACCEPTED")
 print("APPLICATION_COMMAND_SET=GET_VERSION_ONLY")
 print("RF_CONFIGURATION_PATH=ABSENT")
 print("RX_START_PATH=ABSENT")
