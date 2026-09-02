@@ -1,0 +1,29 @@
+{
+  "schema": 1,
+  "targets": [
+    {
+      "id": "mmdvm-hs-hat-stm32f103-simplex-14.7456-adf7021",
+      "description": "Reference simplex MMDVM_HS Hat lineage used for the qualified YWD AX.25 work",
+      "status": "reference-only",
+      "flash_enabled": false,
+      "mcu_family": "STM32F103",
+      "rf_chip": "ADF7021",
+      "tcxo_mhz": 14.7456,
+      "uart_default": "/dev/ttyAMA0",
+      "programmer": "stm32flash",
+      "bootloader_entry": "manual-boot-reset",
+      "flash_base": "0x08000000",
+      "flash_size_bytes": 0,
+      "option_bytes_permitted": false,
+      "stock_backup_required": true,
+      "accepted_running_identities": [
+        "MMDVM_HS_Hat-v1.6.1 20230526 14.7456MHz ADF7021 FW by CA6JAU GitID #7ff74ed",
+        "MMDVM_HS_Hat-YWD-AX25R3-v0.2.2 14.7456MHz ADF7021 FW based on CA6JAU GitID #7ff74ed"
+      ],
+      "ywd1278_identity_prefix": "MMDVM_HS_Hat-YWD-1278-",
+      "firmware_artifact": null,
+      "firmware_sha256": null,
+      "notes": "Write operations remain disabled until flash geometry and a deterministic YWD-1278 firmware artifact are re-qualified in this repository."
+    }
+  ]
+}
