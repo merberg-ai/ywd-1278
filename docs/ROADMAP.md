@@ -21,8 +21,8 @@
 ## 0B — Qualified packet engine port
 
 - [x] 0B-P1 deterministic `YWD-1278`-branded HAT firmware build from exact upstream `7ff74ed` — build/inspect only, no flashing
-- [ ] establish exact first supported target flash geometry/hash
-- [ ] qualify protected stock backup + guarded YWD-1278 flash/restore round trip
+- [x] 0B-P2 establish exact first supported target flash geometry/hash and protected two-pass stock backup
+- [ ] 0B-P3 guarded YWD-1278 firmware write + exact stock restore round trip
 - [ ] port AX.25 codec/FCS/parser
 - [ ] port Bell-202 TX serialization
 - [ ] port realtime streaming Bell-202 RX
