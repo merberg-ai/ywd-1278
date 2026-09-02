@@ -15,7 +15,7 @@
     "version_blob": "4239a854ec09ee90847468f931e1455ee461e2de",
     "makefile_blob": "c73834e9734e4b74bd375cb98ce5144c31134de6",
     "build_script": "scripts/build_fw.sh",
-    "build_script_blob": "30257c0aea66695ed32877b8688daa835ee4f0e2"
+    "build_script_blob": "30257c0aea66695ed32877b8688daa835bee4f0e2"
   },
   "engineering": {
     "repository": "merberg-ai/ywd-mmdvm",
@@ -30,7 +30,7 @@
       "firmware/ax25-classic1/AX25AFSKTX.h": "ca187f153c2139e580c31b5cf635d1393cef5769",
       "firmware/ax25-classic1/apply_ax25_classic1.py": "91eccb3a196f731690e3e275041bbb1b73b18ed1",
       "firmware/ax25-classic1/apply_ax25_classic1_diag.py": "ca885602a4359991bdfa7f1a976d47e0ae3be3e7",
-      "firmware/ax25-classic1/apply_ax25_classic1_continuity.py": "5796655bc91566b3d6d6d6677a0681d0499cc6faec3784f",
+      "firmware/ax25-classic1/apply_ax25_classic1_continuity.py": "5796655bc91566b3c6c2627ea878a712720fbc7d",
       "firmware/ax25-classic1/apply_ax25_classic1_reserve.py": "04ded4879046a508cb3e179d0499cc6faec3784f",
       "firmware/ax25-rx1/AX25AFSKRX.cpp": "cf811dd953fdbbb7218eeb30079f8da12d04871a",
       "firmware/ax25-rx1/AX25AFSKRX.h": "c6059997d66d30af59a74a5085e4a60a7d50a90e",
