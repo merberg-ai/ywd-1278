@@ -8,10 +8,12 @@ ROOT = Path(__file__).resolve().parents[1]
 MANIFEST = ROOT / "firmware/tooling/packet-build-manifest.json"
 BUILDER = ROOT / "firmware/build-packet-ywd1278.sh"
 BRANDER = ROOT / "firmware/tooling/apply_packet_branding.py"
+MATERIALIZER = ROOT / "firmware/tooling/materialize_vendored_engineering.py"
 
 m = json.loads(MANIFEST.read_text(encoding="utf-8"))
 builder = BUILDER.read_text(encoding="utf-8")
 brander = BRANDER.read_text(encoding="utf-8")
+materializer = MATERIALIZER.read_text(encoding="utf-8")
 
 assert m["schema"] == 1
 assert m["phase"] == "0B-P10"
@@ -23,6 +25,8 @@ assert m["build"]["osc_override"] is False
 assert m["rf"]["tcxo_hz"] == 14_745_600
 
 eng = m["engineering"]
+assert eng["source"] == "vendored"
+assert eng["vendored_root"] == "firmware/vendor/ywd-mmdvm"
 assert eng["repository"] == "merberg-ai/ywd-mmdvm"
 assert eng["commit"] == "d25180ad663d781b761c525d1e699e7b052d6214"
 assert eng["qualification_blob"] == "42b4f22ba22050223fa9179b8d55045356e79a9d"
@@ -64,23 +68,41 @@ assert m["branding"]["expected_identity"] == (
     "ADF7021 FW based on CA6JAU GitID #7ff74ed"
 )
 
-safety = m["safety"]
-assert safety == {
+assert m["safety"] == {
     "hardware_access": False,
     "flash_enabled": False,
     "option_bytes_permitted": False,
     "rf_transmit_possible": False,
 }
 
-# Builder must use the frozen engineering Git object database, never its
-# working tree, and apply transforms in manifest order.
-assert 'git -C "$ENGINEERING_REPO" show "$ENG_COMMIT:$path"' in builder
-assert 'ENGINEERING_WORKTREE_USED=NO' in builder
+# Builder must use the byte-pinned engineering source vendored inside YWD-1278.
+assert 'python3 "$MATERIALIZER" --manifest "$MANIFEST" --dest "$TRANSFORMS"' in builder
+assert "ENGINEERING_SOURCE=VENDORED_IN_YWD1278" in builder
+assert "ENGINEERING_EXTERNAL_REPO_REQUIRED=NO" in builder
 assert 'for rel in "${TRANSFORM_ORDER[@]}"' in builder
 assert 'python3 "$TRANSFORMS/$rel" "$src"' in builder
 assert 'python3 "$BRANDER" "$src" --manifest "$MANIFEST"' in builder
 assert 'make -C "$src" -j"$JOBS" "$MAKE_TARGET"' in builder
-assert 'UPSTREAM_HAT_BUILD_RECIPE=PASS' in builder
+assert "UPSTREAM_HAT_BUILD_RECIPE=PASS" in builder
+
+for forbidden in (
+    "--engineering-repo",
+    "YWD1278_ENGINEERING_REPO",
+    "mmdvm-lab/ywd-mmdvm",
+    'git -C "$ENGINEERING_REPO"',
+):
+    assert forbidden not in builder, forbidden
+
+# Materializer validates exact Git blob identity without fetching YWD-MMDVM.
+for required in (
+    "git_blob_sha1",
+    "VENDORED_ENGINEERING_BLOBS=PASS",
+    "ENGINEERING_EXTERNAL_REPO_REQUIRED=NO",
+    "ENGINEERING_NETWORK_FETCH_REQUIRED=NO",
+):
+    assert required in materializer, required
+for forbidden in ("git fetch", "clone", "mmdvm-lab/ywd-mmdvm"):
+    assert forbidden not in materializer, forbidden
 
 # No hardware or flasher command belongs in a build-only tool.
 for forbidden in (
@@ -95,7 +117,7 @@ for forbidden in (
 ):
     assert forbidden not in builder, forbidden
 
-# Product branding must be identity-only after the exact frozen AX25R3 chain.
+# Product branding remains identity-only after the exact frozen AX25R3 chain.
 assert "FROZEN_AX25R3_BEHAVIOR_ANCHORS=PASS" in brander
 assert "BEHAVIORAL_CHANGES_AFTER_FROZEN_AX25R3=NONE" in brander
 assert "0x000E006FU" in brander
@@ -104,7 +126,8 @@ assert "YWD_RF_TX_TONES" in brander
 assert "reply[4U] = 3U" in brander
 
 print("PACKET_FIRMWARE_BUILD_CONTRACT=PASS")
-print("FROZEN_ENGINEERING_COMMIT=PASS")
+print("ENGINEERING_SOURCE=VENDORED_IN_YWD1278")
+print("ENGINEERING_EXTERNAL_REPO_REQUIRED=NO")
 print("FROZEN_ENGINEERING_BLOBS=12")
 print("TRANSFORM_ORDER=PASS")
 print("STM32_HSE_HZ=8000000")
