@@ -19,6 +19,7 @@
   },
   "engineering": {
     "repository": "merberg-ai/ywd-mmdvm",
+    "remote": "https://github.com/merberg-ai/ywd-mmdvm.git",
     "commit": "d25180ad663d781b761c525d1e699e7b052d6214",
     "qualification": "docs/qualifications/ax25-5b-bidirectional-kiss-qualified-2026-09-01.md",
     "qualification_blob": "42b4f22ba22050223fa9179b8d55045356e79a9d",
