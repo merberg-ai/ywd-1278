@@ -28,6 +28,9 @@ from ywd1278.modem._serial import posix_serial_transport_factory  # noqa: E402
 from ywd1278.modem.owner import ModemOwner  # noqa: E402
 from ywd1278.service import RXOnlyPacketRuntime  # noqa: E402
 
+P12A_HISTORICAL_RECEIVE_FREQUENCY_HZ = 144390000
+P12B_RECEIVE_FREQUENCY_HZ = 145050000
+
 
 def load_target(path: Path, target_id: str) -> dict:
     data = json.loads(path.read_text(encoding="utf-8"))
@@ -47,12 +50,24 @@ def load_target(path: Path, target_id: str) -> dict:
     qualification = target.get("packet_live_rx_qualification") or {}
     if qualification.get("phase") != "0B-P12a" or qualification.get("status") != "qualified":
         raise SystemExit("FAIL: target lacks physical P12a live-RX qualification")
+    if qualification.get("receive_frequency_hz") != P12A_HISTORICAL_RECEIVE_FREQUENCY_HZ:
+        raise SystemExit("FAIL: P12a historical 144.390 MHz qualification evidence changed")
     if qualification.get("fifo_dropped_bytes") != 0:
         raise SystemExit("FAIL: P12a evidence contains FIFO loss")
     if qualification.get("packet_firmware_left_installed") is not True:
         raise SystemExit("FAIL: P12a did not record the packet firmware as installed")
     if qualification.get("rf_transmitted") is not False:
         raise SystemExit("FAIL: P12a evidence contains RF transmission")
+
+    staging = target.get("packet_live_rf_kiss_qualification") or {}
+    if staging.get("phase") != "0B-P12b" or staging.get("status") != "staged":
+        raise SystemExit("FAIL: target lacks staged P12b live RF-to-KISS qualification")
+    if staging.get("receive_frequency_hz") != P12B_RECEIVE_FREQUENCY_HZ:
+        raise SystemExit("FAIL: P12b must be staged at exactly 145.050 MHz")
+    if staging.get("tx_command_permitted") is not False:
+        raise SystemExit("FAIL: P12b staging permits a TX command")
+    if staging.get("option_bytes_permitted") is not False:
+        raise SystemExit("FAIL: P12b staging permits option-byte writes")
     return target
 
 
@@ -92,7 +107,7 @@ def main() -> int:
     target = load_target(Path(args.targets), args.target)
     packet = target["packet_firmware_candidate"]
     expected_identity = packet["expected_identity"]
-    frequency_hz = int(target["packet_live_rx_qualification"]["receive_frequency_hz"])
+    frequency_hz = int(target["packet_live_rf_kiss_qualification"]["receive_frequency_hz"])
 
     if not uart_is_free(args.device):
         raise SystemExit(f"FAIL: modem UART already has an owner: {args.device}")
