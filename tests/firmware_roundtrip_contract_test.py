@@ -7,6 +7,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 TARGETS = ROOT / "firmware" / "targets.json"
 SCRIPT = ROOT / "firmware" / "qualify-roundtrip.sh"
+RESTORE = ROOT / "firmware" / "restore-stock.sh"
 
 data = json.loads(TARGETS.read_text(encoding="utf-8"))
 t = data["targets"][0]
@@ -30,6 +31,7 @@ assert q == {
 }
 
 s = SCRIPT.read_text(encoding="utf-8")
+r = RESTORE.read_text(encoding="utf-8")
 
 # The qualification path must be distinct from normal product flashing.
 assert '[[ "$flash_enabled" == false ]]' in s
@@ -57,12 +59,23 @@ assert 'emergency_stock_restore' in s
 assert 'EMERGENCY_STOCK_RESTORE=PASS' in s
 assert 'YWD_WRITTEN == 1 && STOCK_RESTORED == 0' in s
 
+# The standalone recovery tool must itself work through the qualified GPIO path
+# and verify a complete main-flash readback. No physical BOOT/RST interaction.
+assert 'bootloader-entry --targets "$TARGETS" --target "$target_id"' in r
+assert 'application-restart --targets "$TARGETS" --target "$target_id"' in r
+assert 'STOCK_RESTORE_READBACK_SHA256=' in r
+assert 'Restored main flash differs from exact stock SHA256' in r
+assert 'Post-restore exact identity verification' in r
+assert 'Hold BOOT' not in r
+assert 'BOOTLOADER-READY' not in r
+
 # GPIO bootloader entry/restart is the only control method and no option-byte
-# memory addresses or jump/go command are permitted in this round-trip tool.
+# memory addresses or jump/go command are permitted in these write tools.
 assert 'bootloader-entry --targets "$TARGETS" --target "$TARGET_ID"' in s
 assert 'application-restart --targets "$TARGETS" --target "$TARGET_ID"' in s
-for forbidden in ("0x1FFFF800", "0x1ffff800", "0x1FFFF7E0", "0x1ffff7e0", " -g "):
-    assert forbidden not in s
+for text in (s, r):
+    for forbidden in ("0x1FFFF800", "0x1ffff800", "0x1FFFF7E0", "0x1ffff7e0", " -g "):
+        assert forbidden not in text
 
 print("FIRMWARE_ROUNDTRIP_CONTRACT=PASS")
 print("NORMAL_FLASH_GATE_CLOSED=PASS")
@@ -72,4 +85,5 @@ print("VERIFIED_STOCK_BACKUP_REQUIRED=PASS")
 print("YWD_READBACK_REQUIRED=PASS")
 print("STOCK_READBACK_REQUIRED=PASS")
 print("EMERGENCY_STOCK_RECOVERY=REQUIRED")
+print("AUTOMATIC_STOCK_RECOVERY_TOOL=PASS")
 print("OPTION_BYTE_WRITE_PATH=ABSENT")
