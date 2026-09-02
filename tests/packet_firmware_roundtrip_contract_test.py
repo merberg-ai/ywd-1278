@@ -13,13 +13,12 @@ data = json.loads(TARGETS.read_text(encoding="utf-8"))
 t = data["targets"][0]
 
 assert t["id"] == "mmdvm-hs-hat-stm32f103-simplex-14.7456-adf7021"
-assert t["status"] == "0b-p11-packet-roundtrip-qualified"
 assert t["flash_enabled"] is False
 assert t["option_bytes_permitted"] is False
 assert t["flash_size_bytes"] == 131072
 assert t["stock_flash_sha256"] == "4981b35b2d50ada0b09322d9de19dd58a0cbd49eb005693499d1acae92f9d684"
 
-# P3 remains frozen/closed. P11 is separately closed after successful proof.
+# Current phase/status may advance; P3 and P11 qualification evidence remains frozen.
 assert t["qualification_write"]["phase"] == "0B-P3"
 assert t["qualification_write"]["enabled"] is False
 assert t["packet_qualification_write"] == {
@@ -74,22 +73,16 @@ assert rq == {
 
 s = SCRIPT.read_text(encoding="utf-8")
 r = RESTORE.read_text(encoding="utf-8")
-
-# Exact gate and explicit confirmations remain in-tree for audit/recovery.
 assert '[[ "$flash_enabled" == false ]]' in s
 assert '[[ "$p3_enabled" == false ]]' in s
 assert '[[ "$q_phase" == 0B-P11 && "$q_enabled" == true ]]' in s
 assert 'QUALIFY-0B-P11' in s
 assert 'WRITE-PACKET-YWD-THEN-RESTORE-STOCK' in s
-
-# The exact build-qualified candidate and exact two-pass stock backup are mandatory.
 assert 'Firmware does not match the exact 0B-P10 qualified packet SHA256' in s
 assert 'Firmware size does not match the exact 0B-P10 packet artifact size' in s
 assert 'backup lacks two-pass qualification' in s
 assert 'backup does not match target stock SHA256' in s
 assert '0B-P11 must start from the exact stock identity' in s
-
-# Packet write and stock restore both require readback verification.
 assert 'stm32flash -b 115200 -w "$FIRMWARE" -v "$DEVICE"' in s
 assert 'PACKET_READBACK_SHA256=' in s
 assert 'Programmed packet bytes match the exact 0B-P10 artifact' in s
@@ -97,8 +90,6 @@ assert 'stm32flash -b 115200 -w "$STOCK_IMAGE" -v "$DEVICE"' in s
 assert 'STOCK_RESTORE_READBACK_SHA256=' in s
 assert 'Complete restored stock flash matches the exact P2 SHA256' in s
 assert 'YWD1278_0B_P11_PACKET_ROUNDTRIP=PASS' in s
-
-# Runtime proof is GET_VERSION only. No packet receive/transmit/config command is reachable.
 assert 'probe_hat.py" --device "$DEVICE" --targets "$TARGETS" --no-application-release --json' in s
 assert 'APPLICATION_COMMANDS_SENT=GET_VERSION_ONLY' in s
 for forbidden in (
@@ -112,14 +103,10 @@ for forbidden in (
     "MMDVM_YWD_RX",
 ):
     assert forbidden not in s
-
-# Failure after packet write must automatically recover exact stock, including full readback.
 assert 'emergency_stock_restore' in s
 assert 'PACKET_WRITTEN == 1 && STOCK_RESTORED == 0' in s
 assert 'EMERGENCY_STOCK_RESTORE_READBACK_SHA256=' in s
 assert 'EMERGENCY_STOCK_RESTORE=PASS' in s
-
-# GPIO bootloader entry/restart is the only hardware control path. Never write option bytes or jump.
 assert 'bootloader-entry --targets "$TARGETS" --target "$TARGET_ID"' in s
 assert 'application-restart --targets "$TARGETS" --target "$TARGET_ID"' in s
 for text in (s, r):
@@ -133,6 +120,7 @@ print("P11_PACKET_QUALIFICATION_GATE=CLOSED_AFTER_PROOF")
 print("P10_PACKET_SHA=PASS")
 print("PACKET_RUNTIME_IDENTITY=QUALIFIED")
 print("PACKET_RUNNING_IDENTITY=ACCEPTED")
+print("P11_EVIDENCE_PHASE_INDEPENDENT=PASS")
 print("APPLICATION_COMMAND_SET=GET_VERSION_ONLY")
 print("RF_CONFIGURATION_PATH=ABSENT")
 print("RX_START_PATH=ABSENT")
