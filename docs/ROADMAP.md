@@ -33,7 +33,7 @@
 - [x] thread-bound POSIX serial transport + guarded live read-only owner identity proof (0B-P7b-2) — real `/dev/ttyAMA0`, exactly one owner thread and one `GET_VERSION` transaction, exact stock identity, UART released afterward; no GPIO/RX/TX/RF/flash
 - [ ] live YWD_RX owner qualification — deferred until packet-capable YWD-1278 firmware is built/qualified
 - [x] port TCP KISS framing/server (0B-P8) — standard port-0 DATA framing and stream resynchronization; real localhost TCP delivery of all three saved physically sourced frames; bounded client queues with zero drops; inbound client DATA explicitly rejected; no UART/RF/TX path
-- [ ] assemble RX-only product runtime: single owner -> YWD_RX -> Bell-202 -> AX.25 event bus -> TCP KISS
+- [x] assemble RX-only product runtime (0B-P9) — single owner -> YWD_RX revision-3 FIFO -> Bell-202 -> AX.25 event bus -> TCP KISS; target-Pi replay consumed all 24,009 packed bytes, decoded/delivered the same three physical frames, rejected inbound KISS DATA, and reported zero FIFO/subscriber drops with no real UART/RF access
 - [ ] build and qualify packet-capable YWD-1278 firmware from frozen AX25R3 engineering source
 - [ ] requalify physical live RX through assembled product runtime
 - [ ] productize bidirectional bounded RX/TX runtime
