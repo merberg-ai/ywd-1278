@@ -35,7 +35,7 @@ The firmware routine returns a raw `uint16` RSSI magnitude. 0C-P2 intentionally 
 
 ## AX25R4 additive engineering transform
 
-YWD-MMDVM engineering branch:
+Historical YWD-MMDVM engineering branch:
 
 `dev-0c-p2-rssi`
 
@@ -43,7 +43,7 @@ Pinned engineering RSSI commit:
 
 `69309644da839522102e393e66093378544869ea`
 
-New transform:
+Transform provenance path:
 
 `firmware/ax25-rx4/apply_ax25_rx4_rssi.py`
 
@@ -71,9 +71,23 @@ Product candidate identity is staged as:
 
 `MMDVM_HS_Hat-YWD-1278-AX25R4-v0.1.0-alpha1 14.7456MHz ADF7021 FW based on CA6JAU GitID #7ff74ed`
 
+## Self-contained engineering source
+
+YWD-1278 is now self-contained for its YWD packet-engine engineering sources. A local checkout of `merberg-ai/ywd-mmdvm`, a sibling `~/mmdvm-lab/ywd-mmdvm` directory, and a YWD-MMDVM network fetch are **not required** to build either the historical P10 AX25R3 artifact or the staged P2 AX25R4 candidate.
+
+The exact previously qualified engineering files are vendored under:
+
+`firmware/vendor/ywd-mmdvm/`
+
+The manifests retain the original YWD-MMDVM repository and commit IDs strictly as provenance. Before every build, `firmware/tooling/materialize_vendored_engineering.py` recomputes each vendored file's Git blob SHA-1 and refuses the build if any byte differs from its original manifest pin.
+
+The P10 manifest locks twelve historical AX25R3 engineering blobs. The P2 manifest locks those exact same twelve blobs plus the single AX25R4 RSSI transform as the thirteenth blob. CI independently recomputes all of those Git blob identities from the files stored inside YWD-1278.
+
+This changes source acquisition only. It does not change the packet algorithms, waveform, RX slicer, timing, filtering, FIFO behavior, RF behavior, firmware identities, physical evidence, or upstream MMDVM_HS pins.
+
 ## Deterministic candidate build
 
-New build manifest:
+Build manifest:
 
 `firmware/tooling/packet-rssi-build-manifest.json`
 
@@ -88,8 +102,8 @@ The candidate build retains:
 - STM32 HSE `8000000`
 - ADF7021 TCXO `14745600`
 - no OSC override
-- all twelve frozen AX25R3 engineering blobs unchanged
-- the one pinned AX25R4 RSSI transform as the thirteenth engineering file
+- all twelve frozen AX25R3 engineering blobs unchanged and vendored inside YWD-1278
+- the one pinned AX25R4 RSSI transform as the thirteenth vendored engineering file
 
 The exact upstream source pins include:
 
@@ -102,7 +116,7 @@ Builder:
 
 `firmware/build-packet-rssi-ywd1278.py`
 
-The default build performs two independent builds and requires byte-for-byte equality. It is build-only: no modem device, GPIO, `stm32flash`, `sudo`, RF configuration, or RF transmission path exists in the builder.
+The default build performs two independent builds and requires byte-for-byte equality. It is build-only: no modem device, GPIO, `stm32flash`, `sudo`, RF configuration, or RF transmission path exists in the builder. The only source fetched during the build is the separately pinned upstream MMDVM_HS source and its pinned STM32 library submodule; no YWD-MMDVM repository is fetched or required.
 
 No target artifact size or SHA256 is recorded yet because the candidate has intentionally **not yet been built on the target Pi**.
 
@@ -116,23 +130,40 @@ The TCP KISS server and product daemon remain completely disconnected from RSSI-
 
 ## CI evidence
 
-Corrected staging head before this documentation:
+Original corrected P2 staging run:
 
-`f50542af087917a14d7cc8de9f4796752bf88f8b`
-
-GitHub Actions:
-
+- head: `f50542af087917a14d7cc8de9f4796752bf88f8b`
 - workflow: `framework-ci`
 - run: `33694635918`
 - run number: `286`
 - conclusion: **success**
 
-The run passed, among all historical gates:
+Self-contained engineering refactor staging run:
 
-- deterministic 0C-P1 CSMA policy regression
-- deterministic 0C-P1 CSMA architecture contract
+- head: `6fd06f35934ecaca887041bec29452e64390ba44`
+- workflow: `framework-ci`
+- run: `33696514716`
+- run number: `289`
+- event: pull-request staging validation
+- conclusion: **success**
+
+Promoted `dev` validation of that same exact source head:
+
+- head: `6fd06f35934ecaca887041bec29452e64390ba44`
+- workflow: `framework-ci`
+- run: `33696631698`
+- run number: `290`
+- event: push to `dev`
+- conclusion: **success**
+
+Those runs passed, among all historical gates:
+
+- deterministic 0C-P1 CSMA policy regression and architecture contract
 - RSSI telemetry host regression
 - AX25R4 RSSI firmware build contract
+- P10 packet firmware build contract
+- vendored engineering blob contract: twelve P10 blobs and thirteen P2 blobs match their original frozen Git blob identities
+- self-contained compatibility-wrapper contract with no sibling YWD-MMDVM checkout/fetch
 - original P13b one-shot contract
 - historical P13b-R1 contract
 - qualified P13b-R2 contract
@@ -160,6 +191,6 @@ No CI step accesses hardware or transmits RF.
 
 ## Next gate
 
-The immediate next action is **build-only** on the Pi. The build must produce two byte-identical AX25R4 binaries and a locked artifact size/SHA256 before any flash/activation harness is designed.
+The immediate next action is **build-only** on the Pi from the YWD-1278 checkout itself. No YWD-MMDVM checkout is required. The build must produce two byte-identical AX25R4 binaries and a locked artifact size/SHA256 before any flash/activation harness is designed.
 
 Only after the exact artifact is recorded and CI-green will a separate guarded physical receive-only activation/telemetry test be staged. That later test will collect real RSSI samples during idle RF and independently generated received traffic before any carrier threshold is selected.
