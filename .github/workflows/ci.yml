@@ -31,7 +31,7 @@ jobs:
 
       - name: Compile Python
         run: |
-          python -m compileall -q src firmware tests
+          python -m compileall -q src firmware tests tools
 
       - name: AX.25 codec regression
         run: |
@@ -40,6 +40,10 @@ jobs:
       - name: Bell-202 TX serialization regression
         run: |
           python tests/bell202_tx_test.py
+
+      - name: Bell-202 streaming RX regression
+        run: |
+          python tests/bell202_rx_test.py
 
       - name: Firmware identity classification
         run: |
