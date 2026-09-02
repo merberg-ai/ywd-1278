@@ -25,7 +25,8 @@ def expect_value_error(fn) -> None:  # type: ignore[no-untyped-def]
     raise AssertionError("expected ValueError")
 
 
-def close(actual: float, expected: float) -> None:
+def close(actual: float | None, expected: float) -> None:
+    assert actual is not None
     assert abs(actual - expected) < 1e-9, (actual, expected)
 
 
@@ -49,57 +50,80 @@ for bad in (0.0, -0.1):
     expect_value_error(lambda bad=bad: CSMAParameters(max_wait_seconds=bad))
 expect_value_error(lambda: PersistentCSMA(started_at=-0.001))
 
-# A clear channel must remain clear for one complete slot before a persistence
-# trial is allowed.
+# Construction assumes nothing about the channel. The first explicit clear
+# observation starts the first complete slot; it cannot itself run persistence.
 p = PersistentCSMA(started_at=10.0)
-d = p.observe(now=10.05, channel_busy=False)
+assert p.decision.state is CSMAState.WAIT_CLEAR
+assert p.decision.channel_busy is None
+assert p.decision.next_slot_at is None
+d = p.observe(now=10.0, channel_busy=False)
 assert d.state is CSMAState.WAIT_SLOT
 assert d.ready is False
 close(d.next_slot_at, 10.1)
-expect_value_error(lambda: p.observe(now=10.06, channel_busy=False, random_byte=0))
+expect_value_error(lambda: p.observe(now=10.01, channel_busy=False, random_byte=0))
 
 # At the first due slot the default PERSIST=63 accepts random byte 63 and rejects 64.
 p = PersistentCSMA(started_at=20.0)
+p.observe(now=20.0, channel_busy=False)
 d = p.observe(now=20.1, channel_busy=False, random_byte=63)
 assert d.state is CSMAState.READY
 assert d.ready is True
 assert d.persistence_trials == 1
 assert d.random_byte == 63
+assert d.next_slot_at is None
 
 p = PersistentCSMA(started_at=30.0)
+p.observe(now=30.0, channel_busy=False)
 d = p.observe(now=30.1, channel_busy=False, random_byte=64)
 assert d.state is CSMAState.WAIT_SLOT
 assert d.ready is False
 assert d.persistence_trials == 1
 close(d.next_slot_at, 30.2)
-assert d.reason == "persistence trial deferred; waiting one more slot"
-d = p.observe(now=d.next_slot_at, channel_busy=False, random_byte=0)
+assert d.reason == "persistence trial deferred; waiting one more clear slot"
+d = p.observe(now=d.next_slot_at, channel_busy=False, random_byte=0)  # type: ignore[arg-type]
 assert d.state is CSMAState.READY
 assert d.persistence_trials == 2
 
-# Busy observations never consume randomness and restart the complete-slot wait.
+# Busy cancels any in-progress clear slot. Only a later explicit clear sample
+# starts a fresh full slot; busy time never counts as clear time.
 p = PersistentCSMA(started_at=40.0)
+p.observe(now=40.0, channel_busy=False)
 d = p.observe(now=40.09, channel_busy=True)
-assert d.state is CSMAState.WAIT_SLOT
+assert d.state is CSMAState.WAIT_CLEAR
 assert d.busy_observations == 1
-close(d.next_slot_at, 40.19)
+assert d.next_slot_at is None
 expect_value_error(lambda: p.observe(now=40.10, channel_busy=True, random_byte=0))
 d = p.observe(now=40.18, channel_busy=False)
+assert d.state is CSMAState.WAIT_SLOT
+close(d.next_slot_at, 40.28)
+d = p.observe(now=40.27, channel_busy=False)
 assert d.ready is False
-close(d.next_slot_at, 40.19)
-d = p.observe(now=d.next_slot_at, channel_busy=False, random_byte=1)
+close(d.next_slot_at, 40.28)
+d = p.observe(now=d.next_slot_at, channel_busy=False, random_byte=1)  # type: ignore[arg-type]
 assert d.ready is True
 
-# A busy observation after a failed persistence trial restarts the slot timer
-# from the busy observation, not from the previous persistence slot.
+# A busy observation after a failed persistence trial discards that retry slot;
+# a new clear observation starts another complete slot from the clear time.
 p = PersistentCSMA(started_at=50.0)
+p.observe(now=50.0, channel_busy=False)
 d = p.observe(now=50.1, channel_busy=False, random_byte=255)
 assert d.ready is False
 close(d.next_slot_at, 50.2)
 d = p.observe(now=50.15, channel_busy=True)
-close(d.next_slot_at, 50.25)
+assert d.state is CSMAState.WAIT_CLEAR
+assert d.next_slot_at is None
+d = p.observe(now=50.20, channel_busy=False)
+close(d.next_slot_at, 50.30)
 assert d.busy_observations == 1
 assert d.persistence_trials == 1
+
+# Repeated busy samples never start a slot by themselves.
+p = PersistentCSMA(started_at=60.0)
+for when in (60.0, 60.5, 61.0):
+    d = p.observe(now=when, channel_busy=True)
+    assert d.state is CSMAState.WAIT_CLEAR
+    assert d.next_slot_at is None
+assert d.busy_observations == 3
 
 # PERSIST boundaries are exact over the whole byte domain: 255 always passes;
 # 0 passes exactly one possible random byte (zero).
@@ -110,6 +134,7 @@ for random_byte in range(256):
         started_at=0.0,
         parameters=CSMAParameters(persist=255, slot_time_10ms=1),
     )
+    p255.observe(now=0.0, channel_busy=False)
     if p255.observe(now=0.01, channel_busy=False, random_byte=random_byte).ready:
         passes_255 += 1
 
@@ -117,6 +142,7 @@ for random_byte in range(256):
         started_at=0.0,
         parameters=CSMAParameters(persist=0, slot_time_10ms=1),
     )
+    p0.observe(now=0.0, channel_busy=False)
     if p0.observe(now=0.01, channel_busy=False, random_byte=random_byte).ready:
         passes_0 += 1
 assert passes_255 == 256
@@ -127,6 +153,7 @@ p = PersistentCSMA(
     started_at=100.0,
     parameters=CSMAParameters(persist=255, slot_time_10ms=10, max_wait_seconds=0.25),
 )
+p.observe(now=100.0, channel_busy=False)
 d = p.observe(now=100.1, channel_busy=False, random_byte=255)
 assert d.ready is True
 
@@ -134,14 +161,16 @@ p = PersistentCSMA(
     started_at=200.0,
     parameters=CSMAParameters(persist=0, slot_time_10ms=10, max_wait_seconds=0.25),
 )
+p.observe(now=200.0, channel_busy=False)
 d = p.observe(now=200.1, channel_busy=False, random_byte=255)
 assert d.ready is False
-d = p.observe(now=d.next_slot_at, channel_busy=False, random_byte=255)
+d = p.observe(now=d.next_slot_at, channel_busy=False, random_byte=255)  # type: ignore[arg-type]
 assert d.ready is False
 d = p.observe(now=200.25, channel_busy=False)
 assert d.state is CSMAState.TIMED_OUT
 assert d.timed_out is True
 assert d.persistence_trials == 2
+assert d.next_slot_at is None
 
 # Terminal state is sticky and cannot reopen access or consume another random draw.
 d2 = p.observe(now=201.0, channel_busy=False)
@@ -149,6 +178,7 @@ assert d2 == d
 expect_value_error(lambda: p.observe(now=201.1, channel_busy=False, random_byte=0))
 
 ready = PersistentCSMA(started_at=300.0)
+ready.observe(now=300.0, channel_busy=False)
 d = ready.observe(now=300.1, channel_busy=False, random_byte=0)
 assert d.ready is True
 assert ready.observe(now=301.0, channel_busy=True) == d
@@ -165,7 +195,9 @@ print("CSMA_DEFAULT_PERSIST_PROBABILITY=0.25")
 print("CSMA_DEFAULT_SLOTTIME_10MS=10")
 print("CSMA_DEFAULT_SLOT_SECONDS=0.1")
 print("CSMA_DEFAULT_MAX_WAIT_SECONDS=30.0")
-print("BUSY_RESTARTS_SLOT=PASS")
+print("INITIAL_CHANNEL_STATE_ASSUMED=NO")
+print("EXPLICIT_CLEAR_STARTS_SLOT=PASS")
+print("BUSY_CANCELS_CLEAR_SLOT=PASS")
 print("PERSIST_BOUNDARIES=PASS")
 print("BOUNDED_TIMEOUT=PASS")
 print("TERMINAL_STATE_STICKY=PASS")
