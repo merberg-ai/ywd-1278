@@ -85,6 +85,10 @@ jobs:
         run: |
           python tests/rssi_firmware_build_contract_test.py
 
+      - name: P2 locked artifact/live RSSI activation contract
+        run: |
+          python tests/rssi_live_activation_contract_test.py
+
       - name: P13b one-shot TX qualification contract
         run: |
           python tests/single_tx_qualification_contract_test.py
@@ -164,6 +168,7 @@ jobs:
           json.load(open('firmware/qualification/p13b-single-tx.json', encoding='utf-8'))
           json.load(open('firmware/qualification/p13b-r1-three-tx.json', encoding='utf-8'))
           json.load(open('firmware/qualification/p13b-r2-three-tx.json', encoding='utf-8'))
+          json.load(open('firmware/qualification/0c-p2-rssi-live-stage.json', encoding='utf-8'))
           with open('config/ywd-1278.example.toml', 'rb') as f:
               tomllib.load(f)
           print('MANIFEST_CONFIG_PARSE=PASS')
