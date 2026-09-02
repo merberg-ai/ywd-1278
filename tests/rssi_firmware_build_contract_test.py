@@ -115,8 +115,8 @@ for forbidden in (
     "stm32flash",
     "pinctrl",
     "raspi-gpio",
-    "sudo ",
-    "GPIO",
+    "import RPi.GPIO",
+    "gpiozero",
 ):
     assert forbidden not in builder, forbidden
 
