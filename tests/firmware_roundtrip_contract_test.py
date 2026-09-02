@@ -1,0 +1,75 @@
+#!/usr/bin/env python3
+from __future__ import annotations
+
+import json
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+TARGETS = ROOT / "firmware" / "targets.json"
+SCRIPT = ROOT / "firmware" / "qualify-roundtrip.sh"
+
+data = json.loads(TARGETS.read_text(encoding="utf-8"))
+t = data["targets"][0]
+
+assert t["id"] == "mmdvm-hs-hat-stm32f103-simplex-14.7456-adf7021"
+assert t["flash_enabled"] is False
+assert t["option_bytes_permitted"] is False
+assert t["geometry_status"] == "0b-p2-physically-qualified-two-pass-stock-backup"
+assert t["flash_size_bytes"] == 131072
+assert t["stock_flash_sha256"] == "4981b35b2d50ada0b09322d9de19dd58a0cbd49eb005693499d1acae92f9d684"
+assert t["firmware_sha256"] == "db23bc84bd31828d8fb29d8e4164879b9e5e57a4b2ef2eb58c598c66a38420b3"
+assert t["firmware_identity"] == "MMDVM_HS_Hat-YWD-1278-v0.1.0-alpha0 14.7456MHz ADF7021 FW based on CA6JAU GitID #7ff74ed"
+
+q = t["qualification_write"]
+assert q == {
+    "phase": "0B-P3",
+    "enabled": True,
+    "requires_exact_stock_start": True,
+    "requires_verified_stock_backup": True,
+    "requires_stock_restore_same_run": True,
+}
+
+s = SCRIPT.read_text(encoding="utf-8")
+
+# The qualification path must be distinct from normal product flashing.
+assert '[[ "$flash_enabled" == false ]]' in s
+assert '[[ "$q_phase" == 0B-P3 && "$q_enabled" == true ]]' in s
+assert 'QUALIFY-0B-P3' in s
+assert 'WRITE-YWD-THEN-RESTORE-STOCK' in s
+
+# Exact artifact and exact P2 stock backup are mandatory.
+assert 'Firmware does not match the exact 0B-P1 qualified SHA256' in s
+assert 'backup lacks two-pass qualification' in s
+assert 'backup does not match target stock SHA256' in s
+assert '0B-P3 must start from the exact stock identity' in s
+
+# Both the YWD write and stock restore require readback verification.
+assert 'stm32flash -b 115200 -w "$FIRMWARE" -v "$DEVICE"' in s
+assert 'YWD_READBACK_SHA256=' in s
+assert 'Programmed YWD-1278 bytes match the exact 0B-P1 artifact' in s
+assert 'stm32flash -b 115200 -w "$STOCK_IMAGE" -v "$DEVICE"' in s
+assert 'STOCK_RESTORE_READBACK_SHA256=' in s
+assert 'Complete restored stock flash matches the exact P2 SHA256' in s
+assert 'FINAL_IDENTITY=' in s
+
+# A failed qualification after YWD write must attempt stock recovery.
+assert 'emergency_stock_restore' in s
+assert 'EMERGENCY_STOCK_RESTORE=PASS' in s
+assert 'YWD_WRITTEN == 1 && STOCK_RESTORED == 0' in s
+
+# GPIO bootloader entry/restart is the only control method and no option-byte
+# memory addresses or jump/go command are permitted in this round-trip tool.
+assert 'bootloader-entry --targets "$TARGETS" --target "$TARGET_ID"' in s
+assert 'application-restart --targets "$TARGETS" --target "$TARGET_ID"' in s
+for forbidden in ("0x1FFFF800", "0x1ffff800", "0x1FFFF7E0", "0x1ffff7e0", " -g "):
+    assert forbidden not in s
+
+print("FIRMWARE_ROUNDTRIP_CONTRACT=PASS")
+print("NORMAL_FLASH_GATE_CLOSED=PASS")
+print("QUALIFICATION_WRITE_GATE=PASS")
+print("EXACT_YWD_HASH_REQUIRED=PASS")
+print("VERIFIED_STOCK_BACKUP_REQUIRED=PASS")
+print("YWD_READBACK_REQUIRED=PASS")
+print("STOCK_READBACK_REQUIRED=PASS")
+print("EMERGENCY_STOCK_RECOVERY=REQUIRED")
+print("OPTION_BYTE_WRITE_PATH=ABSENT")
