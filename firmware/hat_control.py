@@ -1,10 +1,22 @@
 #!/usr/bin/env python3
 """Target-aware Raspberry Pi control-line helper for supported YWD-1278 HATs.
 
-This helper never communicates with the modem UART, configures RF, enters the
-STM32 bootloader, writes flash, or touches option bytes.  It only places a
-qualified HAT control profile into normal application state: BOOT0 at the
-application level and RESET released. RESET is never pulsed by these operations.
+This helper controls only manifest-qualified Raspberry Pi GPIO lines. It never
+opens the modem UART, configures RF, reads or writes STM32 flash, or touches
+option bytes.
+
+Supported operations intentionally distinguish between:
+
+* application-release: BOOT0 to the application level and RESET released,
+  without pulsing RESET. This is used to recover a HAT that booted with RESET
+  held low by the host pinmux.
+* bootloader-entry: BOOT0 to the qualified system-bootloader level followed by
+  one explicit RESET low/high pulse.
+* application-restart: BOOT0 to the application level followed by one explicit
+  RESET low/high pulse so a running system bootloader exits into the app.
+
+Reset-pulsing operations are available only for an explicit allowlisted target
+whose manifest opts into the exact GPIO behavior.
 """
 from __future__ import annotations
 
@@ -14,6 +26,7 @@ from pathlib import Path
 import shutil
 import subprocess
 import sys
+import time
 import tomllib
 
 
@@ -65,10 +78,8 @@ def compatible_auto_release_targets(targets: list[dict]) -> list[dict]:
     if not matches:
         raise RuntimeError(f"no installer auto-release profile is qualified for host '{model}'")
 
-    # Auto-release is allowed only when every compatible target agrees on the
-    # exact same host-control behavior. Adding a second incompatible target to
-    # the manifest therefore makes this path fail closed until explicitly
-    # resolved.
+    # Auto-release remains the no-pulse recovery path. Adding a second
+    # incompatible candidate makes this path fail closed.
     keys = (
         "tool",
         "boot0_gpio",
@@ -94,7 +105,7 @@ def pinctrl_set(tool: str, gpio: int, level: str) -> None:
     subprocess.run([tool, "set", str(gpio), "op", "dl" if level == "low" else "dh"], check=True)
 
 
-def release_with_profile(label: str, control: dict) -> None:
+def control_context(control: dict) -> tuple[str, str, int, int]:
     expected_model = control.get("platform_model_contains")
     if not isinstance(expected_model, str) or not expected_model:
         raise RuntimeError("target host_control lacks platform_model_contains")
@@ -110,27 +121,53 @@ def release_with_profile(label: str, control: dict) -> None:
 
     boot0 = control.get("boot0_gpio")
     reset = control.get("reset_gpio")
-    boot0_level = control.get("application_boot0_level")
-    reset_level = control.get("application_reset_level")
     if not isinstance(boot0, int) or not isinstance(reset, int):
         raise RuntimeError("target host_control GPIO numbers are invalid")
-    if control.get("application_release_pulses_reset") is not False:
-        raise RuntimeError("application release must be explicitly qualified as no-reset-pulse")
+    return model, tool, boot0, reset
 
+
+def common_before(label: str, control: dict) -> tuple[str, str, int, int]:
+    model, tool, boot0, reset = control_context(control)
     print(f"HAT_CONTROL_TARGET={label}")
     print(f"HAT_CONTROL_HOST={model}")
     print(f"HAT_CONTROL_BOOT0_BEFORE={pinctrl_get(tool, boot0)}")
     print(f"HAT_CONTROL_RESET_BEFORE={pinctrl_get(tool, reset)}")
-    pinctrl_set(tool, boot0, str(boot0_level))
-    pinctrl_set(tool, reset, str(reset_level))
+    return model, tool, boot0, reset
+
+
+def common_after(tool: str, boot0: int, reset: int) -> None:
     print(f"HAT_CONTROL_BOOT0_AFTER={pinctrl_get(tool, boot0)}")
     print(f"HAT_CONTROL_RESET_AFTER={pinctrl_get(tool, reset)}")
-    print("HAT_APPLICATION_STATE_RELEASED=YES")
-    print("STM32_RESET_PULSED=NO")
     print("MODEM_UART_OPENED=NO")
     print("RF_CONFIGURED=NO")
     print("FLASH_WRITTEN=NO")
     print("OPTION_BYTES_WRITTEN=NO")
+
+
+def pulse_reset(tool: str, reset: int, control: dict) -> None:
+    assert_level = control.get("reset_assert_level")
+    release_level = control.get("reset_release_level")
+    pulse_seconds = control.get("reset_pulse_seconds")
+    if assert_level != "low" or release_level != "high":
+        raise RuntimeError("qualified RESET pulse must assert low and release high")
+    if not isinstance(pulse_seconds, (int, float)) or not (0.05 <= float(pulse_seconds) <= 1.0):
+        raise RuntimeError("target reset_pulse_seconds is outside the qualified safety range")
+    pinctrl_set(tool, reset, "low")
+    time.sleep(float(pulse_seconds))
+    pinctrl_set(tool, reset, "high")
+
+
+def release_with_profile(label: str, control: dict) -> None:
+    _, tool, boot0, reset = common_before(label, control)
+    boot0_level = control.get("application_boot0_level")
+    reset_level = control.get("application_reset_level")
+    if control.get("application_release_pulses_reset") is not False:
+        raise RuntimeError("application release must be explicitly qualified as no-reset-pulse")
+    pinctrl_set(tool, boot0, str(boot0_level))
+    pinctrl_set(tool, reset, str(reset_level))
+    common_after(tool, boot0, reset)
+    print("HAT_APPLICATION_STATE_RELEASED=YES")
+    print("STM32_RESET_PULSED=NO")
 
 
 def application_release(target: dict) -> None:
@@ -138,6 +175,42 @@ def application_release(target: dict) -> None:
     if not isinstance(control, dict):
         raise RuntimeError("target has no qualified host_control definition")
     release_with_profile(str(target["id"]), control)
+
+
+def bootloader_entry(target: dict) -> None:
+    if target.get("bootloader_entry") != "pi-gpio20-21":
+        raise RuntimeError("target does not opt into qualified Pi GPIO bootloader entry")
+    control = target.get("host_control")
+    if not isinstance(control, dict):
+        raise RuntimeError("target has no qualified host_control definition")
+    if control.get("bootloader_entry_pulses_reset") is not True:
+        raise RuntimeError("target bootloader entry is not qualified for an explicit RESET pulse")
+
+    _, tool, boot0, reset = common_before(str(target["id"]), control)
+    if control.get("bootloader_boot0_level") != "high":
+        raise RuntimeError("qualified STM32 system bootloader entry requires BOOT0 high")
+    pinctrl_set(tool, boot0, "high")
+    pulse_reset(tool, reset, control)
+    common_after(tool, boot0, reset)
+    print("HAT_BOOTLOADER_STATE_REQUESTED=YES")
+    print("STM32_RESET_PULSED=YES")
+
+
+def application_restart(target: dict) -> None:
+    control = target.get("host_control")
+    if not isinstance(control, dict):
+        raise RuntimeError("target has no qualified host_control definition")
+    if control.get("application_restart_pulses_reset") is not True:
+        raise RuntimeError("target application restart is not qualified for an explicit RESET pulse")
+
+    _, tool, boot0, reset = common_before(str(target["id"]), control)
+    if control.get("application_boot0_level") != "low":
+        raise RuntimeError("qualified STM32 application restart requires BOOT0 low")
+    pinctrl_set(tool, boot0, "low")
+    pulse_reset(tool, reset, control)
+    common_after(tool, boot0, reset)
+    print("HAT_APPLICATION_RESTARTED=YES")
+    print("STM32_RESET_PULSED=YES")
 
 
 def auto_detect_release(targets: list[dict]) -> None:
@@ -149,7 +222,10 @@ def auto_detect_release(targets: list[dict]) -> None:
 
 def main() -> int:
     ap = argparse.ArgumentParser(description="YWD-1278 target-aware HAT control")
-    ap.add_argument("operation", choices=["application-release", "auto-detect-release"])
+    ap.add_argument(
+        "operation",
+        choices=["application-release", "auto-detect-release", "bootloader-entry", "application-restart"],
+    )
     ap.add_argument("--targets", default=str(Path(__file__).with_name("targets.json")))
     ap.add_argument("--target", default="")
     ap.add_argument("--config", default="")
@@ -165,7 +241,16 @@ def main() -> int:
         target_id = config_target(Path(args.config))
     if not target_id:
         raise RuntimeError("hardware target is required; use --target or configure [hardware].target")
-    application_release(find_target(target_id, targets))
+    target = find_target(target_id, targets)
+
+    if args.operation == "application-release":
+        application_release(target)
+    elif args.operation == "bootloader-entry":
+        bootloader_entry(target)
+    elif args.operation == "application-restart":
+        application_restart(target)
+    else:  # pragma: no cover - argparse constrains this
+        raise RuntimeError("unsupported HAT control operation")
     return 0
 
 
