@@ -46,8 +46,8 @@
 
 ## 0C — Channel access / persistent bidirectional TNC
 
-- [ ] deterministic CSMA state-machine tests
-- [ ] channel-busy/recent-RX detection
+- [x] deterministic CSMA state-machine tests (0C-P1) — host-qualified p-persistent policy with frozen `PERSIST=63` (25%), `SLOTTIME=10` (100 ms), 30 s bounded wait, explicit caller-supplied time/randomness, no assumed initial channel state, explicit clear required before a full slot begins, busy observations cancel/reset clear-slot timing, exhaustive PERSIST boundary tests, sticky terminal states, and no modem/KISS/RF integration
+- [ ] channel-busy/recent-RX detection (0C-P2)
 - [ ] TXDELAY
 - [ ] PERSIST
 - [ ] SLOTTIME
