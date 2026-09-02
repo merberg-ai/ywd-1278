@@ -20,9 +20,11 @@
 
 ## 0B — Qualified packet engine port
 
-- [x] 0B-P1 deterministic `YWD-1278`-branded HAT firmware build from exact upstream `7ff74ed` — build/inspect only, no flashing
-- [x] 0B-P2 establish exact first supported target flash geometry/hash and protected two-pass stock backup
-- [ ] 0B-P3 guarded YWD-1278 firmware write + exact stock restore round trip
+- [x] 0B-P1 deterministic `YWD-1278`-branded build reproducibility — historical checkpoint retained, but its artifact is **revoked for runtime use** because the build incorrectly passed the ADF7021 14.7456 MHz TCXO as the STM32 HSE/OSC value
+- [ ] 0B-P1R1 corrected deterministic branded build using pinned upstream MMDVM_HS_Hat recipe: STM32 HSE default 8 MHz, ADF7021 TCXO 14.7456 MHz, no OSC override
+- [x] establish exact first supported target flash geometry/hash (0B-P2)
+- [x] qualify protected two-pass stock backup (0B-P2)
+- [ ] guarded YWD-1278 flash/restore round trip (0B-P3) — first attempt failed safely at YWD GET_VERSION; exact programmed readback matched the revoked P1 artifact and automatic exact-stock recovery passed; retry blocked until P1R1 is qualified
 - [ ] port AX.25 codec/FCS/parser
 - [ ] port Bell-202 TX serialization
 - [ ] port realtime streaming Bell-202 RX
