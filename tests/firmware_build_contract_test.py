@@ -38,13 +38,14 @@ matches = [x for x in t["targets"] if x["id"] == m["target_id"]]
 assert len(matches) == 1
 target = matches[0]
 assert target["flash_enabled"] is False
-assert target["qualification_write"]["enabled"] is False
+assert target["qualification_write"]["phase"] == "0B-P3"
+assert target["qualification_write"]["enabled"] is True
 assert target["option_bytes_permitted"] is False
 assert target["stm32_hse_hz"] == 8000000
 assert target["tcxo_mhz"] == 14.7456
-assert target["firmware_artifact"] is None
-assert target["firmware_sha256"] is None
-assert target["firmware_identity"] is None
+assert target["firmware_artifact"] == "firmware/out/0b-p1r1-stm32f103-simplex-adf7021-14.7456tcxo-8mhz-hse/MMDVM_HS_Hat-YWD-1278-v0.1.0-alpha0-7ff74ed-hse8m.bin"
+assert target["firmware_sha256"] == "b7ec163fc3a3cec395c0e3e3065f20c6dc6be186e32ccdcf9044c85ec681b9b8"
+assert target["firmware_identity"] == m["branding"]["expected_identity"]
 assert any(x["sha256"] == m["supersedes"]["artifact_sha256"] for x in target["revoked_artifacts"])
 assert m["branding"]["expected_identity"].startswith(target["ywd1278_identity_prefix"])
 
@@ -93,7 +94,8 @@ print("STM32_HSE_8MHZ=PASS")
 print("ADF7021_TCXO_14_7456MHZ=PASS")
 print("OSC_OVERRIDE=ABSENT")
 print("READ_ONLY_ARTIFACT_REPUBLISH=PASS")
+print("P1R1_QUALIFIED_ARTIFACT_HASH=PASS")
 print("FAILED_P1_ARTIFACT=REVOKED")
-print("P3_WRITE_GATE=CLOSED")
-print("FLASH_GATE_CLOSED=PASS")
+print("P3_WRITE_GATE=ARMED_FOR_P1R1_ONLY")
+print("NORMAL_FLASH_GATE_CLOSED=PASS")
 print("HARDWARE_ACCESS_PATH=ABSENT")
