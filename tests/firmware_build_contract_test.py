@@ -72,6 +72,18 @@ assert 'osc_override=false' in builder
 assert 'STM32_HSE_HZ=%s' in builder
 assert 'ADF7021_TCXO_HZ=%s' in builder
 
+# Published artifacts are intentionally 0444. Re-running the builder must not
+# attempt to truncate those files in place. It must stage a new artifact and
+# metadata in the same directory and atomically rename them into place.
+assert 'FINAL_TMP="$OUT_DIR/.${ARTIFACT_NAME}.tmp.$$"' in builder
+assert 'META_TMP="$OUT_DIR/.build-metadata.json.tmp.$$"' in builder
+assert 'cp "$A" "$FINAL_TMP"' in builder
+assert 'chmod 0444 "$FINAL_TMP" "$META_TMP"' in builder
+assert 'mv -f "$FINAL_TMP" "$FINAL"' in builder
+assert 'mv -f "$META_TMP" "$META"' in builder
+assert 'ATOMIC_PUBLISH=PASS' in builder
+assert 'cp "$A" "$FINAL"' not in builder
+
 print("FIRMWARE_BUILD_CONTRACT=PASS")
 print("UPSTREAM_PIN=PASS")
 print("EXACT_COMMIT_FETCH=PASS")
@@ -80,6 +92,7 @@ print("UPSTREAM_BUILD_RECIPE_PIN=PASS")
 print("STM32_HSE_8MHZ=PASS")
 print("ADF7021_TCXO_14_7456MHZ=PASS")
 print("OSC_OVERRIDE=ABSENT")
+print("READ_ONLY_ARTIFACT_REPUBLISH=PASS")
 print("FAILED_P1_ARTIFACT=REVOKED")
 print("P3_WRITE_GATE=CLOSED")
 print("FLASH_GATE_CLOSED=PASS")
