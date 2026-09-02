@@ -1,0 +1,51 @@
+# YWD-1278 example configuration
+#
+# Safe defaults intentionally do not permit RF transmission. The setup tool
+# must be used to configure station identity/frequency before enabling TX.
+
+[station]
+callsign = "N0CALL"
+ssid = 0
+
+[radio]
+device = "/dev/ttyAMA0"
+frequency_mhz = 0.0
+tx_power = 64
+tx_enabled = false
+
+[packet]
+baud = 1200
+txdelay_ms = 300
+persist = 63
+slottime_ms = 100
+paclen = 128
+maxframe = 4
+retry = 10
+
+[kiss]
+enabled = true
+listen = "127.0.0.1"
+port = 8001
+
+[console]
+enabled = true
+listen = "127.0.0.1"
+port = 8010
+
+[monitor]
+enabled = true
+log_frames = true
+
+[storage]
+database = "/var/lib/ywd-1278/ywd-1278.sqlite3"
+
+[beacon]
+enabled = false
+interval_seconds = 600
+destination = "BEACON"
+path = []
+text = "YWD-1278 packet node"
+
+[firmware]
+required_product = "YWD-1278"
+allow_automatic_flash = false
