@@ -1,8 +1,8 @@
 """Pure YWD/MMDVM host-protocol encoding and decoding.
 
-This module performs no device I/O.  It preserves the wire opcodes used by the
-physically-qualified YWD-MMDVM AX25R3 / AX25-5B boundary so the later
-single-UART-owner runtime can consume and produce deterministic byte frames.
+This module performs no device I/O. It preserves the wire opcodes used by the
+physically-qualified YWD-MMDVM AX25R3 / AX25-5B boundary and adds only the
+read-only AX25R4 RSSI telemetry primitive staged for 0C-P2.
 """
 
 from __future__ import annotations
@@ -34,6 +34,7 @@ RX_START = 0x01
 RX_READ = 0x02
 RX_STOP = 0x03
 RX_STATUS = 0x04
+RX_RSSI = 0x05
 
 RX_PROTOCOL_REVISION = 3
 MAX_FRAME_BYTES = 255
@@ -84,6 +85,17 @@ class RX3Status:
     available_bytes: int
     samples: int
     dropped_bytes: int
+
+
+@dataclass(frozen=True)
+class RXRSSI:
+    """Raw ADF7021 RSSI magnitude returned by AX25R4 firmware.
+
+    0C-P2 intentionally preserves the modem's uint16 value without assigning a
+    carrier threshold or pretending it is already a calibrated DCD boolean.
+    """
+
+    raw_magnitude: int
 
 
 def _octet(value: int, label: str) -> int:
@@ -241,6 +253,19 @@ def rx_stop_request() -> bytes:
 
 def rx_status_request() -> bytes:
     return build_frame(YWD_RX, bytes((RX_STATUS,)))
+
+
+def rx_rssi_request() -> bytes:
+    """Request one read-only raw ADF7021 RSSI sample from AX25R4 firmware."""
+    return build_frame(YWD_RX, bytes((RX_RSSI,)))
+
+
+def parse_rx_rssi(data: bytes) -> RXRSSI:
+    frame = parse_frame(data, expected_command=YWD_RX)
+    if len(frame.payload) != 3 or frame.payload[0] != RX_RSSI:
+        raise ValueError("malformed YWD_RX/RSSI response")
+    raw = frame.payload[1] | (frame.payload[2] << 8)
+    return RXRSSI(raw_magnitude=raw)
 
 
 def parse_rx3_status(data: bytes) -> RX3Status:
