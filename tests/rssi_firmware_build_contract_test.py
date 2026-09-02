@@ -29,8 +29,17 @@ assert m["schema"] == 1
 assert m["phase"] == "0C-P2"
 assert m["profile_id"] == "0c-p2-rssi-ax25r4-stm32f103-simplex-adf7021-14.7456tcxo-8mhz-hse"
 assert m["target_id"] == "mmdvm-hs-hat-stm32f103-simplex-14.7456-adf7021"
-assert m["upstream"]["commit"] == "7ff74ed1ba663a282edcbbb5e0ec3d7132e6f2f5"
-assert m["upstream"]["submodules"]["STM32F10X_Lib"] == "1debc23063f3942608e2bd62d04d5e1249c47fa3"
+upstream = m["upstream"]
+assert upstream["repository"] == "https://github.com/juribeparada/MMDVM_HS.git"
+assert upstream["commit"] == "7ff74ed1ba663a282edcbbb5e0ec3d7132e6f2f5"
+assert upstream["short_commit"] == "7ff74ed"
+assert upstream["submodules"]["STM32F10X_Lib"] == "1debc23063f3942608e2bd62d04d5e1249c47fa3"
+assert upstream["config_template"] == "configs/MMDVM_HS_Hat.h"
+assert upstream["config_template_blob"] == "1c526b41dd96ea68823f2e83442a8a76fd59590a"
+assert upstream["version_blob"] == "4239a854ec09ee90847468f931e1455ee461e2de"
+assert upstream["makefile_blob"] == "c73834e9734e4b74bd375cb98ce5144c31134de6"
+assert upstream["build_script"] == "scripts/build_fw.sh"
+assert upstream["build_script_blob"] == "30257c0aea66695ed32877b8688daa835ee4f0e2"
 assert m["build"]["stm32_hse_hz"] == 8_000_000
 assert m["build"]["osc_override"] is False
 assert m["rf"]["tcxo_hz"] == 14_745_600
@@ -153,6 +162,7 @@ print("PHASE=0C-P2")
 print("BASELINE_AX25R3_COMMIT=d25180ad663d781b761c525d1e699e7b052d6214")
 print("RSSI_ENGINEERING_COMMIT=69309644da839522102e393e66093378544869ea")
 print("ENGINEERING_FILES=13")
+print("UPSTREAM_PIN_SET=PASS")
 print("YWD_RX_RSSI_SUBCOMMAND=0x05")
 print("RX_STATUS_REVISION=3")
 print("CARRIER_THRESHOLD_SELECTED=NO")
