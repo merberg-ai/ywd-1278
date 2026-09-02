@@ -15,7 +15,7 @@ The YWD-1278 product must port from this frozen boundary, not from whichever exp
 |---|---|---|---|
 | `tools/ax25/ax25.py` | `src/ywd1278/ax25/codec.py` | AX.25 addresses, FCS, modulo-8 I/S/U parsing | **ported in 0B-P4** from source blob `d708f3b5f355c4a16bd917fd8b992d47f7008a1d`; preserve canonical CRC and frozen physical-capture vectors |
 | `tools/ax25/ax25.py` KISS helpers + `tools/ax25/kiss_stream.py` | `src/ywd1278/kiss/framing.py` | KISS packet/stream framing | later phase; preserve escaping and stream resynchronization behavior |
-| `tools/ax25/afsk1200.py` | `src/ywd1278/phy/bell202_tx.py` | HDLC/NRZI/Bell-202 TX selector generation | preserve physical selector equivalence |
+| `tools/ax25/afsk1200.py` | `src/ywd1278/phy/bell202_tx.py` | HDLC/NRZI/Bell-202 TX selector generation | **ported in 0B-P5** from source blob `c3aecf7a8f22ef0f051177873482538dddbd6828`; preserve exact AX25-5B selector count and packed-selector representation |
 | `tools/packetd/streaming_rx.py` | `src/ywd1278/phy/bell202_rx.py` | realtime 19.2ksps Bell-202 RX | preserve 144-hypothesis qualified bank and duty gate |
 | `tools/packetd/ywd_packetd.py` | split into `kiss/server.py` + event model | TCP KISS and RX publication | remove lab naming; preserve frame semantics |
 | `tools/packetd/tx_pipeline.py` | `src/ywd1278/phy/tx_pipeline.py` | KISS DATA -> qualified TX representation | preserve FCS/selector equivalence gate |
@@ -54,6 +54,44 @@ P4 preserves:
 - two FCS-valid physical AX25R3 capture vectors that were independently decoded by Direwolf.
 
 P4 deliberately does **not** contain KISS stream logic, Bell-202 modulation/demodulation, UART ownership, GPIO access, or RF operations.
+
+## 0B-P5 Bell-202 TX serialization port
+
+Source implementation:
+
+- `tools/ax25/afsk1200.py`
+- source blob: `c3aecf7a8f22ef0f051177873482538dddbd6828`
+
+Source regression tests:
+
+- `tools/ax25/test_afsk1200.py`
+- source blob: `7ddd18cf00349ac73c93a2bf49f254607b8dceb0`
+
+YWD-1278 destination:
+
+- `src/ywd1278/phy/bell202_tx.py`
+- `tests/bell202_tx_test.py`
+
+P5 preserves:
+
+- LSB-first HDLC byte serialization;
+- flag `0x7E` representation;
+- AX.25 five-one bit stuffing and inverse reference path;
+- AX.25 NRZI (`0` changes tone, `1` holds tone);
+- Bell-202 selector semantics: `0 = 1200 Hz MARK`, `1 = 2200 Hz SPACE`;
+- MSB-first packed-selector UART representation;
+- default 45 opening flags = exactly 300 ms at 1200 baud;
+- default three closing flags.
+
+A bit-exact regression is anchored to the previously physically-qualified AX25-5B transmission:
+
+`KJ6YWD-10>APYWD1: AX25-5B KISS TX TEST`
+
+The frozen physical qualification reported exactly **691 selectors** and `691 * 16 = 11056` generated STM32 samples, followed by an independent ordinary Bell-202/AX.25 decode of the exact packet. The P5 host-only regression requires the same 691-selector representation and locks its MSB-first packed-selector SHA256 to:
+
+`30718ba5a4368e82bab69e6343f95c7e226cd08426844ed328ad8c52fbfd750e`
+
+This P5 gate does not open the modem UART, expand samples, key RF, or issue a modem TX command. Physical YWD-1278 transmission remains a later requalification step.
 
 ## Firmware lineage
 
