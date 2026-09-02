@@ -1,9 +1,12 @@
 """Bounded single-owner modem command runtime.
 
-0B-P7b-1 deliberately exposes only read/control operations needed by the
-receive path.  Clients cannot submit arbitrary modem frames and there is no
-TX_TONES method in this layer.  The transport object is created inside the
-owner thread, so device ownership begins and ends in exactly one thread.
+Public clients receive typed operations only. The transport object is created,
+used, and closed inside exactly one owner thread, so device ownership is a
+structural boundary rather than a convention.
+
+The receive path can perform the exact normal MMDVM setup used by the frozen
+AX25R3 capture lineage, but callers cannot submit arbitrary configuration bytes
+and there is still no TX_TONES method in this layer.
 """
 
 from __future__ import annotations
@@ -13,7 +16,7 @@ import queue
 import threading
 from typing import Callable, Protocol, TypeVar, cast
 
-from . import protocol
+from . import protocol, rx_config
 
 
 class ModemTransport(Protocol):
@@ -65,14 +68,16 @@ _STOP = object()
 class ModemOwner:
     """Exactly-one-thread modem transaction owner with a bounded request queue.
 
-    Public callers receive typed methods only.  They cannot pass a raw modem
-    frame through this object.  In P7b-1 the reachable command set is:
+    Public callers receive typed methods only. They cannot pass a raw modem
+    frame through this object. The reachable RX/control command set is:
 
     * GET_VERSION
+    * guarded simplex SET_FREQ for receive setup
+    * fixed RX-safe SET_CONFIG modem-I/O initialization
     * YWD_RX START / READ / STATUS / STOP
-    * YWD_RF GET_DIAG (read-only diagnostic)
+    * YWD_RF GET_STATUS / GET_DIAG read-only diagnostics
 
-    There is intentionally no RF TX/ABORT/EXIT API here.  TX sequencing will be
+    There is intentionally no RF TX/ABORT/EXIT API here. TX sequencing will be
     added later behind its own bounded broker and qualification gate.
     """
 
@@ -141,8 +146,6 @@ class ModemOwner:
                 return
             self._accepting = False
 
-        # Once acceptance is closed, existing queued calls are allowed to drain
-        # ahead of the sentinel.  No new client call can enter the queue.
         try:
             self._queue.put(_STOP, timeout=timeout)
         except queue.Full as exc:
@@ -176,6 +179,12 @@ class ModemOwner:
     def get_version(self, *, timeout: float | None = None) -> protocol.VersionResponse:
         return cast(protocol.VersionResponse, self._call("get_version", None, timeout))
 
+    def set_rx_frequency(self, frequency_hz: int, *, timeout: float | None = None) -> None:
+        self._call("set_rx_frequency", int(frequency_hz), timeout)
+
+    def arm_rx_modem_io(self, *, timeout: float | None = None) -> None:
+        self._call("arm_rx_modem_io", None, timeout)
+
     def rx_start(self, *, timeout: float | None = None) -> None:
         self._call("rx_start", None, timeout)
 
@@ -192,6 +201,9 @@ class ModemOwner:
 
     def rx_stop(self, *, timeout: float | None = None) -> None:
         self._call("rx_stop", None, timeout)
+
+    def rf_status(self, *, timeout: float | None = None) -> protocol.RFStatus:
+        return cast(protocol.RFStatus, self._call("rf_status", None, timeout))
 
     def rf_diagnostics(self, *, timeout: float | None = None) -> protocol.RFDiagnostics:
         return cast(protocol.RFDiagnostics, self._call("rf_diag", None, timeout))
@@ -222,8 +234,6 @@ class ModemOwner:
                 f"modem owner request queue is full (capacity={self._queue.maxsize})"
             ) from exc
 
-        # The owner transaction timeout applies to device I/O; allow a bounded
-        # extra interval for time spent waiting behind earlier queue entries.
         wait_timeout = transaction_timeout + self._submit_timeout + 1.0
         if not call.done.wait(wait_timeout):
             raise ModemOwnerError(
@@ -250,7 +260,7 @@ class ModemOwner:
                     call = cast(_Call, item)
                     try:
                         call.result = self._dispatch(transport, call)
-                    except BaseException as exc:  # propagate exact cause to caller
+                    except BaseException as exc:
                         call.error = exc
                     finally:
                         call.done.set()
@@ -276,6 +286,23 @@ class ModemOwner:
         if call.operation == "get_version":
             response = self._transact(transport, protocol.get_version_request(), call.timeout)
             return protocol.parse_version_response(response)
+        if call.operation == "set_rx_frequency":
+            frequency_hz = cast(int, call.argument)
+            response = self._transact(
+                transport,
+                rx_config.set_rx_frequency_request(frequency_hz),
+                call.timeout,
+            )
+            protocol.parse_ack(response, expected_command=protocol.SET_FREQ)
+            return None
+        if call.operation == "arm_rx_modem_io":
+            response = self._transact(
+                transport,
+                rx_config.arm_rx_modem_io_request(),
+                call.timeout,
+            )
+            protocol.parse_ack(response, expected_command=protocol.SET_CONFIG)
+            return None
         if call.operation == "rx_start":
             response = self._transact(transport, protocol.rx_start_request(), call.timeout)
             protocol.parse_ack(response, expected_command=protocol.YWD_RX)
@@ -292,6 +319,9 @@ class ModemOwner:
             response = self._transact(transport, protocol.rx_stop_request(), call.timeout)
             protocol.parse_ack(response, expected_command=protocol.YWD_RX)
             return None
+        if call.operation == "rf_status":
+            response = self._transact(transport, protocol.rf_status_request(), call.timeout)
+            return protocol.parse_rf_status(response)
         if call.operation == "rf_diag":
             response = self._transact(transport, protocol.rf_diag_request(), call.timeout)
             return protocol.parse_rf_diagnostics(response)
