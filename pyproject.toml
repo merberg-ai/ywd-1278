@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ywd-1278"
+version = "0.1.0a0"
+description = "Modern AX.25 packet TNC/node for Raspberry Pi + compatible MMDVM HAT"
+readme = "README.md"
+requires-python = ">=3.11"
+license = {text = "GPL-2.0-or-later"}
+authors = [{name = "YWD-1278 contributors"}]
+dependencies = []
+
+[project.scripts]
+ywd1278 = "ywd1278.cli:main"
+ywd1278d = "ywd1278.daemon:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
