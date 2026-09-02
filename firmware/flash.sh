@@ -10,6 +10,7 @@ require_root
 banner
 
 TARGETS="$SCRIPT_DIR/targets.json"
+HAT_CONTROL="$SCRIPT_DIR/hat_control.py"
 DEVICE=/dev/ttyAMA0
 TARGET_ID=""
 FIRMWARE=""
@@ -18,6 +19,7 @@ MODE="${1:-probe}"
 [[ $# -gt 0 ]] && shift || true
 CONFIRM=""
 BACKUP_ROOT=/var/lib/ywd-1278/firmware-backups
+BOOTLOADER_ACTIVE=0
 
 usage(){
   cat <<'EOF'
@@ -34,6 +36,8 @@ Safety model:
   * actual write requires target flash_enabled=true
   * target must specify nonzero flash geometry and an expected firmware SHA256
   * running application identity must match the target before bootloader entry
+  * backup performs two independent main-flash reads and never reads option bytes
+  * known stock firmware must match its allowlisted full-flash SHA256
   * when stock rollback is required, a true stock backup is mandatory
   * an engineering/YWD firmware dump never satisfies the stock-backup gate
   * option-byte operations are never issued
@@ -55,6 +59,7 @@ while (($#)); do
 done
 
 [[ -f "$TARGETS" ]] || die "Target manifest missing: $TARGETS"
+[[ -f "$HAT_CONTROL" ]] || die "HAT control helper missing: $HAT_CONTROL"
 [[ -e "$DEVICE" ]] || die "UART does not exist: $DEVICE"
 
 json_target(){
@@ -103,18 +108,25 @@ verify_stock_backup_dir(){
   local dir="$1"
   [[ -d "$dir" && -f "$dir/manifest.json" && -f "$dir/original-flash.bin" ]] || return 1
   python3 - "$TARGETS" "$TARGET_ID" "$dir/manifest.json" "$dir/original-flash.bin" <<'PY'
-import hashlib,json,os,sys
+import hashlib,json,sys
 targets,target_id,meta_path,image_path=sys.argv[1:]
 data=json.load(open(targets, encoding='utf-8'))
 t=[x for x in data.get('targets',[]) if x.get('id')==target_id]
 if len(t)!=1: raise SystemExit(1)
+target=t[0]
 meta=json.load(open(meta_path, encoding='utf-8'))
 if meta.get('target_id') != target_id: raise SystemExit(1)
-if meta.get('captured_identity') not in (t[0].get('stock_identities') or []): raise SystemExit(1)
+if meta.get('captured_identity') not in (target.get('stock_identities') or []): raise SystemExit(1)
 if meta.get('option_bytes_read_or_written') not in (False, None): raise SystemExit(1)
+if meta.get('read_passes') != 2 or meta.get('two_pass_byte_identical') is not True: raise SystemExit(1)
 raw=open(image_path,'rb').read()
 if len(raw) != int(meta.get('flash_size_bytes',-1)): raise SystemExit(1)
-if hashlib.sha256(raw).hexdigest().lower() != str(meta.get('sha256','')).lower(): raise SystemExit(1)
+if len(raw) != int(target.get('flash_size_bytes',-2)): raise SystemExit(1)
+sha=hashlib.sha256(raw).hexdigest().lower()
+if sha != str(meta.get('sha256','')).lower(): raise SystemExit(1)
+stock_sha=str(target.get('stock_flash_sha256') or '').lower()
+if stock_sha and sha != stock_sha: raise SystemExit(1)
+if meta.get('stock_sha256_match') is not True: raise SystemExit(1)
 PY
 }
 
@@ -123,6 +135,7 @@ known_units=(
   ywd-mmdvmhost.service ywd-hotspot-mmdvmhost.service
 )
 STATE_FILE="$(mktemp /tmp/ywd1278-flash-services.XXXXXX)"
+
 restore_services(){
   local line unit active enabled
   [[ -f "$STATE_FILE" ]] || return 0
@@ -137,7 +150,19 @@ restore_services(){
   done <"$STATE_FILE"
   rm -f "$STATE_FILE"
 }
-trap restore_services EXIT
+
+restart_application_quiet(){
+  [[ $BOOTLOADER_ACTIVE -eq 1 && -n "$TARGET_ID" ]] || return 0
+  python3 "$HAT_CONTROL" application-restart --targets "$TARGETS" --target "$TARGET_ID" >/dev/null 2>&1 || true
+  BOOTLOADER_ACTIVE=0
+  sleep 0.5
+}
+
+cleanup(){
+  restart_application_quiet
+  restore_services
+}
+trap cleanup EXIT
 
 stop_known_owners(){
   : >"$STATE_FILE"
@@ -163,7 +188,7 @@ probe_identity(){
 }
 
 if [[ "$MODE" == probe ]]; then
-  section "Read-only HAT probe"
+  section "Safe HAT identity probe"
   stop_known_owners
   python3 "$SCRIPT_DIR/probe_hat.py" --device "$DEVICE" --targets "$TARGETS"
   ok "Probe completed without RF configuration or flash writes"
@@ -180,12 +205,17 @@ flash_size="$(json_target flash_size_bytes)"
 flash_base="$(json_target flash_base)"
 backup_required="$(json_target stock_backup_required)"
 option_bytes="$(json_target option_bytes_permitted)"
+bootloader_method="$(json_target bootloader_entry)"
+expected_boot_version="$(json_target expected_bootloader_version)"
+expected_device_id="$(json_target expected_device_id)"
+stock_flash_sha="$(json_target stock_flash_sha256)"
 
 section "Target"
 step "$TARGET_ID"
 step "$description"
 step "manifest status: $status"
 [[ "$option_bytes" == false ]] || die "Target manifest permits option-byte writes; YWD-1278 policy forbids this"
+[[ "$bootloader_method" == pi-gpio20-21 ]] || die "Target bootloader entry is not qualified for automatic YWD-1278 control"
 
 stop_known_owners
 section "Application identity gate"
@@ -195,50 +225,137 @@ step "Running identity: $identity"
 match_identity "$identity" || die "Running identity does not match requested target; refusing operation"
 ok "Running identity matches allowlisted target"
 
-[[ "$flash_size" =~ ^[0-9]+$ ]] && (( flash_size > 0 )) || die "Target flash geometry is not qualified yet (flash_size_bytes=$flash_size)"
+[[ "$flash_size" =~ ^[0-9]+$ ]] && (( flash_size > 0 )) || die "Target flash geometry is not qualified for read testing yet (flash_size_bytes=$flash_size)"
 command_exists stm32flash || die "stm32flash is required"
+
+validate_bootloader_info(){
+  local text="$1"
+  python3 - "$expected_boot_version" "$expected_device_id" <<'PY' <<<"$text"
+import re,sys
+expected_version,expected_id=sys.argv[1:]
+text=sys.stdin.read()
+def grab(label):
+    m=re.search(rf"{label}\s*:\s*(0x[0-9A-Fa-f]+)", text)
+    return m.group(1).lower() if m else ''
+version=grab('Version')
+device=grab('Device ID')
+if not version or not device:
+    print('STM32_BOOTLOADER_PARSE=FAIL', file=sys.stderr)
+    raise SystemExit(2)
+print(f'STM32_BOOTLOADER_VERSION={version}')
+print(f'STM32_DEVICE_ID={device}')
+if expected_version and version != expected_version.lower():
+    print(f'expected bootloader {expected_version}, got {version}', file=sys.stderr)
+    raise SystemExit(3)
+if expected_id and device != expected_id.lower():
+    print(f'expected device {expected_id}, got {device}', file=sys.stderr)
+    raise SystemExit(4)
+print('STM32_BOOTLOADER_IDENTITY=PASS')
+PY
+}
 
 enter_bootloader(){
   section "Enter STM32 system bootloader"
-  warn "This target currently uses a manual BOOT/RST entry method."
-  step "Hold the HAT BOOT button."
-  step "Tap/release RST while continuing to hold BOOT briefly."
-  step "Release BOOT."
-  confirm_exact "BOOTLOADER-READY" "Do this only for the exact allowlisted HAT above." || die "Bootloader entry cancelled"
-  stm32flash -b 115200 "$DEVICE" >/tmp/ywd1278-stm32-probe.$$ 2>&1 || {
-    cat /tmp/ywd1278-stm32-probe.$$ >&2 || true
-    rm -f /tmp/ywd1278-stm32-probe.$$
+  python3 "$HAT_CONTROL" bootloader-entry --targets "$TARGETS" --target "$TARGET_ID" || die "Failed to request target bootloader state"
+  BOOTLOADER_ACTIVE=1
+  sleep 0.5
+  local info
+  info="$(stm32flash -b 115200 "$DEVICE" 2>&1)" || {
+    printf '%s\n' "$info" >&2
     die "STM32 bootloader did not answer"
   }
-  rm -f /tmp/ywd1278-stm32-probe.$$
-  ok "STM32 bootloader responded"
+  printf '%s\n' "$info"
+  validate_bootloader_info "$info" || die "STM32 bootloader identity did not match target"
+  ok "STM32 bootloader responded with the expected identity"
+}
+
+restart_application(){
+  section "Return HAT to application"
+  python3 "$HAT_CONTROL" application-restart --targets "$TARGETS" --target "$TARGET_ID" || die "Failed to restart target application"
+  BOOTLOADER_ACTIVE=0
+  sleep 1.5
 }
 
 make_backup(){
-  local stamp dir image sha size
+  local stamp dir read_a read_b image sha_a sha_b size_a size_b stock_match=false
   stamp="$(date +%Y%m%d-%H%M%S)"
   dir="$BACKUP_ROOT/$TARGET_ID/$stamp"
+  read_a="$dir/read-a.bin"
+  read_b="$dir/read-b.bin"
   image="$dir/original-flash.bin"
   install -d -m 0700 "$dir"
+
   enter_bootloader
-  section "Protected flash backup"
-  step "Reading $flash_size bytes from $flash_base"
-  stm32flash -b 115200 -r "$image" -S "$flash_base:$flash_size" "$DEVICE"
-  chmod 0600 "$image"
-  size="$(stat -c %s "$image")"
-  [[ "$size" == "$flash_size" ]] || die "Backup size mismatch: got $size expected $flash_size"
-  sha="$(sha256sum "$image" | awk '{print $1}')"
-  python3 - "$dir/manifest.json" "$TARGET_ID" "$identity" "$DEVICE" "$flash_base" "$flash_size" "$sha" <<'PY'
+  section "Protected two-pass main-flash backup"
+  step "Read range: $flash_base + $flash_size bytes"
+  step "Option-byte region: NOT READ"
+
+  stm32flash -b 115200 -r "$read_a" -S "$flash_base:$flash_size" "$DEVICE"
+  chmod 0600 "$read_a"
+  stm32flash -b 115200 -r "$read_b" -S "$flash_base:$flash_size" "$DEVICE"
+  chmod 0600 "$read_b"
+
+  size_a="$(stat -c %s "$read_a")"
+  size_b="$(stat -c %s "$read_b")"
+  [[ "$size_a" == "$flash_size" && "$size_b" == "$flash_size" ]] || die "Backup read size mismatch: A=$size_a B=$size_b expected=$flash_size"
+
+  sha_a="$(sha256sum "$read_a" | awk '{print $1}')"
+  sha_b="$(sha256sum "$read_b" | awk '{print $1}')"
+  printf 'BACKUP_READ_A_SHA256=%s\n' "$sha_a"
+  printf 'BACKUP_READ_B_SHA256=%s\n' "$sha_b"
+  cmp -s "$read_a" "$read_b" || die "Independent main-flash reads are not byte-identical"
+  [[ "$sha_a" == "$sha_b" ]] || die "Independent main-flash read SHA256 values differ"
+  ok "Two independent $flash_size-byte reads are byte-identical"
+
+  if identity_is_stock "$identity"; then
+    [[ "$stock_flash_sha" =~ ^[0-9a-fA-F]{64}$ ]] || die "Target has no allowlisted stock main-flash SHA256"
+    [[ "${sha_a,,}" == "${stock_flash_sha,,}" ]] || die "Stock flash SHA256 differs from the qualified golden baseline"
+    stock_match=true
+    ok "Stock main-flash SHA256 matches the qualified golden baseline"
+  fi
+
+  install -m 0600 "$read_a" "$image"
+  rm -f "$read_a" "$read_b"
+
+  python3 - "$dir/manifest.json" "$TARGET_ID" "$identity" "$DEVICE" "$flash_base" "$flash_size" "$sha_a" "$stock_flash_sha" "$stock_match" "$expected_boot_version" "$expected_device_id" <<'PY'
 import json,sys,time
-path,target,identity,device,base,size,sha=sys.argv[1:]
-obj={"schema":1,"target_id":target,"captured_identity":identity,"device":device,
-     "flash_base":base,"flash_size_bytes":int(size),"sha256":sha,
-     "captured_unix":int(time.time()),"option_bytes_read_or_written":False}
+(path,target,identity,device,base,size,sha,stock_sha,stock_match,boot_version,device_id)=sys.argv[1:]
+obj={
+  "schema":2,
+  "target_id":target,
+  "captured_identity":identity,
+  "device":device,
+  "flash_base":base,
+  "flash_size_bytes":int(size),
+  "sha256":sha,
+  "read_passes":2,
+  "two_pass_byte_identical":True,
+  "stock_sha256_expected":stock_sha or None,
+  "stock_sha256_match":stock_match.lower()=="true",
+  "expected_bootloader_version":boot_version or None,
+  "expected_device_id":device_id or None,
+  "captured_unix":int(time.time()),
+  "option_bytes_read_or_written":False,
+  "flash_written":False
+}
 open(path,'w',encoding='utf-8').write(json.dumps(obj,indent=2,sort_keys=True)+'\n')
 PY
   chmod 0600 "$dir/manifest.json"
-  ok "Backup verified: $image"
+
+  restart_application
+  section "Post-backup application verification"
+  post_json="$(probe_identity)" || die "Main flash was read successfully but the application did not return"
+  post_identity="$(python3 -c 'import json,sys; print(json.load(sys.stdin)["identity"])' <<<"$post_json")"
+  [[ "$post_identity" == "$identity" ]] || die "Application identity changed across backup operation: $post_identity"
+  ok "Application returned with the exact pre-backup identity"
+
+  ok "Protected backup verified: $image"
   echo "BACKUP_DIR=$dir"
+  echo "BACKUP_SHA256=$sha_a"
+  echo "BACKUP_READ_PASSES=2"
+  echo "BACKUP_TWO_PASS_IDENTICAL=YES"
+  echo "GEOMETRY_VERIFIED_BYTES=$flash_size"
+  echo "OPTION_BYTES_READ=NO"
   LAST_BACKUP_DIR="$dir"
 }
 
@@ -246,6 +363,7 @@ if [[ "$MODE" == backup ]]; then
   make_backup
   if identity_is_stock "$identity"; then
     echo "BACKUP_CLASS=STOCK"
+    echo "STOCK_SHA256_MATCH=YES"
   else
     echo "BACKUP_CLASS=NON_STOCK"
   fi
@@ -255,7 +373,7 @@ if [[ "$MODE" == backup ]]; then
 fi
 
 section "Firmware write gates"
-[[ "$flash_enabled" == true ]] || die "Target is recognized but flash_enabled=false. No YWD-1278 firmware is qualified for this target yet."
+[[ "$flash_enabled" == true ]] || die "Target is recognized but flash_enabled=false. No YWD-1278 firmware write is enabled for this target yet."
 [[ -n "$FIRMWARE" && -f "$FIRMWARE" ]] || die "--firmware must name an existing file"
 [[ "$CONFIRM" == FLASH-YWD-1278 ]] || die "Actual write requires --confirm FLASH-YWD-1278"
 expected_sha="$(json_target firmware_sha256)"
@@ -282,13 +400,12 @@ section "WRITE YWD-1278 firmware"
 warn "Power loss during this step may require bootloader recovery."
 confirm_exact "WRITE-FIRMWARE-NOW" "Last chance: write the verified image to the allowlisted HAT?" || die "Flash cancelled"
 
-# Intentionally no stm32flash option-byte flags are used here. This command is
-# unreachable until the target manifest is promoted to flash_enabled=true with
-# qualified geometry and image hash.
-stm32flash -b 115200 -w "$FIRMWARE" -v -g 0x0 "$DEVICE"
+# This write path is unreachable while flash_enabled=false. No option-byte
+# commands are present. Promotion requires a separately qualified checkpoint.
+stm32flash -b 115200 -w "$FIRMWARE" -v "$DEVICE"
 ok "Programmer reported write/verify success"
+restart_application
 
-sleep 1
 section "Post-flash identity verification"
 post="$(probe_identity)" || die "Firmware was written but application identity could not be verified. Use restore-stock.sh with the protected stock backup before further experimentation."
 post_identity="$(python3 -c 'import json,sys; print(json.load(sys.stdin)["identity"])' <<<"$post")"
