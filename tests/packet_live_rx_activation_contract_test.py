@@ -22,6 +22,7 @@ LIVE = ROOT / "tools" / "qualify_live_rx_owner.py"
 data = json.loads(TARGETS.read_text(encoding="utf-8"))
 t = data["targets"][0]
 
+assert t["status"] == "0b-p12a-live-rx-qualified"
 assert t["flash_enabled"] is False
 assert t["option_bytes_permitted"] is False
 assert t["qualification_write"]["phase"] == "0B-P3"
@@ -32,7 +33,7 @@ assert t["packet_qualification_write"]["enabled"] is False
 q = t["packet_live_rx_activation"]
 assert q == {
     "phase": "0B-P12a",
-    "enabled": True,
+    "enabled": False,
     "requires_exact_stock_start": True,
     "requires_verified_stock_backup": True,
     "requires_automatic_stock_recovery_on_failure": True,
@@ -53,6 +54,44 @@ assert t["packet_runtime_qualification"]["phase"] == "0B-P11"
 assert t["packet_runtime_qualification"]["status"] == "qualified"
 assert t["packet_runtime_qualification"]["rf_transmitted"] is False
 
+qr = t["packet_live_rx_qualification"]
+assert qr == {
+    "phase": "0B-P12a",
+    "status": "qualified",
+    "date": "2026-09-02",
+    "artifact_size_bytes": 59812,
+    "artifact_sha256": "a069d9a9f1c3d5014984e5d73a5b57155ffa50f8908c9d80c5da221b8ea07310",
+    "programmed_readback_sha256": "a069d9a9f1c3d5014984e5d73a5b57155ffa50f8908c9d80c5da221b8ea07310",
+    "packet_identity_verified": True,
+    "main_flash_write_occurred": True,
+    "receive_frequency_hz": 144390000,
+    "live_rx_duration_seconds": 3,
+    "packed_bytes_drained": 7210,
+    "read_transactions": 1910,
+    "status_checks": 7,
+    "initial_samples": 20,
+    "final_samples": 57682,
+    "samples_advanced": 57662,
+    "peak_fifo_available_bytes": 4,
+    "fifo_dropped_bytes": 0,
+    "rx_active_flags": "0x0D",
+    "rx_idle_flags": "0x04",
+    "rf_keyups_before": 0,
+    "rf_keyups_after": 0,
+    "rf_tx_generated_samples_before": 0,
+    "rf_tx_generated_samples_after": 0,
+    "rf_tx_active_after": False,
+    "single_modem_owner": True,
+    "modem_owner_transactions": 1926,
+    "uart_released": True,
+    "final_packet_restarted": True,
+    "packet_firmware_left_installed": True,
+    "rf_receive_configured": True,
+    "tx_command_path_present": False,
+    "rf_transmitted": False,
+    "option_bytes_written": False,
+}
+
 # Frozen RX setup bytes are explicit and typed.
 assert set_rx_frequency_request(144_390_000) == bytes.fromhex(
     "e0 0d 04 00 70 37 9b 08 70 37 9b 08 01"
@@ -67,7 +106,8 @@ assert not hasattr(ModemOwner, "transact")
 s = ACTIVATE.read_text(encoding="utf-8")
 live = LIVE.read_text(encoding="utf-8")
 
-# Exact one-purpose activation gate.
+# The one-purpose activation harness remains in-tree, but its manifest gate is
+# closed after successful physical P12a proof.
 assert 'QUALIFY-0B-P12A' in s
 assert 'ACTIVATE-PACKET-RX-ONLY' in s
 assert '[[ "$flash_enabled" == false ]]' in s
@@ -130,10 +170,14 @@ print("PACKET_LIVE_RX_ACTIVATION_CONTRACT=PASS")
 print("NORMAL_FLASH_GATE=CLOSED")
 print("P3_WRITE_GATE=CLOSED")
 print("P11_WRITE_GATE=CLOSED")
-print("P12A_ACTIVATION_GATE=ARMED")
+print("P12A_ACTIVATION_GATE=CLOSED_AFTER_PROOF")
 print("EXACT_PACKET_SHA_GATE=PASS")
 print("EXACT_STOCK_RECOVERY=PASS")
 print("RX_SETUP_BYTES=PASS")
 print("SINGLE_UART_OWNER=PASS")
+print("P12A_PHYSICAL_EVIDENCE=PASS")
+print("FIFO_DROPPED_BYTES=0")
+print("RF_KEYUPS=0")
+print("RF_TX_GENERATED_SAMPLES=0")
 print("TX_COMMAND_PATH=ABSENT")
 print("OPTION_BYTE_WRITE_PATH=ABSENT")
