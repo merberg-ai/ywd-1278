@@ -15,7 +15,7 @@
     "version_blob": "4239a854ec09ee90847468f931e1455ee461e2de",
     "makefile_blob": "c73834e9734e4b74bd375cb98ce5144c31134de6",
     "build_script": "scripts/build_fw.sh",
-    "build_script_blob": "30257c0aea66695ed32877b8688daa835bee4f0e2"
+    "build_script_blob": "30257c0aea66695ed32877b8688daa835ee4f0e2"
   },
   "engineering": {
     "repository": "merberg-ai/ywd-mmdvm",
