@@ -16,11 +16,12 @@ assert len(targets) == 1
 t = targets[0]
 
 assert t["id"] == "mmdvm-hs-hat-stm32f103-simplex-14.7456-adf7021"
+assert t["status"] == "0b-p2-read-only-qualified"
 assert t["flash_enabled"] is False
 assert t["option_bytes_permitted"] is False
 assert t["flash_base"] == "0x08000000"
 assert t["flash_size_bytes"] == 131072
-assert t["geometry_status"].startswith("candidate-from-qualified-golden-baseline")
+assert t["geometry_status"] == "0b-p2-physically-qualified-two-pass-stock-backup"
 assert t["expected_bootloader_version"] == "0x22"
 assert t["expected_device_id"] == "0x0410"
 assert t["stock_flash_sha256"] == "4981b35b2d50ada0b09322d9de19dd58a0cbd49eb005693499d1acae92f9d684"
@@ -74,7 +75,7 @@ assert 'FLASH_WRITTEN=NO' in control
 assert 'OPTION_BYTES_WRITTEN=NO' in control
 
 print("FIRMWARE_BACKUP_CONTRACT=PASS")
-print("GEOMETRY_CANDIDATE=131072")
+print("GEOMETRY_QUALIFIED=131072")
 print("STOCK_HASH_GATE=PASS")
 print("TWO_PASS_READ_REQUIRED=PASS")
 print("GPIO_BOOTLOADER_CONTROL=PASS")
