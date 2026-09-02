@@ -101,7 +101,7 @@ assert 'OPTION_BYTES_WRITTEN=NO' in s
 # Duration must be an ordinary fixed variable, not Bash's auto-incrementing SECONDS.
 assert 'DURATION_SECONDS=3' in s
 assert '--seconds) DURATION_SECONDS=' in s
-assert 'SECONDS=3' not in s
+assert not any(line.lstrip().startswith("SECONDS=") for line in s.splitlines())
 
 # Live tool can only reach the serial device through ModemOwner typed methods.
 assert 'posix_serial_transport_factory(args.device)' in live
