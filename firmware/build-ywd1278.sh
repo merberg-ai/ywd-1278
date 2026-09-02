@@ -233,12 +233,18 @@ fi
 
 ARTIFACT_NAME="MMDVM_HS_Hat-YWD-1278-v${FW_VERSION}-${UPSTREAM_SHORT}-hse8m.bin"
 FINAL="$OUT_DIR/$ARTIFACT_NAME"
-cp "$A" "$FINAL"
-FINAL_SHA="$(sha256sum "$FINAL" | awk '{print $1}')"
-FINAL_SIZE="$(stat -c %s "$FINAL")"
 META="$OUT_DIR/build-metadata.json"
+FINAL_TMP="$OUT_DIR/.${ARTIFACT_NAME}.tmp.$$"
+META_TMP="$OUT_DIR/.build-metadata.json.tmp.$$"
 
-python3 - "$MANIFEST" "$META" "$FINAL" "$FINAL_SHA" "$FINAL_SIZE" "$TOOLCHAIN" "$MAKE_VERSION" "$SOURCE_DATE_EPOCH" "$REPRO_RESULT" <<'PY'
+# Published artifacts are deliberately read-only. Rebuilds therefore publish
+# through new same-directory temporary files and atomically rename them over
+# any prior result instead of trying to truncate a 0444 destination in place.
+cp "$A" "$FINAL_TMP"
+FINAL_SHA="$(sha256sum "$FINAL_TMP" | awk '{print $1}')"
+FINAL_SIZE="$(stat -c %s "$FINAL_TMP")"
+
+python3 - "$MANIFEST" "$META_TMP" "$FINAL" "$FINAL_SHA" "$FINAL_SIZE" "$TOOLCHAIN" "$MAKE_VERSION" "$SOURCE_DATE_EPOCH" "$REPRO_RESULT" <<'PY'
 import json,sys
 manifest_path,meta_path,artifact,sha,size,toolchain,make_version,epoch,repro=sys.argv[1:]
 with open(manifest_path,encoding='utf-8') as f: m=json.load(f)
@@ -274,7 +280,10 @@ with open(meta_path,'w',encoding='utf-8') as f:
     json.dump(out,f,indent=2,sort_keys=True); f.write('\n')
 PY
 
-chmod 0444 "$FINAL" "$META"
+chmod 0444 "$FINAL_TMP" "$META_TMP"
+mv -f "$FINAL_TMP" "$FINAL"
+mv -f "$META_TMP" "$META"
+echo "ATOMIC_PUBLISH=PASS"
 
 echo
 printf '=== %s BUILD RESULT ===\n' "$PHASE"
