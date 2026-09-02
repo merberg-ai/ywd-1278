@@ -16,14 +16,12 @@ FIRMWARE=""
 BACKUP_DIR=""
 DEVICE=/dev/ttyAMA0
 CONFIRM=""
-SECONDS=3
+DURATION_SECONDS=3
 BOOTLOADER_ACTIVE=0
 PACKET_WRITTEN=0
 STOCK_RESTORED=0
-SUCCESS=0
 STOCK_IMAGE=""
 CAPTURED_IDENTITY=""
-STATE_FILE="$(mktemp /tmp/ywd1278-p12a-services.XXXXXX)"
 
 usage(){
   cat <<'EOF'
@@ -36,22 +34,19 @@ Usage:
     [--seconds 3] \
     --confirm QUALIFY-0B-P12A
 
-0B-P12a is a guarded activation + receive-only lifecycle qualification. It:
-  * requires normal product flash_enabled=false;
-  * requires the historical P3 and P11 write gates to remain closed;
-  * permits only the exact P10/P11-qualified packet artifact;
-  * requires exact stock firmware at start and the exact P2 stock backup;
-  * writes and reads back the exact packet artifact;
-  * verifies the exact packet GET_VERSION identity;
-  * runs the single-owner RX-only lifecycle at the manifest frequency;
-  * automatically restores and fully verifies exact stock on any failure after
-    the packet image is written;
-  * intentionally leaves the packet firmware installed only after a complete
-    P12a receive-only PASS.
+0B-P12a is a guarded packet activation + live receive-only lifecycle proof.
+It starts only from exact stock, installs only the exact P10/P11-qualified
+packet image, verifies its programmed bytes and identity, exercises a bounded
+single-owner YWD_RX lifecycle, then restarts that packet firmware cold and
+leaves it installed on success.
 
-P12a configures the receiver using normal MMDVM SET_FREQ + a fixed idle
-SET_CONFIG, starts/stops YWD_RX, and drains its FIFO. It has no packet TX
-command path. Option-byte write commands are never issued.
+If anything fails after the packet image is written, the EXIT recovery path
+restores the exact protected stock image, performs a complete 128 KiB readback,
+and verifies the exact stock GET_VERSION identity.
+
+P12a may configure receive hardware and start/stop YWD_RX. It has no packet TX
+command path and never writes STM32 option bytes. Competing modem services must
+already be inactive; this tool never changes systemd enable/active state.
 EOF
 }
 
@@ -61,7 +56,7 @@ while (($#)); do
     --firmware) FIRMWARE="${2:?missing --firmware value}"; shift ;;
     --stock-backup-dir) BACKUP_DIR="${2:?missing --stock-backup-dir value}"; shift ;;
     --device) DEVICE="${2:?missing --device value}"; shift ;;
-    --seconds) SECONDS="${2:?missing --seconds value}"; shift ;;
+    --seconds) DURATION_SECONDS="${2:?missing --seconds value}"; shift ;;
     --confirm) CONFIRM="${2:?missing --confirm value}"; shift ;;
     -h|--help) usage; exit 0 ;;
     *) die "Unknown argument: $1" ;;
@@ -76,7 +71,7 @@ done
 [[ -f "$TARGETS" && -f "$HAT_CONTROL" && -f "$LIVE_RX_TOOL" ]] || die "P12a tooling is incomplete"
 [[ -e "$DEVICE" ]] || die "UART does not exist: $DEVICE"
 command_exists stm32flash || die "stm32flash is required"
-python3 - "$SECONDS" <<'PY' || die "--seconds must be numeric in the range 1..15"
+python3 - "$DURATION_SECONDS" <<'PY' || die "--seconds must be numeric in the range 1..15"
 import sys
 v=float(sys.argv[1])
 assert 1.0 <= v <= 15.0
@@ -127,25 +122,24 @@ device_id="$(json_target expected_device_id)"
 option_bytes="$(json_target option_bytes_permitted)"
 
 [[ "$flash_enabled" == false ]] || die "P12a must not run with normal product flashing enabled"
-[[ "$p3_enabled" == false && "$p11_enabled" == false ]] || die "Historical P3/P11 qualification write gates must remain closed during P12a"
-[[ "$q_phase" == 0B-P12a && "$q_enabled" == true ]] || die "Target does not expose the guarded 0B-P12a live-RX activation gate"
-[[ "$q_stock_start" == true && "$q_backup" == true && "$q_recovery" == true && "$q_leave" == true ]] || die "P12a activation/recovery requirements are incomplete"
-[[ "$q_tx" == false && "$q_option" == false ]] || die "P12a policy permits TX or option-byte writes; refusing activation"
+[[ "$p3_enabled" == false && "$p11_enabled" == false ]] || die "Historical P3/P11 write gates must remain closed during P12a"
+[[ "$q_phase" == 0B-P12a && "$q_enabled" == true ]] || die "Target does not expose the guarded P12a activation gate"
+[[ "$q_stock_start" == true && "$q_backup" == true && "$q_recovery" == true && "$q_leave" == true ]] || die "P12a safety requirements are incomplete"
+[[ "$q_tx" == false && "$q_option" == false && "$option_bytes" == false ]] || die "P12a policy permits TX or option-byte writes"
 [[ "$boot_method" == pi-gpio20-21 ]] || die "Target lacks the qualified GPIO bootloader method"
-[[ "$option_bytes" == false ]] || die "Target policy permits option-byte writes; refusing activation"
 [[ "$flash_size" =~ ^[0-9]+$ ]] && (( flash_size == 131072 )) || die "Unexpected flash geometry: $flash_size"
 [[ "$expected_sha" =~ ^[0-9a-fA-F]{64}$ ]] || die "Packet candidate lacks an exact SHA256"
-[[ "$expected_size" =~ ^[0-9]+$ ]] || die "Packet candidate lacks an exact artifact size"
-[[ -n "$expected_identity" ]] || die "Packet candidate lacks an exact runtime identity"
+[[ "$expected_size" =~ ^[0-9]+$ ]] || die "Packet candidate lacks an exact size"
+[[ -n "$expected_identity" ]] || die "Packet candidate lacks an exact identity"
 [[ "$candidate_status" == deterministic-build-and-runtime-qualified ]] || die "Packet candidate is not P11 runtime-qualified"
-[[ "$candidate_runtime_verified" == true && "$candidate_accepted" == true ]] || die "Packet candidate is not an accepted P11-qualified running identity"
+[[ "$candidate_runtime_verified" == true && "$candidate_accepted" == true ]] || die "Packet candidate is not an accepted P11-qualified identity"
 [[ "$q_frequency" =~ ^[0-9]+$ ]] || die "P12a manifest receive frequency is invalid"
 
 artifact_sha="$(sha256sum "$FIRMWARE" | awk '{print $1}')"
 artifact_size="$(stat -c %s "$FIRMWARE")"
 [[ "${artifact_sha,,}" == "${expected_sha,,}" ]] || die "Firmware does not match the exact P10/P11 qualified packet SHA256"
-[[ "$artifact_size" == "$expected_size" ]] || die "Firmware size does not match the exact P10/P11 packet artifact size"
-(( artifact_size > 0 && artifact_size <= flash_size )) || die "Packet firmware artifact size is invalid for target geometry"
+[[ "$artifact_size" == "$expected_size" ]] || die "Firmware size does not match the exact P10/P11 packet artifact"
+(( artifact_size > 0 && artifact_size <= flash_size )) || die "Packet artifact is invalid for target geometry"
 
 STOCK_IMAGE="$BACKUP_DIR/original-flash.bin"
 BACKUP_META="$BACKUP_DIR/manifest.json"
@@ -176,43 +170,16 @@ if sha != str(meta.get('sha256','')).lower(): raise SystemExit('backup manifest 
 if sha != str(t.get('stock_flash_sha256','')).lower(): raise SystemExit('backup does not match target stock SHA256')
 print(identity)
 PY
-)" || die "Protected stock backup failed 0B-P2 verification"
-
-section "0B-P12a activation/live-RX gates"
-step "Target: $TARGET_ID"
-step "Packet firmware SHA256: $artifact_sha"
-step "Packet firmware bytes: $artifact_size"
-step "Expected packet identity: $expected_identity"
-step "RX frequency: $q_frequency Hz"
-step "Live RX interval: $SECONDS s"
-step "Stock backup: $BACKUP_DIR"
-step "Stock SHA256: $stock_sha"
-step "Normal product flash_enabled: $flash_enabled"
-step "Historical P3 write gate: CLOSED"
-step "Historical P11 write gate: CLOSED"
-step "P12a live-RX activation gate: ENABLED"
-step "RX configuration/start: PERMITTED"
-step "Packet TX command: FORBIDDEN"
-step "Option-byte writes: FORBIDDEN"
-step "Success final firmware: PACKET IMAGE (intentional)"
-step "Failure final firmware: EXACT STOCK RECOVERY REQUIRED"
+)" || die "Protected stock backup failed P2 verification"
 
 known_units=(ywd-1278.service MMDVMHost.service mmdvmhost.service ywd-mmdvmhost.service ywd-hotspot-mmdvmhost.service)
-
-restore_services(){
-  local kind unit enabled active
-  [[ -f "$STATE_FILE" ]] || return 0
-  while IFS='|' read -r kind unit enabled active; do
-    [[ "$kind" == UNIT ]] || continue
-    case "$enabled" in
-      enabled|enabled-runtime|linked|linked-runtime) systemctl enable "$unit" >/dev/null 2>&1 || true ;;
-      disabled) systemctl disable "$unit" >/dev/null 2>&1 || true ;;
-      masked|masked-runtime) systemctl mask "$unit" >/dev/null 2>&1 || true ;;
-    esac
-    [[ "$active" == active ]] && systemctl start "$unit" >/dev/null 2>&1 || true
-  done <"$STATE_FILE"
-  rm -f "$STATE_FILE"
-}
+for unit in "${known_units[@]}"; do
+  [[ "$(systemctl is-active "$unit" 2>/dev/null || true)" != active ]] || die "Competing modem service is active: $unit (stop it before P12a)"
+done
+if fuser "$DEVICE" >/dev/null 2>&1; then
+  fuser -v "$DEVICE" >&2 || true
+  die "UART already has an owner before P12a"
+fi
 
 probe_identity(){
   python3 "$SCRIPT_DIR/probe_hat.py" --device "$DEVICE" --targets "$TARGETS" --no-application-release --json
@@ -228,7 +195,6 @@ def grab(label):
     m=re.search(rf"{label}\s*:\s*(0x[0-9A-Fa-f]+)",text)
     return m.group(1).lower() if m else ''
 version=grab('Version'); device=grab('Device ID')
-if not version or not device: raise SystemExit(2)
 if version != expected_version.lower() or device != expected_id.lower(): raise SystemExit(3)
 print(f'STM32_BOOTLOADER_VERSION={version}')
 print(f'STM32_DEVICE_ID={device}')
@@ -256,14 +222,12 @@ emergency_stock_restore(){
   warn "P12a failed after packet firmware was written; attempting automatic exact-stock recovery."
   if fuser "$DEVICE" >/dev/null 2>&1; then
     fuser -v "$DEVICE" >&2 || true
-    warn "UART still has an owner before emergency recovery."
     return 1
   fi
   python3 "$HAT_CONTROL" bootloader-entry --targets "$TARGETS" --target "$TARGET_ID" || return 1
   BOOTLOADER_ACTIVE=1
   sleep 0.5
   stm32flash -b 115200 -w "$STOCK_IMAGE" -v "$DEVICE" || return 1
-
   local recovery_readback recovery_sha j ident
   recovery_readback="$(mktemp /tmp/ywd1278-p12a-emergency-stock.XXXXXX.bin)"
   stm32flash -b 115200 -r "$recovery_readback" -S "$flash_base:$flash_size" "$DEVICE" || { rm -f "$recovery_readback"; return 1; }
@@ -271,7 +235,6 @@ emergency_stock_restore(){
   rm -f "$recovery_readback"
   [[ "${recovery_sha,,}" == "${stock_sha,,}" ]] || return 1
   echo "EMERGENCY_STOCK_RESTORE_READBACK_SHA256=$recovery_sha"
-
   python3 "$HAT_CONTROL" application-restart --targets "$TARGETS" --target "$TARGET_ID" || return 1
   BOOTLOADER_ACTIVE=0
   sleep 1.5
@@ -291,91 +254,82 @@ cleanup(){
   elif (( BOOTLOADER_ACTIVE == 1 )); then
     python3 "$HAT_CONTROL" application-restart --targets "$TARGETS" --target "$TARGET_ID" >/dev/null 2>&1 || true
   fi
-
-  if (( SUCCESS == 1 )); then
-    # P12b needs a known-free UART. Do not restart any prior modem owner after a
-    # successful activation; leave recorded units stopped and report this fact.
-    rm -f "$STATE_FILE"
-  else
-    restore_services
-  fi
   exit "$rc"
 }
 trap 'cleanup $?' EXIT
 
-: >"$STATE_FILE"
-for unit in "${known_units[@]}"; do
-  load="$(systemctl show -p LoadState --value "$unit" 2>/dev/null || true)"
-  [[ -n "$load" && "$load" != not-found ]] || continue
-  enabled="$(systemctl is-enabled "$unit" 2>/dev/null || true)"
-  active="$(systemctl is-active "$unit" 2>/dev/null || true)"
-  printf 'UNIT|%s|%s|%s\n' "$unit" "$enabled" "$active" >>"$STATE_FILE"
-  systemctl stop "$unit" >/dev/null 2>&1 || true
-done
-sleep 0.25
-if fuser "$DEVICE" >/dev/null 2>&1; then
-  fuser -v "$DEVICE" >&2 || true
-  die "UART still has an owner after stopping known services"
-fi
+section "0B-P12a activation/live-RX gates"
+step "Target: $TARGET_ID"
+step "Packet SHA256: $artifact_sha"
+step "Packet bytes: $artifact_size"
+step "Packet identity: $expected_identity"
+step "RX frequency: $q_frequency Hz"
+step "Live RX duration: $DURATION_SECONDS s"
+step "Stock SHA256: $stock_sha"
+step "Normal flash_enabled: false"
+step "P3/P11 write gates: CLOSED"
+step "P12a activation gate: ENABLED"
+step "RX setup/start: PERMITTED"
+step "Packet TX: FORBIDDEN"
+step "Option-byte writes: FORBIDDEN"
+step "Success leaves exact packet firmware installed"
+step "Failure requires exact stock recovery"
 
 section "Exact stock start gate"
 start_json="$(probe_identity)" || die "HAT application did not answer before P12a"
 start_identity="$(python3 -c 'import json,sys; print(json.load(sys.stdin)["identity"])' <<<"$start_json")"
 step "$start_identity"
-[[ "$start_identity" == "$CAPTURED_IDENTITY" ]] || die "P12a must start from the exact stock identity captured by the verified backup"
+[[ "$start_identity" == "$CAPTURED_IDENTITY" ]] || die "P12a must start from the exact protected stock identity"
 ok "Exact stock start state verified"
 
-warn "P12a will write the exact P10/P11-qualified AX25R3 packet image, verify its readback/identity, configure receive-only operation at $q_frequency Hz, run a bounded YWD_RX lifecycle, then restart the packet firmware cold and LEAVE IT INSTALLED on success. Any failure after the write triggers exact-stock recovery."
-confirm_exact "ACTIVATE-PACKET-RX-ONLY" "Proceed with guarded 0B-P12a packet activation and live receive-only lifecycle?" || die "P12a cancelled"
+warn "This will install the exact P11-qualified packet firmware and LEAVE IT INSTALLED only if the receive-only lifecycle passes. Failure after the write triggers full exact-stock recovery."
+confirm_exact "ACTIVATE-PACKET-RX-ONLY" "Proceed with guarded P12a packet activation/live RX?" || die "P12a cancelled"
 
-section "Write exact qualified packet firmware artifact"
-enter_bootloader || die "Unable to enter the expected STM32 bootloader"
+section "Write exact qualified packet firmware"
+enter_bootloader || die "Unable to enter expected STM32 bootloader"
 stm32flash -b 115200 -w "$FIRMWARE" -v "$DEVICE"
 PACKET_WRITTEN=1
-ok "Packet firmware artifact write/verify reported success"
+ok "Packet firmware write/verify reported success"
 
-section "Read back programmed packet firmware bytes"
+section "Read back exact programmed packet bytes"
 packet_readback="$(mktemp /tmp/ywd1278-p12a-packet-readback.XXXXXX.bin)"
 stm32flash -b 115200 -r "$packet_readback" -S "$flash_base:$artifact_size" "$DEVICE"
 packet_readback_sha="$(sha256sum "$packet_readback" | awk '{print $1}')"
 rm -f "$packet_readback"
-printf 'PACKET_READBACK_SHA256=%s\n' "$packet_readback_sha"
-[[ "${packet_readback_sha,,}" == "${expected_sha,,}" ]] || die "Programmed packet bytes do not match the exact P10/P11 artifact SHA256"
-ok "Programmed packet bytes match the exact qualified packet artifact"
+echo "PACKET_READBACK_SHA256=$packet_readback_sha"
+[[ "${packet_readback_sha,,}" == "${expected_sha,,}" ]] || die "Programmed packet bytes differ from exact qualified artifact"
+ok "Exact packet programmed readback verified"
 
-restart_application || die "Unable to restart packet firmware application"
-section "Exact packet firmware identity gate"
-packet_json="$(probe_identity)" || die "Packet firmware image did not answer GET_VERSION"
+restart_application || die "Unable to restart packet firmware"
+packet_json="$(probe_identity)" || die "Packet firmware did not answer GET_VERSION"
 packet_identity="$(python3 -c 'import json,sys; print(json.load(sys.stdin)["identity"])' <<<"$packet_json")"
-step "$packet_identity"
-[[ "$packet_identity" == "$expected_identity" ]] || die "Packet firmware identity differs from the exact P11-qualified identity"
-ok "Exact packet firmware identity verified"
+[[ "$packet_identity" == "$expected_identity" ]] || die "Packet firmware identity mismatch"
+ok "Exact packet runtime identity verified"
 
-section "Live single-owner YWD_RX lifecycle"
+section "Live receive-only owner/FIFO lifecycle"
 python3 "$LIVE_RX_TOOL" \
   --device "$DEVICE" \
   --identity "$expected_identity" \
   --frequency-hz "$q_frequency" \
-  --seconds "$SECONDS"
+  --seconds "$DURATION_SECONDS"
 
 if fuser "$DEVICE" >/dev/null 2>&1; then
   fuser -v "$DEVICE" >&2 || true
-  die "UART was not released after live RX owner qualification"
+  die "UART was not released by live RX owner"
 fi
-ok "Live RX owner released the UART"
+ok "Single owner released UART"
 
-section "Restart qualified packet image cold"
-restart_application || die "Unable to restart packet firmware after live RX qualification"
-final_json="$(probe_identity)" || die "Packet firmware did not answer after final cold restart"
+section "Cold restart packet firmware for P12b"
+restart_application || die "Unable to cold-restart packet firmware after P12a"
+final_json="$(probe_identity)" || die "Packet firmware did not answer after final restart"
 final_identity="$(python3 -c 'import json,sys; print(json.load(sys.stdin)["identity"])' <<<"$final_json")"
-step "$final_identity"
-[[ "$final_identity" == "$expected_identity" ]] || die "Final packet identity differs after cold restart"
+[[ "$final_identity" == "$expected_identity" ]] || die "Final packet identity mismatch"
 if fuser "$DEVICE" >/dev/null 2>&1; then
   fuser -v "$DEVICE" >&2 || true
-  die "UART is unexpectedly owned after final packet identity probe"
+  die "UART unexpectedly owned after final identity probe"
 fi
 
-SUCCESS=1
+trap - EXIT
 
 echo "YWD1278_0B_P12A_PACKET_LIVE_RX=PASS"
 echo "PACKET_ARTIFACT_SHA256=$expected_sha"
@@ -385,7 +339,6 @@ echo "RX_FREQUENCY_HZ=$q_frequency"
 echo "PACKET_FIRMWARE_LEFT_INSTALLED=YES"
 echo "FINAL_PACKET_RESTARTED=YES"
 echo "MODEM_UART_RELEASED=YES"
-echo "KNOWN_MODEM_SERVICES_LEFT_STOPPED=YES"
 echo "NORMAL_FLASH_ENABLED=NO"
 echo "P3_QUALIFICATION_GATE=CLOSED"
 echo "P11_PACKET_QUALIFICATION_GATE=CLOSED"
