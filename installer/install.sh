@@ -22,6 +22,12 @@ BIN_LINK=/usr/local/bin/ywd1278
 SKIP_PACKAGES=0
 WITH_FIRMWARE_TOOLCHAIN=1
 RUN_SETUP=0
+STAGING_ROOT=""
+
+cleanup(){
+  [[ -z "$STAGING_ROOT" || ! -d "$STAGING_ROOT" ]] || rm -rf "$STAGING_ROOT"
+}
+trap cleanup EXIT
 
 usage(){
   cat <<'EOF'
@@ -48,6 +54,15 @@ while (($#)); do
   esac
   shift
 done
+
+[[ -f "$REPO_ROOT/VERSION" && -f "$REPO_ROOT/pyproject.toml" ]] || die "Run the installer from a complete YWD-1278 source checkout"
+version="$(tr -d '[:space:]' <"$REPO_ROOT/VERSION")"
+commit="$(git -C "$REPO_ROOT" rev-parse HEAD 2>/dev/null || printf 'unknown')"
+
+section "Stage source"
+STAGING_ROOT="$(mktemp -d /tmp/ywd1278-install.XXXXXX)"
+tar -C "$REPO_ROOT" --exclude=.git --exclude='__pycache__' --exclude='*.pyc' -cf - . | tar -C "$STAGING_ROOT" -xf -
+ok "Staged YWD-1278 $version ($commit) before modifying the installed tree"
 
 section "Platform preflight"
 [[ -r /proc/device-tree/model ]] || die "Unable to identify Raspberry Pi model (/proc/device-tree/model missing)"
@@ -90,23 +105,21 @@ for cmd in python3 git systemctl tar sha256sum; do
 done
 
 section "Filesystem layout"
-install -d -m 0755 "$INSTALL_ROOT" "$SOURCE_ROOT" "$CONFIG_DIR" "$STATE_DIR" "$BACKUP_DIR" "$LOG_DIR"
-# Backups can contain the user's original device firmware; keep the directory private.
+install -d -m 0755 "$INSTALL_ROOT" "$CONFIG_DIR" "$STATE_DIR" "$BACKUP_DIR" "$LOG_DIR"
 chmod 0700 "$BACKUP_DIR"
 
 if [[ -d "$SOURCE_ROOT" && -n "$(find "$SOURCE_ROOT" -mindepth 1 -maxdepth 1 -print -quit 2>/dev/null)" ]]; then
   stamp="$(date +%Y%m%d-%H%M%S)"
   old="$INSTALL_ROOT/source.pre-install.$stamp"
   mv "$SOURCE_ROOT" "$old"
-  install -d -m 0755 "$SOURCE_ROOT"
   info "Previous installed source preserved at $old"
+else
+  rm -rf "$SOURCE_ROOT"
 fi
 
-step "Copying source tree into $SOURCE_ROOT"
-tar -C "$REPO_ROOT" --exclude=.git --exclude='__pycache__' --exclude='*.pyc' -cf - . | tar -C "$SOURCE_ROOT" -xf -
-
-version="$(tr -d '[:space:]' <"$REPO_ROOT/VERSION")"
-commit="$(git -C "$REPO_ROOT" rev-parse HEAD 2>/dev/null || printf 'unknown')"
+step "Installing staged source into $SOURCE_ROOT"
+mv "$STAGING_ROOT" "$SOURCE_ROOT"
+STAGING_ROOT=""
 printf '%s\n' "$version" >"$INSTALL_ROOT/installed-version"
 printf '%s\n' "$commit" >"$INSTALL_ROOT/installed-commit"
 
