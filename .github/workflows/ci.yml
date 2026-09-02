@@ -37,6 +37,10 @@ jobs:
         run: |
           python tests/ax25_codec_test.py
 
+      - name: Bell-202 TX serialization regression
+        run: |
+          python tests/bell202_tx_test.py
+
       - name: Firmware identity classification
         run: |
           python tests/firmware_identity_test.py
