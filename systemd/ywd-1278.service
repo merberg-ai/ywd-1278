@@ -8,6 +8,7 @@ StartLimitBurst=3
 
 [Service]
 Type=simple
+ExecStartPre=/usr/bin/python3 /opt/ywd-1278/source/firmware/hat_control.py application-release --config /etc/ywd-1278/config.toml
 ExecStart=/opt/ywd-1278/venv/bin/ywd1278d --config /etc/ywd-1278/config.toml
 Restart=on-failure
 RestartSec=2s
