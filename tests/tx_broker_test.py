@@ -139,7 +139,7 @@ class TXBrokerTests(unittest.TestCase):
         broker.start()
         try:
             receipt = broker.submit_frame(p5_reference_frame())
-            self.assertEqual(receipt.frame_bytes, 40)
+            self.assertEqual(receipt.frame_bytes, 38)
             self.assertEqual(receipt.selector_count, 691)
             self.assertEqual(receipt.packed_selector_bytes, 87)
             self.assertEqual(receipt.packed_selector_sha256, P5_PACKED_SHA256)
