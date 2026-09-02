@@ -37,17 +37,32 @@ assert m["safety"] == {
 matches = [x for x in t["targets"] if x["id"] == m["target_id"]]
 assert len(matches) == 1
 target = matches[0]
+assert target["status"] == "0b-p3-roundtrip-qualified"
 assert target["flash_enabled"] is False
 assert target["qualification_write"]["phase"] == "0B-P3"
-assert target["qualification_write"]["enabled"] is True
+assert target["qualification_write"]["enabled"] is False
 assert target["option_bytes_permitted"] is False
 assert target["stm32_hse_hz"] == 8000000
 assert target["tcxo_mhz"] == 14.7456
 assert target["firmware_artifact"] == "firmware/out/0b-p1r1-stm32f103-simplex-adf7021-14.7456tcxo-8mhz-hse/MMDVM_HS_Hat-YWD-1278-v0.1.0-alpha0-7ff74ed-hse8m.bin"
 assert target["firmware_sha256"] == "b7ec163fc3a3cec395c0e3e3065f20c6dc6be186e32ccdcf9044c85ec681b9b8"
 assert target["firmware_identity"] == m["branding"]["expected_identity"]
+assert target["firmware_identity"] in target["accepted_running_identities"]
 assert any(x["sha256"] == m["supersedes"]["artifact_sha256"] for x in target["revoked_artifacts"])
 assert m["branding"]["expected_identity"].startswith(target["ywd1278_identity_prefix"])
+
+rq = target["runtime_qualification"]
+assert rq["phase"] == "0B-P3"
+assert rq["status"] == "qualified"
+assert rq["artifact_size_bytes"] == 57316
+assert rq["artifact_sha256"] == target["firmware_sha256"]
+assert rq["programmed_readback_sha256"] == target["firmware_sha256"]
+assert rq["ywd_identity_verified"] is True
+assert rq["stock_restore_sha256"] == target["stock_flash_sha256"]
+assert rq["stock_identity_verified"] is True
+assert rq["main_flash_write_occurred"] is True
+assert rq["rf_transmitted"] is False
+assert rq["option_bytes_written"] is False
 
 builder = BUILDER.read_text(encoding="utf-8")
 # The build wrapper must remain physically incapable of touching the HAT.
@@ -95,7 +110,8 @@ print("ADF7021_TCXO_14_7456MHZ=PASS")
 print("OSC_OVERRIDE=ABSENT")
 print("READ_ONLY_ARTIFACT_REPUBLISH=PASS")
 print("P1R1_QUALIFIED_ARTIFACT_HASH=PASS")
+print("P3_RUNTIME_QUALIFICATION=PASS")
 print("FAILED_P1_ARTIFACT=REVOKED")
-print("P3_WRITE_GATE=ARMED_FOR_P1R1_ONLY")
+print("P3_WRITE_GATE=CLOSED_AFTER_QUALIFICATION")
 print("NORMAL_FLASH_GATE_CLOSED=PASS")
 print("HARDWARE_ACCESS_PATH=ABSENT")
