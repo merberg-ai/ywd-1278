@@ -22,7 +22,9 @@ LIVE = ROOT / "tools" / "qualify_live_rx_owner.py"
 data = json.loads(TARGETS.read_text(encoding="utf-8"))
 t = data["targets"][0]
 
-assert t["status"] == "0b-p12a-live-rx-qualified"
+# The target has advanced through P12b, but this contract deliberately locks
+# the complete P12a activation and physical evidence objects below unchanged.
+assert t["status"] == "0b-p12b-live-rf-kiss-qualified"
 assert t["flash_enabled"] is False
 assert t["option_bytes_permitted"] is False
 assert t["qualification_write"]["phase"] == "0B-P3"
@@ -167,6 +169,7 @@ for text in (s, live):
         assert forbidden not in text
 
 print("PACKET_LIVE_RX_ACTIVATION_CONTRACT=PASS")
+print("TARGET_ADVANCED_TO_P12B=PASS")
 print("NORMAL_FLASH_GATE=CLOSED")
 print("P3_WRITE_GATE=CLOSED")
 print("P11_WRITE_GATE=CLOSED")
