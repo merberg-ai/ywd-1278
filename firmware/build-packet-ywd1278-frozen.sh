@@ -4,7 +4,6 @@ set -Eeuo pipefail
 ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 MANIFEST="$ROOT/firmware/tooling/packet-build-manifest.json"
 BUILDER="$ROOT/firmware/build-packet-ywd1278.sh"
-ENGINEERING_REMOTE="${YWD1278_ENGINEERING_REMOTE:-https://github.com/merberg-ai/ywd-mmdvm.git}"
 
 [[ ${EUID:-$(id -u)} -ne 0 ]] || {
   echo "[FAIL] Firmware builds do not require root. Run this command without sudo." >&2
@@ -23,11 +22,14 @@ readarray -t ENG < <(python3 - "$MANIFEST" <<'PY'
 import json,sys
 m=json.load(open(sys.argv[1],encoding='utf-8'))
 print(m['engineering']['repository'])
+print(m['engineering']['remote'])
 print(m['engineering']['commit'])
 PY
 )
 ENG_NAME="${ENG[0]}"
-ENG_COMMIT="${ENG[1]}"
+ENG_DEFAULT_REMOTE="${ENG[1]}"
+ENG_COMMIT="${ENG[2]}"
+ENGINEERING_REMOTE="${YWD1278_ENGINEERING_REMOTE:-$ENG_DEFAULT_REMOTE}"
 
 WORK="$(mktemp -d "${TMPDIR:-/tmp}/ywd1278-engineering-fetch.XXXXXX")"
 trap 'rm -rf "$WORK"' EXIT
