@@ -11,9 +11,9 @@ TOOL = ROOT / "tools" / "qualify_live_rx_kiss.py"
 target = json.loads(TARGETS.read_text(encoding="utf-8"))["targets"][0]
 text = TOOL.read_text(encoding="utf-8")
 
-# Post-qualification target state advances to P12b, while all P12a physical
-# evidence remains frozen as the prerequisite boundary used by the test tool.
-assert target["status"] == "0b-p12b-live-rf-kiss-qualified"
+# The current target has advanced to P13b. All P12a/P12b physical receive
+# evidence remains frozen as historical prerequisite evidence.
+assert target["status"] == "0b-p13b-known-packet-tx-qualified"
 assert target["flash_enabled"] is False
 assert target["option_bytes_permitted"] is False
 assert target["packet_live_rx_activation"]["enabled"] is False
@@ -29,8 +29,9 @@ assert target["packet_live_rx_qualification"]["rf_keyups_after"] == 0
 assert target["packet_live_rx_qualification"]["rf_tx_generated_samples_before"] == 0
 assert target["packet_live_rx_qualification"]["rf_tx_generated_samples_after"] == 0
 assert target["packet_live_rx_qualification"]["rf_transmitted"] is False
+assert target["packet_live_tx_qualification"]["status"] == "qualified"
 
-# P12b is now physical evidence at the corrected local packet-network frequency.
+# P12b remains exact historical physical evidence at the local packet-network frequency.
 p12b = target["packet_live_rf_kiss_qualification"]
 assert p12b["phase"] == "0B-P12b"
 assert p12b["status"] == "qualified"
@@ -77,9 +78,8 @@ assert p12b["tx_command_permitted"] is False
 assert p12b["option_bytes_permitted"] is False
 
 # The frozen P12b qualification tool still records the exact pre-qualification
-# gate it was physically run against. The post-evidence manifest intentionally
-# no longer satisfies that staged-state gate, preventing accidental re-use as
-# if P12b had not already been qualified.
+# gate it was physically run against. The current manifest intentionally no
+# longer satisfies that historical staged-state gate.
 assert 'target.get("status") != "0b-p12a-live-rx-qualified"' in text
 assert 'P12A_HISTORICAL_RECEIVE_FREQUENCY_HZ = 144390000' in text
 assert 'P12B_RECEIVE_FREQUENCY_HZ = 145050000' in text
@@ -105,7 +105,7 @@ assert 'client.sendall(encode(b"P12B CLIENT TX MUST REMAIN DISCONNECTED"))' in t
 assert 'backend.snapshot.tx_rejected != 1' in text
 assert 'KISS_CLIENT_TX_PATH=REJECTED' in text
 
-# RF diagnostics prove no TX activity occurred during the live receive test.
+# RF diagnostics prove no TX activity occurred during the historical live receive test.
 assert 'owner.rf_diagnostics' in text
 assert 'diag_after.keyups != diag_before.keyups' in text
 assert 'diag_after.generated_samples != diag_before.generated_samples' in text
@@ -139,6 +139,7 @@ print("P12A_PHYSICAL_PREREQUISITE=PASS")
 print("P12A_144390_EVIDENCE_FROZEN=PASS")
 print("P12B_145050_PHYSICAL_EVIDENCE=PASS")
 print("P12B_LIVE_FRAME_LOCKED=PASS")
+print("TARGET_ADVANCED_TO_P13B=PASS")
 print("REAL_UART_SINGLE_OWNER=PASS")
 print("LIVE_RX_RUNTIME=PASS")
 print("LOOPBACK_KISS_ONLY=PASS")
