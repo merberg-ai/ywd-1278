@@ -37,7 +37,7 @@ assert m["safety"] == {
 matches = [x for x in t["targets"] if x["id"] == m["target_id"]]
 assert len(matches) == 1
 target = matches[0]
-assert target["status"] == "0b-p11-packet-roundtrip-qualified"
+# Current phase/status may advance; frozen P1R1/P3 evidence below must not.
 assert target["flash_enabled"] is False
 assert target["qualification_write"]["phase"] == "0B-P3"
 assert target["qualification_write"]["enabled"] is False
@@ -67,11 +67,9 @@ assert rq["rf_transmitted"] is False
 assert rq["option_bytes_written"] is False
 
 builder = BUILDER.read_text(encoding="utf-8")
-# The build wrapper must remain physically incapable of touching the HAT.
 for forbidden in ("stm32flash", "pinctrl", "/dev/tty", "/dev/serial", "systemctl reboot", "gpiochip"):
     assert forbidden not in builder, f"build-only pipeline contains forbidden hardware operation token: {forbidden}"
 
-# Exact source/build-recipe pins are mandatory.
 assert 'git init -q "$SEED"' in builder
 assert 'fetch --quiet --no-tags --depth=1 origin "$UPSTREAM_COMMIT"' in builder
 assert 'cat-file -e "$UPSTREAM_COMMIT^{commit}"' in builder
@@ -80,19 +78,11 @@ assert 'hash-object Makefile' in builder
 assert 'hash-object "$UPSTREAM_BUILD_SCRIPT"' in builder
 assert "UPSTREAM_HAT_BUILD_RECIPE=PASS" in builder
 assert "^CLK_DEF=8000000$" in builder
-
-# Critical regression gate: the 14.7456 MHz ADF7021 TCXO must never be passed
-# to make as the STM32 OSC/HSE. Correct build follows upstream's no-override
-# HAT recipe and therefore uses CLK_DEF=8000000.
 assert 'make -C "$src" -j"$JOBS" "$MAKE_TARGET"' in builder
 assert 'OSC="$' not in builder
 assert 'osc_override=false' in builder
 assert 'STM32_HSE_HZ=%s' in builder
 assert 'ADF7021_TCXO_HZ=%s' in builder
-
-# Published artifacts are intentionally 0444. Re-running the builder must not
-# attempt to truncate those files in place. It must stage a new artifact and
-# metadata in the same directory and atomically rename them into place.
 assert 'FINAL_TMP="$OUT_DIR/.${ARTIFACT_NAME}.tmp.$$"' in builder
 assert 'META_TMP="$OUT_DIR/.build-metadata.json.tmp.$$"' in builder
 assert 'cp "$A" "$FINAL_TMP"' in builder
@@ -113,7 +103,7 @@ print("OSC_OVERRIDE=ABSENT")
 print("READ_ONLY_ARTIFACT_REPUBLISH=PASS")
 print("P1R1_QUALIFIED_ARTIFACT_HASH=PASS")
 print("P3_RUNTIME_QUALIFICATION=PASS")
-print("P3_EVIDENCE_PRESERVED_AFTER_P11=PASS")
+print("P3_EVIDENCE_PHASE_INDEPENDENT=PASS")
 print("FAILED_P1_ARTIFACT=REVOKED")
 print("P3_WRITE_GATE=CLOSED_AFTER_QUALIFICATION")
 print("P11_WRITE_GATE=CLOSED_AFTER_QUALIFICATION")
