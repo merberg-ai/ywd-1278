@@ -5,8 +5,9 @@ used, and closed inside exactly one owner thread, so device ownership is a
 structural boundary rather than a convention.
 
 The receive path can perform the exact normal MMDVM setup used by the frozen
-AX25R3 capture lineage, but callers cannot submit arbitrary configuration bytes
-and there is still no TX_TONES method in this layer.
+AX25R3 capture lineage. 0C-P2 adds one read-only typed RSSI operation for the
+staged AX25R4 firmware; callers still cannot submit arbitrary configuration
+bytes and there is no TX_TONES method in this base layer.
 """
 
 from __future__ import annotations
@@ -75,10 +76,12 @@ class ModemOwner:
     * guarded simplex SET_FREQ for receive setup
     * fixed RX-safe SET_CONFIG modem-I/O initialization
     * YWD_RX START / READ / STATUS / STOP
+    * YWD_RX RSSI read-only telemetry on AX25R4 firmware
     * YWD_RF GET_STATUS / GET_DIAG read-only diagnostics
 
-    There is intentionally no RF TX/ABORT/EXIT API here. TX sequencing will be
-    added later behind its own bounded broker and qualification gate.
+    There is intentionally no RF TX/ABORT/EXIT API here. The narrow
+    :class:`TXModemOwner` subclass remains the only owner with the qualified
+    selector-burst TX primitive.
     """
 
     def __init__(
@@ -199,6 +202,10 @@ class ModemOwner:
     def rx_status(self, *, timeout: float | None = None) -> protocol.RX3Status:
         return cast(protocol.RX3Status, self._call("rx_status", None, timeout))
 
+    def rx_rssi(self, *, timeout: float | None = None) -> protocol.RXRSSI:
+        """Read one raw ADF7021 RSSI magnitude through the single owner thread."""
+        return cast(protocol.RXRSSI, self._call("rx_rssi", None, timeout))
+
     def rx_stop(self, *, timeout: float | None = None) -> None:
         self._call("rx_stop", None, timeout)
 
@@ -315,6 +322,9 @@ class ModemOwner:
         if call.operation == "rx_status":
             response = self._transact(transport, protocol.rx_status_request(), call.timeout)
             return protocol.parse_rx3_status(response)
+        if call.operation == "rx_rssi":
+            response = self._transact(transport, protocol.rx_rssi_request(), call.timeout)
+            return protocol.parse_rx_rssi(response)
         if call.operation == "rx_stop":
             response = self._transact(transport, protocol.rx_stop_request(), call.timeout)
             protocol.parse_ack(response, expected_command=protocol.YWD_RX)
