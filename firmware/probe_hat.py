@@ -1,9 +1,14 @@
 #!/usr/bin/env python3
-"""Read-only MMDVM_HS application identity probe for YWD-1278.
+"""Safe MMDVM_HS application identity probe for YWD-1278.
 
-This probe sends only MMDVM GET_VERSION (0x00). It does not configure the RF
-engine, change frequency, reset the STM32, enter bootloader mode, write flash,
-or write option bytes.
+The probe always tries MMDVM GET_VERSION (0x00) first without touching HAT
+control GPIOs. If the UART is silent and the installed configuration explicitly
+names an allowlisted hardware target, it may invoke that target's qualified
+application-release operation (BOOT0 normal, RESET released, no reset pulse)
+and retry GET_VERSION.
+
+It never configures RF, changes frequency, enters the STM32 bootloader, writes
+flash, or writes option bytes.
 """
 from __future__ import annotations
 
@@ -12,6 +17,8 @@ import json
 import os
 from pathlib import Path
 import select
+import subprocess
+import sys
 import termios
 import time
 
@@ -54,9 +61,6 @@ def read_frame(fd: int, timeout: float) -> bytes:
                 continue
 
             if len(data) == 1:
-                # The second byte is the complete MMDVM frame length. Invalid
-                # lengths mean we hit noise/stale data; resynchronise instead
-                # of poisoning the rest of the attempt.
                 if byte < 3:
                     data.clear()
                     target = None
@@ -93,10 +97,6 @@ def get_identity(
     observed: list[bytes] = []
     try:
         configure(fd)
-        # Some HAT/application combinations are not ready for the first byte
-        # immediately after the host UART is reopened. A short bounded settle
-        # delay plus retries makes identity probing robust without resetting or
-        # otherwise changing the modem state.
         time.sleep(max(0.0, settle_seconds))
 
         for attempt in range(1, attempts + 1):
@@ -143,23 +143,65 @@ def match_targets(identity: str, targets: list[dict]) -> list[dict]:
     return matches
 
 
+def release_configured_application(config: Path, targets: Path) -> str:
+    helper = Path(__file__).with_name("hat_control.py")
+    proc = subprocess.run(
+        [
+            sys.executable,
+            str(helper),
+            "application-release",
+            "--targets",
+            str(targets),
+            "--config",
+            str(config),
+        ],
+        text=True,
+        capture_output=True,
+    )
+    if proc.returncode != 0:
+        detail = (proc.stderr or proc.stdout or "target-aware application release failed").strip()
+        raise RuntimeError(detail)
+    return proc.stdout.strip()
+
+
 def main() -> int:
-    ap = argparse.ArgumentParser(description="Read-only YWD-1278 MMDVM HAT identity probe")
+    ap = argparse.ArgumentParser(description="Safe YWD-1278 MMDVM HAT identity probe")
     ap.add_argument("--device", default="/dev/ttyAMA0")
     ap.add_argument("--targets", default=str(Path(__file__).with_name("targets.json")))
+    ap.add_argument("--config", default="/etc/ywd-1278/config.toml")
     ap.add_argument("--timeout", type=float, default=1.25, help="per-attempt response timeout")
     ap.add_argument("--attempts", type=int, default=3)
     ap.add_argument("--json", action="store_true")
     args = ap.parse_args()
 
-    identity = get_identity(args.device, args.timeout, args.attempts)
-    matches = match_targets(identity, load_targets(Path(args.targets)))
+    target_path = Path(args.targets)
+    control_output = ""
+    application_release_used = False
+
+    try:
+        identity = get_identity(args.device, args.timeout, args.attempts)
+    except RuntimeError as first_error:
+        config_path = Path(args.config)
+        if not config_path.is_file():
+            raise RuntimeError(
+                f"{first_error}; no configured hardware target is available for safe application release"
+            ) from first_error
+        try:
+            control_output = release_configured_application(config_path, target_path)
+        except RuntimeError as release_error:
+            raise RuntimeError(f"{first_error}; {release_error}") from first_error
+        application_release_used = True
+        time.sleep(0.25)
+        identity = get_identity(args.device, args.timeout, args.attempts)
+
+    matches = match_targets(identity, load_targets(target_path))
 
     result = {
         "device": args.device,
         "identity": identity,
         "matched_target_ids": [item["id"] for item in matches],
         "unique_supported_identity": len(matches) == 1,
+        "application_release_used": application_release_used,
         "rf_configured": False,
         "flash_written": False,
         "option_bytes_written": False,
@@ -168,6 +210,9 @@ def main() -> int:
     if args.json:
         print(json.dumps(result, sort_keys=True))
     else:
+        if control_output:
+            print(control_output)
+        print(f"HAT_APPLICATION_RELEASE_USED={'YES' if application_release_used else 'NO'}")
         print(f"HAT_DEVICE={args.device}")
         print(f"HAT_IDENTITY={identity}")
         if len(matches) == 1:
@@ -187,4 +232,8 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    try:
+        raise SystemExit(main())
+    except Exception as exc:
+        print(f"HAT_PROBE_ERROR={exc}", file=sys.stderr)
+        raise SystemExit(2)
