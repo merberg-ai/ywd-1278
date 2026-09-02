@@ -98,6 +98,15 @@ class FakeRX3Transport:
                 protocol.GET_VERSION,
                 bytes((1,)) + IDENTITY.encode("ascii") + b"\0",
             )
+        if frame.command == protocol.SET_FREQ:
+            return protocol.ack_for(protocol.SET_FREQ)
+        if frame.command == protocol.SET_CONFIG:
+            return protocol.ack_for(protocol.SET_CONFIG)
+        if frame.command == protocol.YWD_RF and frame.payload == bytes((protocol.RF_GET_STATUS,)):
+            return protocol.build_frame(
+                protocol.YWD_RF,
+                bytes((protocol.RF_GET_STATUS, 1, 0x08, 0, 0, 0)),
+            )
 
         if frame.command != protocol.YWD_RX or not frame.payload:
             raise RuntimeError("unexpected fake modem command")
@@ -213,12 +222,48 @@ class RXProductRuntimeTests(unittest.TestCase):
 
         snap = runtime.snapshot
         self.assertEqual(snap.identity, IDENTITY)
+        self.assertIsNone(snap.frequency_hz)
         self.assertEqual(snap.decoded_frames, 3)
         self.assertEqual(snap.packed_bytes, len(packed))
         self.assertEqual(snap.fifo_dropped_bytes, 0)
         self.assertEqual(snap.failure, "")
         self.assertEqual(backend.snapshot.subscriber_drops, 0)
         self.assertTrue(holder["transport"].closed)
+
+    def test_live_setup_is_typed_and_precedes_rx_start(self) -> None:
+        packed = b""
+        holder: dict[str, FakeRX3Transport] = {}
+
+        def factory() -> FakeRX3Transport:
+            transport = FakeRX3Transport(packed)
+            holder["transport"] = transport
+            return transport
+
+        owner = ModemOwner(factory)
+        backend = RXOnlyBackend()
+        runtime = RXOnlyPacketRuntime(
+            owner,
+            backend,
+            expected_identity=IDENTITY,
+            frequency_hz=144_390_000,
+            status_interval_seconds=0.02,
+        )
+        runtime.start()
+        time.sleep(0.03)
+        runtime.stop()
+
+        commands = holder["transport"].commands
+        command_ids = [command for command, _ in commands]
+        self.assertEqual(command_ids[0], protocol.GET_VERSION)
+        self.assertEqual(command_ids[1], protocol.SET_FREQ)
+        self.assertEqual(command_ids[2], protocol.SET_CONFIG)
+        self.assertEqual(command_ids[3], protocol.YWD_RF)
+        self.assertEqual(commands[3][1], bytes((protocol.RF_GET_STATUS,)))
+        self.assertEqual(command_ids[4], protocol.YWD_RX)
+        self.assertEqual(commands[4][1], bytes((protocol.RX_START,)))
+        self.assertNotIn(protocol.RF_TX_TONES, [payload[0] for command, payload in commands if command == protocol.YWD_RF and payload])
+        self.assertEqual(runtime.snapshot.frequency_hz, 144_390_000)
+        self.assertEqual(runtime.snapshot.fifo_dropped_bytes, 0)
 
     def test_fifo_drop_fails_closed_during_start_gate(self) -> None:
         packed = synthetic_capture()
@@ -242,6 +287,7 @@ if __name__ == "__main__":
     print("YWD_RX_FIFO_TO_BELL202=PASS")
     print("AX25_EVENT_TO_TCP_KISS=PASS")
     print("PHYSICAL_FRAME_VECTORS=3")
+    print("LIVE_RX_SETUP_ORDER=PASS")
     print("KISS_CLIENT_TX_PATH=REJECTED")
     print("FIFO_DROP_FAIL_CLOSED=PASS")
     print("RAW_UART_CLIENT_ACCESS=ABSENT")
