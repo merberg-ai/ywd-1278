@@ -24,7 +24,7 @@
 - [x] 0B-P1R1 corrected deterministic branded build using pinned upstream MMDVM_HS_Hat recipe: STM32 HSE default 8 MHz, ADF7021 TCXO 14.7456 MHz, no OSC override; qualified SHA256 `b7ec163fc3a3cec395c0e3e3065f20c6dc6be186e32ccdcf9044c85ec681b9b8`
 - [x] establish exact first supported target flash geometry/hash (0B-P2)
 - [x] qualify protected two-pass stock backup (0B-P2)
-- [ ] guarded YWD-1278 flash/restore round trip (0B-P3) — attempt 1 failed safely using the now-revoked clock-misconfigured P1 artifact and automatic exact-stock recovery passed; attempt 2 is armed only for the qualified P1R1 artifact while normal product `flash_enabled` remains false
+- [x] guarded YWD-1278 flash/restore round trip (0B-P3) — corrected P1R1 image programmed and read back to its exact SHA, exact YWD-1278 GET_VERSION identity verified, exact 128 KiB protected stock image restored and read back to its qualified SHA, and exact stock identity verified; qualification-only write gate closed again and normal product `flash_enabled` remains false
 - [ ] port AX.25 codec/FCS/parser
 - [ ] port Bell-202 TX serialization
 - [ ] port realtime streaming Bell-202 RX
