@@ -19,7 +19,8 @@
         "reset_gpio": 21,
         "application_boot0_level": "low",
         "application_reset_level": "high",
-        "application_release_pulses_reset": false
+        "application_release_pulses_reset": false,
+        "installer_auto_release_candidate": true
       },
       "flash_base": "0x08000000",
       "flash_size_bytes": 0,
@@ -38,7 +39,7 @@
       "ywd1278_identity_prefix": "MMDVM_HS_Hat-YWD-1278-",
       "firmware_artifact": null,
       "firmware_sha256": null,
-      "notes": "Write operations remain disabled until flash geometry and a deterministic YWD-1278 firmware artifact are re-qualified in this repository. GPIO20=BOOT0 and GPIO21=RESET were physically validated on the reference Pi 5/HAT; normal application release is BOOT0 low and RESET high and does not pulse RESET. Stock restore must use a protected backup whose captured identity appears in stock_identities."
+      "notes": "Write operations remain disabled until flash geometry and a deterministic YWD-1278 firmware artifact are re-qualified in this repository. GPIO20=BOOT0 and GPIO21=RESET were physically validated on the reference Pi 5/HAT; normal application release is BOOT0 low and RESET high and does not pulse RESET. The installer may use this profile as an auto-release candidate only after a direct read-only probe fails and the install flow has user authorization. Stock restore must use a protected backup whose captured identity appears in stock_identities."
     }
   ]
 }
