@@ -41,8 +41,18 @@ builder = BUILDER.read_text(encoding="utf-8")
 for forbidden in ("stm32flash", "pinctrl", "/dev/tty", "/dev/serial", "systemctl reboot", "gpiochip"):
     assert forbidden not in builder, f"build-only pipeline contains forbidden hardware operation token: {forbidden}"
 
+# A normal branch clone is not a strong enough source contract for an old pin.
+# The builder must explicitly fetch the exact manifest commit and verify that
+# both its commit object and tree object are locally present before checkout.
+assert 'git init -q "$SEED"' in builder
+assert 'fetch --quiet --no-tags --depth=1 origin "$UPSTREAM_COMMIT"' in builder
+assert 'cat-file -e "$UPSTREAM_COMMIT^{commit}"' in builder
+assert 'cat-file -e "$UPSTREAM_COMMIT^{tree}"' in builder
+assert 'git clone --quiet --no-checkout' not in builder
+
 print("FIRMWARE_BUILD_CONTRACT=PASS")
 print("UPSTREAM_PIN=PASS")
+print("EXACT_COMMIT_FETCH=PASS")
 print("SUBMODULE_PIN=PASS")
 print("FLASH_GATE_CLOSED=PASS")
 print("HARDWARE_ACCESS_PATH=ABSENT")
