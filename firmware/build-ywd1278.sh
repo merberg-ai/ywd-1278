@@ -13,7 +13,7 @@ usage(){
   cat <<'EOF'
 Usage: ./firmware/build-ywd1278.sh [options]
 
-Build-only 0B-P1 pipeline. It does not access the HAT or Raspberry Pi GPIOs.
+Build-only YWD-1278 firmware pipeline. It does not access the HAT or Raspberry Pi GPIOs.
 
 Options:
   --single       Build once instead of performing the default two-build
@@ -41,7 +41,7 @@ done
   exit 2
 }
 
-for cmd in git make python3 arm-none-eabi-gcc arm-none-eabi-g++ arm-none-eabi-objcopy sha256sum cmp; do
+for cmd in git make python3 arm-none-eabi-gcc arm-none-eabi-g++ arm-none-eabi-objcopy sha256sum cmp grep; do
   command -v "$cmd" >/dev/null 2>&1 || {
     echo "[FAIL] Missing build dependency: $cmd" >&2
     echo "       Run the YWD-1278 installer with firmware toolchain support first." >&2
@@ -65,6 +65,7 @@ PY
 }
 
 PROFILE="$(mget profile_id)"
+PHASE="$(mget phase)"
 TARGET="$(mget target_id)"
 UPSTREAM_REPO="$(mget upstream.repository)"
 UPSTREAM_COMMIT="$(mget upstream.commit)"
@@ -73,8 +74,13 @@ SUBMODULE_SHA="$(mget upstream.submodules.STM32F10X_Lib)"
 CONFIG_TEMPLATE="$(mget upstream.config_template)"
 CONFIG_BLOB="$(mget upstream.config_template_blob)"
 VERSION_BLOB="$(mget upstream.version_blob)"
+MAKEFILE_BLOB="$(mget upstream.makefile_blob)"
+UPSTREAM_BUILD_SCRIPT="$(mget upstream.build_script)"
+UPSTREAM_BUILD_SCRIPT_BLOB="$(mget upstream.build_script_blob)"
 MAKE_TARGET="$(mget build.make_target)"
-OSC_HZ="$(mget build.osc_hz)"
+STM32_HSE_HZ="$(mget build.stm32_hse_hz)"
+OSC_OVERRIDE="$(mget build.osc_override)"
+RF_TCXO_HZ="$(mget rf.tcxo_hz)"
 BINARY_PATH="$(mget build.binary_path)"
 FW_VERSION="$(mget branding.firmware_version)"
 EXPECTED_IDENTITY="$(mget branding.expected_identity)"
@@ -83,6 +89,9 @@ EXPECTED_IDENTITY="$(mget branding.expected_identity)"
 [[ "$(mget safety.flash_enabled)" == false ]] || { echo "[FAIL] build manifest unexpectedly enables flashing" >&2; exit 2; }
 [[ "$(mget safety.option_bytes_permitted)" == false ]] || { echo "[FAIL] build manifest unexpectedly permits option-byte writes" >&2; exit 2; }
 [[ "$(mget safety.rf_transmit_possible)" == false ]] || { echo "[FAIL] build manifest unexpectedly permits RF" >&2; exit 2; }
+[[ "$OSC_OVERRIDE" == false ]] || { echo "[FAIL] corrected HAT build must not pass an OSC override" >&2; exit 2; }
+[[ "$STM32_HSE_HZ" == 8000000 ]] || { echo "[FAIL] corrected HAT build requires pinned upstream STM32 HSE default 8000000 Hz" >&2; exit 2; }
+[[ "$RF_TCXO_HZ" == 14745600 ]] || { echo "[FAIL] expected ADF7021 TCXO is 14745600 Hz" >&2; exit 2; }
 
 OUT_DIR="${YWD1278_FIRMWARE_OUT:-$ROOT/firmware/out/$PROFILE}"
 mkdir -p "$OUT_DIR"
@@ -93,13 +102,14 @@ else
   trap 'echo "[INFO] Build work tree retained at: $WORK"' EXIT
 fi
 
-printf '\n=== YWD-1278 0B-P1 FIRMWARE BUILD ===\n'
+printf '\n=== YWD-1278 %s FIRMWARE BUILD ===\n' "$PHASE"
 printf 'Profile          : %s\n' "$PROFILE"
 printf 'Target           : %s\n' "$TARGET"
 printf 'Upstream commit  : %s\n' "$UPSTREAM_COMMIT"
 printf 'F1 library       : %s\n' "$SUBMODULE_SHA"
 printf 'Configuration    : %s\n' "$CONFIG_TEMPLATE"
-printf 'Oscillator       : %s Hz\n' "$OSC_HZ"
+printf 'STM32 HSE        : %s Hz (upstream default; no OSC override)\n' "$STM32_HSE_HZ"
+printf 'ADF7021 TCXO     : %s Hz\n' "$RF_TCXO_HZ"
 printf 'Firmware identity: %s\n' "$EXPECTED_IDENTITY"
 printf 'Hardware access  : NO\n'
 printf 'Flash operations : DISABLED\n\n'
@@ -134,8 +144,23 @@ actual_submodule="$(git -C "$SEED/STM32F10X_Lib" rev-parse HEAD)"
 [[ "$actual_submodule" == "$SUBMODULE_SHA" ]] || { echo "[FAIL] STM32F10X_Lib checkout mismatch: $actual_submodule" >&2; exit 1; }
 [[ "$(git -C "$SEED" hash-object "$CONFIG_TEMPLATE")" == "$CONFIG_BLOB" ]] || { echo "[FAIL] pinned HAT configuration blob mismatch" >&2; exit 1; }
 [[ "$(git -C "$SEED" hash-object version.h)" == "$VERSION_BLOB" ]] || { echo "[FAIL] pinned version.h blob mismatch" >&2; exit 1; }
+[[ "$(git -C "$SEED" hash-object Makefile)" == "$MAKEFILE_BLOB" ]] || { echo "[FAIL] pinned upstream Makefile blob mismatch" >&2; exit 1; }
+[[ "$(git -C "$SEED" hash-object "$UPSTREAM_BUILD_SCRIPT")" == "$UPSTREAM_BUILD_SCRIPT_BLOB" ]] || { echo "[FAIL] pinned upstream HAT build recipe blob mismatch" >&2; exit 1; }
 [[ -z "$(git -C "$SEED" status --porcelain --ignore-submodules=none)" ]] || { echo "[FAIL] pinned source seed is not clean" >&2; exit 1; }
-echo "[ OK ] Exact upstream source and STM32F10X_Lib submodule verified"
+
+grep -Eq '^CLK_DEF=8000000$' "$SEED/Makefile" || { echo "[FAIL] pinned Makefile no longer declares the expected 8 MHz STM32 default HSE" >&2; exit 1; }
+grep -q '^#define ADF7021_14_7456$' "$SEED/$CONFIG_TEMPLATE" || { echo "[FAIL] HAT config does not select the 14.7456 MHz ADF7021 TCXO" >&2; exit 1; }
+python3 - "$SEED/$UPSTREAM_BUILD_SCRIPT" <<'PY'
+from pathlib import Path
+import sys
+s=Path(sys.argv[1]).read_text(encoding='utf-8')
+needle='cp ~/MMDVM_HS/configs/MMDVM_HS_Hat.h ~/MMDVM_HS/Config.h\nmake -j4\n'
+if needle not in s:
+    raise SystemExit('[FAIL] pinned upstream MMDVM_HS_Hat recipe is not the expected no-OSC-override make invocation')
+print('UPSTREAM_HAT_BUILD_RECIPE=PASS')
+PY
+
+echo "[ OK ] Exact upstream source, build recipe, clock roles, and STM32F10X_Lib verified"
 
 SOURCE_DATE_EPOCH="$(git -C "$SEED" show -s --format=%ct HEAD)"
 export SOURCE_DATE_EPOCH TZ=UTC LC_ALL=C
@@ -166,8 +191,14 @@ build_one(){
     echo "toolchain=$TOOLCHAIN"
     echo "make=$MAKE_VERSION"
     echo "SOURCE_DATE_EPOCH=$SOURCE_DATE_EPOCH"
+    echo "stm32_hse_hz=$STM32_HSE_HZ"
+    echo "adf7021_tcxo_hz=$RF_TCXO_HZ"
+    echo "osc_override=false"
     make -C "$src" clean
-    make -C "$src" -j"$JOBS" "$MAKE_TARGET" OSC="$OSC_HZ"
+    # Deliberately DO NOT pass OSC=. The pinned upstream Makefile's normal F1
+    # HAT build uses CLK_DEF=8000000 for the STM32 HSE. The 14.7456 MHz value
+    # in Config.h belongs to the ADF7021 TCXO and must never be reused as HSE.
+    make -C "$src" -j"$JOBS" "$MAKE_TARGET"
   } >"$log" 2>&1 || {
     echo "[FAIL] $label failed; see $log" >&2
     tail -n 40 "$log" >&2 || true
@@ -200,7 +231,7 @@ else
   sha_a="$(sha256sum "$A" | awk '{print $1}')"
 fi
 
-ARTIFACT_NAME="MMDVM_HS_Hat-YWD-1278-v${FW_VERSION}-${UPSTREAM_SHORT}.bin"
+ARTIFACT_NAME="MMDVM_HS_Hat-YWD-1278-v${FW_VERSION}-${UPSTREAM_SHORT}-hse8m.bin"
 FINAL="$OUT_DIR/$ARTIFACT_NAME"
 cp "$A" "$FINAL"
 FINAL_SHA="$(sha256sum "$FINAL" | awk '{print $1}')"
@@ -220,8 +251,13 @@ out={
   'stm32f10x_lib_commit': m['upstream']['submodules']['STM32F10X_Lib'],
   'config_template_blob': m['upstream']['config_template_blob'],
   'version_blob': m['upstream']['version_blob'],
+  'makefile_blob': m['upstream']['makefile_blob'],
+  'build_script_blob': m['upstream']['build_script_blob'],
   'firmware_version': m['branding']['firmware_version'],
   'expected_identity': m['branding']['expected_identity'],
+  'stm32_hse_hz': m['build']['stm32_hse_hz'],
+  'osc_override': m['build']['osc_override'],
+  'adf7021_tcxo_hz': m['rf']['tcxo_hz'],
   'artifact': artifact,
   'artifact_size_bytes': int(size),
   'artifact_sha256': sha,
@@ -241,11 +277,14 @@ PY
 chmod 0444 "$FINAL" "$META"
 
 echo
-printf '=== 0B-P1 BUILD RESULT ===\n'
+printf '=== %s BUILD RESULT ===\n' "$PHASE"
 printf 'ARTIFACT=%s\n' "$FINAL"
 printf 'ARTIFACT_SIZE_BYTES=%s\n' "$FINAL_SIZE"
 printf 'ARTIFACT_SHA256=%s\n' "$FINAL_SHA"
 printf 'FIRMWARE_IDENTITY=%s\n' "$EXPECTED_IDENTITY"
+printf 'STM32_HSE_HZ=%s\n' "$STM32_HSE_HZ"
+printf 'ADF7021_TCXO_HZ=%s\n' "$RF_TCXO_HZ"
+printf 'OSC_OVERRIDE=NO\n'
 printf 'REPRODUCIBILITY=%s\n' "$REPRO_RESULT"
 printf 'METADATA=%s\n' "$META"
 printf 'HARDWARE_ACCESSED=NO\n'
