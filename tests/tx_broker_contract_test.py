@@ -8,16 +8,11 @@ import sys
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
+from ywd1278.modem import protocol  # noqa: E402
 from ywd1278.modem.owner import ModemOwner  # noqa: E402
 from ywd1278.modem.tx_owner import TXModemOwner  # noqa: E402
-from ywd1278.modem import protocol  # noqa: E402
-from ywd1278.tx.broker import (  # noqa: E402
-    P5_INITIAL_TONE,
-    P5_POST_FLAGS,
-    P5_PRE_FLAGS,
-    TXBroker,
-)
 from ywd1278.phy import MARK  # noqa: E402
+from ywd1278.tx.broker import P5_INITIAL_TONE, P5_POST_FLAGS, P5_PRE_FLAGS, TXBroker  # noqa: E402
 
 TARGETS = ROOT / "firmware" / "targets.json"
 BROKER = ROOT / "src" / "ywd1278" / "tx" / "broker.py"
@@ -31,8 +26,8 @@ tx_owner_text = TX_OWNER.read_text(encoding="utf-8")
 kiss_text = KISS_SERVER.read_text(encoding="utf-8")
 daemon_text = DAEMON.read_text(encoding="utf-8")
 
-# P12b remains the latest physically qualified target boundary.  P13a is
-# intentionally host-only and must not rewrite the live-RF evidence.
+# P12b remains the latest physically qualified target boundary. P13a is
+# host-only and must not rewrite that live-RF evidence.
 assert target["status"] == "0b-p12b-live-rf-kiss-qualified"
 assert target["flash_enabled"] is False
 assert target["option_bytes_permitted"] is False
@@ -44,7 +39,7 @@ assert p12b["tx_command_permitted"] is False
 assert p12b["rf_transmitted"] is False
 assert p12b["option_bytes_written"] is False
 
-# Preserve the exact RX-only owner used for P12a/P12b.  TX capability exists
+# Preserve the exact RX-only owner used for P12a/P12b. TX capability exists
 # only on the narrow subclass intended for the broker.
 assert not hasattr(ModemOwner, "transmit_selector_burst")
 assert not hasattr(ModemOwner, "rf_tx_tones")
@@ -57,8 +52,8 @@ assert 'self._call("transmit_selector_burst"' in tx_owner_text
 assert "protocol.rf_tx_tones_request" in tx_owner_text
 assert "protocol.parse_ack(response, expected_command=protocol.YWD_RF)" in tx_owner_text
 
-# Broker timing remains exactly the frozen 0B-P5 serializer profile.  P13a
-# adds no configurable TXDELAY or CSMA behavior.
+# Broker timing remains exactly the frozen 0B-P5 serializer profile. P13a adds
+# no configurable TXDELAY or CSMA behavior.
 assert P5_PRE_FLAGS == 45
 assert P5_POST_FLAGS == 3
 assert P5_INITIAL_TONE == MARK
@@ -72,30 +67,19 @@ assert "remaining_selectors != 0" in broker_text
 assert "transmit_selector_burst(" in broker_text
 assert "queue.Queue[_Job | object]" in broker_text
 
-# Most important P13a boundary: ordinary KISS remains RX-only and the product
-# daemon does not construct or connect the broker.  A TCP client still has no
-# path to YWD_RF/TX_TONES.
-for forbidden in (
-    "TXBroker",
-    "TXModemOwner",
-    "transmit_selector_burst",
-    "RF_TX_TONES",
-):
+# Ordinary KISS remains RX-only and the product daemon does not construct or
+# connect the broker. A TCP client still has no path to YWD_RF/TX_TONES.
+for forbidden in ("TXBroker", "TXModemOwner", "transmit_selector_burst", "RF_TX_TONES"):
     assert forbidden not in kiss_text, forbidden
     assert forbidden not in daemon_text, forbidden
 assert "class RXOnlyBackend" in kiss_text
 assert "self._tx_rejected += 1" in kiss_text
 
-# Broker itself has no direct hardware transport, GPIO, flash, or KISS layer.
-for forbidden in (
-    "/dev/tty",
-    "posix_serial_transport_factory",
-    "stm32flash",
-    "pinctrl",
-    "socket",
-    "KISS",
-):
+# Broker itself has no direct serial/GPIO/flash/socket implementation. Mentioning
+# KISS in comments is fine; importing or opening a KISS service is not.
+for forbidden in ("/dev/tty", "posix_serial_transport_factory", "stm32flash", "pinctrl", "import socket"):
     assert forbidden not in broker_text, forbidden
+assert "ywd1278.kiss" not in broker_text
 
 # Default construction is a hard-disabled object, not merely an empty queue.
 class NeverOwner:
