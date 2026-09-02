@@ -32,9 +32,11 @@
 - [x] bounded single-owner runtime architecture (0B-P7b-1) — transport created/used/closed in exactly one owner thread; typed receive/control API only; bounded queue fails closed; no raw client transact and no TX owner API; deterministic fake-transport qualification
 - [x] thread-bound POSIX serial transport + guarded live read-only owner identity proof (0B-P7b-2) — real `/dev/ttyAMA0`, exactly one owner thread and one `GET_VERSION` transaction, exact stock identity, UART released afterward; no GPIO/RX/TX/RF/flash
 - [ ] live YWD_RX owner qualification — deferred until packet-capable YWD-1278 firmware is built/qualified
-- [ ] port TCP KISS framing/server
+- [x] port TCP KISS framing/server (0B-P8) — standard port-0 DATA framing and stream resynchronization; real localhost TCP delivery of all three saved physically sourced frames; bounded client queues with zero drops; inbound client DATA explicitly rejected; no UART/RF/TX path
+- [ ] assemble RX-only product runtime: single owner -> YWD_RX -> Bell-202 -> AX.25 event bus -> TCP KISS
+- [ ] build and qualify packet-capable YWD-1278 firmware from frozen AX25R3 engineering source
+- [ ] requalify physical live RX through assembled product runtime
 - [ ] productize bidirectional bounded RX/TX runtime
-- [ ] requalify physical RX
 - [ ] requalify KISS-originated external-decode TX
 - [ ] freeze first product packet-engine checkpoint
 
