@@ -26,7 +26,6 @@ Uninstall never flashes firmware. Use firmware/restore-stock.sh separately when
 an intentional firmware restoration is desired.
 EOF
 }
-
 while (($#)); do
   case "$1" in
     --purge-config) PURGE_CONFIG=1 ;;
@@ -38,12 +37,12 @@ while (($#)); do
   shift
 done
 
-section "Stop service"
-systemctl disable --now ywd-1278.service >/dev/null 2>&1 || true
-rm -f /etc/systemd/system/ywd-1278.service
+section "Stop services"
+systemctl disable --now ywd-1278.service ywd-1278-install-resume.service >/dev/null 2>&1 || true
+rm -f /etc/systemd/system/ywd-1278.service /etc/systemd/system/ywd-1278-install-resume.service
 systemctl daemon-reload
-systemctl reset-failed ywd-1278.service >/dev/null 2>&1 || true
-ok "Service removed"
+systemctl reset-failed ywd-1278.service ywd-1278-install-resume.service >/dev/null 2>&1 || true
+ok "Runtime and installer-resume services removed"
 
 section "Remove installed application"
 rm -f /usr/local/bin/ywd1278
@@ -61,14 +60,13 @@ fi
 
 if [[ $PURGE_STATE -eq 1 ]]; then
   section "Purge runtime state"
-  if [[ -d /var/lib/ywd-1278 ]]; then
-    # Keep firmware backups unless separately and explicitly authorized.
-    find /var/lib/ywd-1278 -mindepth 1 -maxdepth 1 ! -name firmware-backups -exec rm -rf -- {} +
-  fi
+  if [[ -d /var/lib/ywd-1278 ]]; then find /var/lib/ywd-1278 -mindepth 1 -maxdepth 1 ! -name firmware-backups -exec rm -rf -- {} +; fi
   rm -rf /var/log/ywd-1278
   ok "Non-firmware state removed"
 else
-  info "Runtime state/logs preserved"
+  # A pending resume marker is not useful after the application is removed.
+  rm -f /var/lib/ywd-1278/install-resume.env
+  info "Runtime state/logs preserved; pending installer resume marker cleared"
 fi
 
 if [[ $PURGE_BACKUPS -eq 1 ]]; then
@@ -84,4 +82,3 @@ fi
 section "Uninstall complete"
 ok "YWD-1278 host software removed"
 warn "HAT firmware was NOT changed."
-info "If YWD-1278 firmware is installed and stock restoration is desired, use the preserved restore tool/source checkout intentionally."
