@@ -33,6 +33,10 @@ jobs:
         run: |
           python -m compileall -q src firmware tests
 
+      - name: AX.25 codec regression
+        run: |
+          python tests/ax25_codec_test.py
+
       - name: Firmware identity classification
         run: |
           python tests/firmware_identity_test.py
