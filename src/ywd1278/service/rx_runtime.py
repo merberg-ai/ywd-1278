@@ -5,8 +5,14 @@ The runtime joins already-qualified layers without creating a transmit path:
 single ModemOwner -> YWD_RX FIFO -> StreamingBell202Decoder -> PacketEvent ->
 RXOnlyBackend -> TCP KISS (when a server is attached to the backend).
 
-Only the ModemOwner can touch the transport.  This module has no raw serial
-access and no TX operation.  RX FIFO drops are fatal and stop the receive
+For live hardware, ``frequency_hz`` enables the exact RX-safe setup sequence
+from the frozen AX25R3 engineering capture: guarded SET_FREQ, fixed idle
+SET_CONFIG, read-only RF status verification, then YWD_RX/START. Replay tests
+may leave ``frequency_hz`` unset because their injected transport already
+represents a configured packet FIFO.
+
+Only the ModemOwner can touch the transport. This module has no raw serial
+access and no TX operation. RX FIFO drops are fatal and stop the receive
 runtime rather than being silently reported as healthy packet service.
 """
 
@@ -23,6 +29,7 @@ from ywd1278.phy.bell202_rx import StreamingBell202Decoder, StreamingFrame
 
 ACTIVE_RX_FLAGS = 0x0D
 IDLE_RX_FLAGS = 0x04
+ARMED_IDLE_RF_FLAGS = 0x08
 
 
 class RXRuntimeError(RuntimeError):
@@ -33,6 +40,7 @@ class RXRuntimeError(RuntimeError):
 class RXRuntimeSnapshot:
     running: bool
     identity: str
+    frequency_hz: int | None
     read_transactions: int
     packed_bytes: int
     decoded_frames: int
@@ -48,6 +56,10 @@ class RXOnlyPacketRuntime:
 
     ``expected_identity`` is mandatory so a stock or otherwise unexpected
     firmware image cannot accidentally be treated as packet-capable.
+
+    Set ``frequency_hz`` for real hardware. When present, startup reproduces
+    the exact qualified MMDVM radio initialization before YWD_RX/START. Leaving
+    it unset is intended only for injected/replay transports.
     """
 
     def __init__(
@@ -56,6 +68,7 @@ class RXOnlyPacketRuntime:
         backend: RXOnlyBackend,
         *,
         expected_identity: str,
+        frequency_hz: int | None = None,
         read_maximum: int = 200,
         idle_sleep_seconds: float = 0.002,
         status_interval_seconds: float = 1.0,
@@ -63,6 +76,8 @@ class RXOnlyPacketRuntime:
     ) -> None:
         if not expected_identity.strip():
             raise ValueError("expected_identity must be non-empty")
+        if frequency_hz is not None and frequency_hz <= 0:
+            raise ValueError("frequency_hz must be positive when provided")
         if not 1 <= read_maximum <= 200:
             raise ValueError("read_maximum must be 1..200")
         if idle_sleep_seconds < 0.0:
@@ -73,6 +88,7 @@ class RXOnlyPacketRuntime:
         self._owner = owner
         self._backend = backend
         self._expected_identity = expected_identity
+        self._frequency_hz = None if frequency_hz is None else int(frequency_hz)
         self._read_maximum = int(read_maximum)
         self._idle_sleep_seconds = float(idle_sleep_seconds)
         self._status_interval_seconds = float(status_interval_seconds)
@@ -100,6 +116,7 @@ class RXOnlyPacketRuntime:
             return RXRuntimeSnapshot(
                 running=bool(thread and thread.is_alive() and not self._stop.is_set()),
                 identity=self._identity,
+                frequency_hz=self._frequency_hz,
                 read_transactions=self._read_transactions,
                 packed_bytes=self._packed_bytes,
                 decoded_frames=self._decoded_frames,
@@ -125,6 +142,16 @@ class RXOnlyPacketRuntime:
                 )
             with self._lock:
                 self._identity = version.identity
+
+            if self._frequency_hz is not None:
+                self._owner.set_rx_frequency(self._frequency_hz, timeout=timeout)
+                self._owner.arm_rx_modem_io(timeout=timeout)
+                rf = self._owner.rf_status(timeout=timeout)
+                if rf.flags != ARMED_IDLE_RF_FLAGS or rf.remaining_selectors != 0 or rf.mode != 0:
+                    raise RXRuntimeError(
+                        "modem IO did not enter armed idle before packet RX: "
+                        f"flags=0x{rf.flags:02x} remaining={rf.remaining_selectors} mode={rf.mode}"
+                    )
 
             self._owner.rx_start(timeout=timeout)
             self._rx_started = True
@@ -219,7 +246,7 @@ class RXOnlyPacketRuntime:
         with self._lock:
             self._decoded_frames += 1
 
-    def _record_status(self, status) -> None:  # RX3Status without importing protocol twice
+    def _record_status(self, status) -> None:
         with self._lock:
             self._status_checks += 1
             self._firmware_samples = status.samples
@@ -243,9 +270,6 @@ class RXOnlyPacketRuntime:
         self._owner.rx_stop(timeout=timeout)
         self._rx_started = False
 
-        # Firmware stops producing new packed samples before ACKing RX_STOP.
-        # Drain the finite tail so shutdown does not discard an already-captured
-        # packet occurrence.
         while True:
             chunk = self._owner.rx_read(self._read_maximum, timeout=timeout)
             with self._lock:
