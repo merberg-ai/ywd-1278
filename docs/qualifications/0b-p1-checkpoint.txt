@@ -1,0 +1,3 @@
+checkpoint branch: checkpoint/0b-p1-deterministic-firmware-build-qualified
+qualification commit: ac104082d4614d655723109aa1221531d4515f0c
+qualified artifact sha256: db23bc84bd31828d8fb29d8e4164879b9e5e57a4b2ef2eb58c598c66a38420b3
