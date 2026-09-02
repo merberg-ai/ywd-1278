@@ -14,6 +14,7 @@ from ywd1278.modem.owner import ModemOwner  # noqa: E402
 MANIFEST = ROOT / "firmware" / "tooling" / "packet-rssi-build-manifest.json"
 BUILDER = ROOT / "firmware" / "build-packet-rssi-ywd1278.py"
 BRANDER = ROOT / "firmware" / "tooling" / "apply_packet_rssi_branding.py"
+MATERIALIZER = ROOT / "firmware" / "tooling" / "materialize_vendored_engineering.py"
 TARGETS = ROOT / "firmware" / "targets.json"
 KISS = ROOT / "src" / "ywd1278" / "kiss" / "server.py"
 DAEMON = ROOT / "src" / "ywd1278" / "daemon.py"
@@ -21,6 +22,7 @@ DAEMON = ROOT / "src" / "ywd1278" / "daemon.py"
 m = json.loads(MANIFEST.read_text(encoding="utf-8"))
 builder = BUILDER.read_text(encoding="utf-8")
 brander = BRANDER.read_text(encoding="utf-8")
+materializer = MATERIALIZER.read_text(encoding="utf-8")
 targets = json.loads(TARGETS.read_text(encoding="utf-8"))["targets"][0]
 kiss = KISS.read_text(encoding="utf-8")
 daemon = DAEMON.read_text(encoding="utf-8")
@@ -29,22 +31,16 @@ assert m["schema"] == 1
 assert m["phase"] == "0C-P2"
 assert m["profile_id"] == "0c-p2-rssi-ax25r4-stm32f103-simplex-adf7021-14.7456tcxo-8mhz-hse"
 assert m["target_id"] == "mmdvm-hs-hat-stm32f103-simplex-14.7456-adf7021"
-upstream = m["upstream"]
-assert upstream["repository"] == "https://github.com/juribeparada/MMDVM_HS.git"
-assert upstream["commit"] == "7ff74ed1ba663a282edcbbb5e0ec3d7132e6f2f5"
-assert upstream["short_commit"] == "7ff74ed"
-assert upstream["submodules"]["STM32F10X_Lib"] == "1debc23063f3942608e2bd62d04d5e1249c47fa3"
-assert upstream["config_template"] == "configs/MMDVM_HS_Hat.h"
-assert upstream["config_template_blob"] == "1c526b41dd96ea68823f2e83442a8a76fd59590a"
-assert upstream["version_blob"] == "4239a854ec09ee90847468f931e1455ee461e2de"
-assert upstream["makefile_blob"] == "c73834e9734e4b74bd375cb98ce5144c31134de6"
-assert upstream["build_script"] == "scripts/build_fw.sh"
-assert upstream["build_script_blob"] == "30257c0aea66695ed32877b8688daa835ee4f0e2"
+assert m["upstream"]["commit"] == "7ff74ed1ba663a282edcbbb5e0ec3d7132e6f2f5"
+assert m["upstream"]["submodules"]["STM32F10X_Lib"] == "1debc23063f3942608e2bd62d04d5e1249c47fa3"
+assert m["upstream"]["build_script_blob"] == "30257c0aea66695ed32877b8688daa835ee4f0e2"
 assert m["build"]["stm32_hse_hz"] == 8_000_000
 assert m["build"]["osc_override"] is False
 assert m["rf"]["tcxo_hz"] == 14_745_600
 
 eng = m["engineering"]
+assert eng["source"] == "vendored"
+assert eng["vendored_root"] == "firmware/vendor/ywd-mmdvm"
 assert eng["baseline_qualified_commit"] == "d25180ad663d781b761c525d1e699e7b052d6214"
 assert eng["commit"] == "69309644da839522102e393e66093378544869ea"
 assert eng["baseline_qualification_blob"] == "42b4f22ba22050223fa9179b8d55045356e79a9d"
@@ -107,18 +103,21 @@ assert hasattr(ModemOwner, "rx_rssi")
 assert not hasattr(ModemOwner, "transmit_selector_burst")
 assert not hasattr(ModemOwner, "transact")
 
-# Build pipeline is deterministic, source-pinned, and build-only.
+# Build pipeline is deterministic and obtains YWD engineering only from this repo.
 for required in (
-    "FROZEN_ENGINEERING_OBJECTS=PASS",
-    "ENGINEERING_WORKTREE_USED=NO",
     "PINNED_UPSTREAM_SOURCE=PASS",
     "REPRODUCIBLE_BUILDS=PASS",
     "YWD1278_0C_P2_RSSI_FIRMWARE_BUILD=PASS",
-    "carrier_threshold_selected",
+    "ENGINEERING_SOURCE=VENDORED_IN_YWD1278",
+    "ENGINEERING_EXTERNAL_REPO_REQUIRED=NO",
+    "materialize_vendored_engineering.py",
     "arm-none-eabi-gcc",
 ):
     assert required in builder, required
 for forbidden in (
+    "--engineering-repo",
+    "YWD1278_ENGINEERING_REPO",
+    "mmdvm-lab/ywd-mmdvm",
     "/dev/ttyAMA0",
     "/dev/serial0",
     "stm32flash",
@@ -128,6 +127,14 @@ for forbidden in (
     "gpiozero",
 ):
     assert forbidden not in builder, forbidden
+
+for required in (
+    "VENDORED_ENGINEERING_BLOBS=PASS",
+    "ENGINEERING_EXTERNAL_REPO_REQUIRED=NO",
+    "ENGINEERING_NETWORK_FETCH_REQUIRED=NO",
+    "git_blob_sha1",
+):
+    assert required in materializer, required
 
 # Branding locks the exact additive behavior and preserves the qualified R3 engine.
 for required in (
@@ -161,8 +168,9 @@ print("RSSI_FIRMWARE_BUILD_CONTRACT=PASS")
 print("PHASE=0C-P2")
 print("BASELINE_AX25R3_COMMIT=d25180ad663d781b761c525d1e699e7b052d6214")
 print("RSSI_ENGINEERING_COMMIT=69309644da839522102e393e66093378544869ea")
+print("ENGINEERING_SOURCE=VENDORED_IN_YWD1278")
+print("ENGINEERING_EXTERNAL_REPO_REQUIRED=NO")
 print("ENGINEERING_FILES=13")
-print("UPSTREAM_PIN_SET=PASS")
 print("YWD_RX_RSSI_SUBCOMMAND=0x05")
 print("RX_STATUS_REVISION=3")
 print("CARRIER_THRESHOLD_SELECTED=NO")
