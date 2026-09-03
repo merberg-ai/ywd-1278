@@ -1,0 +1,71 @@
+{
+  "schema": 1,
+  "phase": "0C-P8-host",
+  "status": "staged",
+  "date": "2026-09-03",
+  "base_checkpoint": "checkpoint/0c-p7-live-kiss-one-shot-qualified",
+  "base_checkpoint_sha": "80249ab34da4c64d40d23d98d639db78d1691f5d",
+  "scope": "sustained bounded KISS TNC host/runtime qualification",
+  "architecture": {
+    "preserve_p7_queue_source": true,
+    "thread_safe_queue_by_composition": true,
+    "single_scheduler_worker": true,
+    "single_modem_owner": true,
+    "real_localhost_kiss_tcp": true,
+    "real_p7_admission": true,
+    "real_p2_p1_channel_access": true,
+    "real_p4e_half_duplex": true,
+    "real_p5_txdelay_broker": true,
+    "real_tx_modem_owner": true,
+    "fake_thread_bound_modem_transport": true
+  },
+  "qualification": {
+    "concurrent_kiss_producers": 8,
+    "concurrency_queue_capacity": 4,
+    "concurrency_expected_admitted": 4,
+    "concurrency_expected_full_drops": 4,
+    "integration_queue_capacity": 3,
+    "integration_kiss_clients": 2,
+    "client_reconnect_required": true,
+    "data_messages_received": 5,
+    "data_messages_admitted": 4,
+    "queue_full_drops": 1,
+    "sustained_tx_cycles": 4,
+    "captured_txdelay_profiles": [20, 30, 40, 50],
+    "distinct_parameter_generations_required": true,
+    "post_tx_decoder_reset_per_cycle": true,
+    "post_tx_fcs_valid_rx_required": true,
+    "rx_history_delivered_after_reconnect": true,
+    "queue_drains_to_zero": true,
+    "automatic_retry": false
+  },
+  "operator_accounting": {
+    "runtime_counters": true,
+    "parameter_snapshot": true,
+    "control_counters": true,
+    "kiss_data_ingress_counters": true,
+    "normalized_queue_counters": true,
+    "connection_counters": true,
+    "subscriber_drop_counter": true
+  },
+  "safety": {
+    "host_fake_modem_only": true,
+    "posix_serial": false,
+    "uart_access": false,
+    "rf_transmitted": false,
+    "flash_written": false,
+    "gpio_accessed": false,
+    "option_bytes_written": false,
+    "daemon_product_tx_enabled": false,
+    "systemd_product_tx_enabled": false,
+    "generic_rf_configuration_added": false
+  },
+  "physical_follow_on": {
+    "authorized": false,
+    "frequency_hz": 145050000,
+    "rf_power": 200,
+    "require_path": ["YWDNOD"],
+    "require_ywdnod_repeated_decode": false,
+    "note": "Physical sustained KISS qualification is separate and remains unauthorized until the P8 host checkpoint is frozen. YWDNOD repeat proof remains deferred/non-blocking."
+  }
+}

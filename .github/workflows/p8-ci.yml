@@ -1,0 +1,77 @@
+name: p8-ci
+
+on:
+  pull_request:
+    branches: [dev]
+  push:
+    branches: [dev-0c-p8-sustained-kiss-tnc]
+
+jobs:
+  p8-sustained-kiss-tnc:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Compile P8 host/runtime boundary
+        run: |
+          python -m py_compile src/ywd1278/kiss/sustained.py
+          python -m py_compile src/ywd1278/service/tnc_runtime.py
+          python -m py_compile tests/p8_fake_modem.py
+          python -m py_compile tests/sustained_kiss_queue_concurrency_test.py
+          python -m py_compile tests/sustained_kiss_tnc_integration_test.py
+          python -m py_compile tests/sustained_kiss_tnc_contract_test.py
+
+      - name: P8 concurrent bounded admission
+        run: python tests/sustained_kiss_queue_concurrency_test.py
+
+      - name: P8 sustained localhost KISS TNC graph
+        run: python tests/sustained_kiss_tnc_integration_test.py
+
+      - name: P8 architecture and safety contract
+        run: python tests/sustained_kiss_tnc_contract_test.py
+
+      - name: Preserve qualified P7 ingress and physical evidence
+        run: |
+          python tests/kiss_data_admission_test.py
+          python tests/kiss_data_full_graph_integration_test.py
+          python tests/kiss_data_admission_contract_test.py
+          python tests/live_p7_kiss_one_shot_evidence_contract_test.py
+
+      - name: Preserve P6 controls and P4e/P5 lifecycle
+        run: |
+          python tests/kiss_control_plane_test.py
+          python tests/kiss_control_plane_server_test.py
+          python tests/half_duplex_test.py
+          python tests/half_duplex_tx_owner_integration_test.py
+          python tests/txdelay_test.py
+          python tests/txdelay_contract_test.py
+
+      - name: Parse P8 host manifest
+        run: |
+          python - <<'PY'
+          import json
+          p = 'firmware/qualification/0c-p8-sustained-kiss-tnc-host.json'
+          d = json.load(open(p, encoding='utf-8'))
+          assert d['phase'] == '0C-P8-host'
+          assert d['status'] == 'staged'
+          assert d['base_checkpoint_sha'] == '80249ab34da4c64d40d23d98d639db78d1691f5d'
+          assert d['architecture']['thread_safe_queue_by_composition'] is True
+          assert d['qualification']['concurrent_kiss_producers'] == 8
+          assert d['qualification']['sustained_tx_cycles'] == 4
+          assert d['qualification']['client_reconnect_required'] is True
+          assert d['qualification']['post_tx_fcs_valid_rx_required'] is True
+          assert d['qualification']['automatic_retry'] is False
+          assert d['safety']['host_fake_modem_only'] is True
+          assert d['safety']['posix_serial'] is False
+          assert d['safety']['uart_access'] is False
+          assert d['safety']['rf_transmitted'] is False
+          assert d['safety']['daemon_product_tx_enabled'] is False
+          assert d['physical_follow_on']['authorized'] is False
+          assert d['physical_follow_on']['require_path'] == ['YWDNOD']
+          print('P8_HOST_MANIFEST_PARSE=PASS')
+          PY
