@@ -67,14 +67,17 @@ assert obs.random_byte == 255
 assert close(obs.csma.next_slot_at, 0.46)
 assert source.calls == 1
 
-# A real busy-side sample cancels that in-progress slot immediately. No random
-# byte is consumed even though the prior slot deadline is reached later.
+# P1 intentionally counts every busy-for-access observation, including the
+# startup/recent-RX observations above. Lock the count before the distinct live
+# BUSY sample so this test proves that the raw-48 observation adds exactly one
+# busy observation while cancelling the in-progress clear slot.
+busy_before_live = obs.csma.busy_observations
 obs = attempt.observe_rssi(now=0.40, raw_magnitude=48, random_byte_source=source)
 assert obs.detector.state is ChannelBusyState.BUSY
 assert obs.detector.channel_busy is True
 assert obs.csma.state is CSMAState.WAIT_CLEAR
 assert obs.csma.next_slot_at is None
-assert obs.csma.busy_observations == 1
+assert obs.csma.busy_observations == busy_before_live + 1
 assert obs.random_byte is None
 assert source.calls == 1
 
@@ -136,6 +139,7 @@ assert missing.csma.decision.persistence_trials == 0
 
 print("CHANNEL_ACCESS_INTEGRATION_TEST=PASS")
 print("DETECTOR_RECENT_RX_FEEDS_P1_BUSY=PASS")
+print("LIVE_BUSY_OBSERVATION_DELTA=1")
 print("BUSY_CANCELS_P1_CLEAR_SLOT=PASS")
 print("POST_BUSY_FULL_SLOT_REQUIRED=PASS")
 print("PERSIST_DEFER_BYTE=255")
