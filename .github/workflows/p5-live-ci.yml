@@ -64,3 +64,47 @@ jobs:
           assert data['option_bytes_permitted'] is False
           print('P5_LIVE_R3_MANIFEST_PARSE=PASS')
           PY
+
+      - name: Parse P5 live partial physical evidence
+        run: |
+          python - <<'PY'
+          import json
+          data = json.load(open('firmware/qualification/0c-p5-live-txdelay-ywdnod-physical-evidence.json', encoding='utf-8'))
+          assert data['phase'] == '0C-P5-live'
+          assert data['status'] == 'physical-execution-pass-ywdnod-repeat-pending'
+          assert data['staged_checkpoint_sha'] == '634e796cbc862ed0541351ffc2aa66b780731f7c'
+          assert data['host_checkpoint_sha'] == '30cc677fbcc9fc9bab1aa1a18c18850ed1ef40a1'
+          assert data['live_harness_result'] == 'YWD1278_0C_P5_R2_LIVE_TXDELAY_YWDNOD_EXECUTION=PASS'
+          assert data['authorized_entry_point'] == 'tools/qualify_live_p5_txdelay_ywdnod_r3.py'
+          assert data['tx_submissions'] == 2
+          assert data['complete_rx_tx_rx_cycles'] == 2
+          assert data['post_tx_rx_restarts'] == 2
+          assert data['qualifying_non_p5_inbound_frames'] == 3
+          assert data['p5_qualification_echoes_ignored'] == 2
+          assert data['final_post_tx_non_qualification_fcs_valid_rx'] is True
+          assert data['fifo_dropped_bytes'] == 0
+          assert [x['txdelay_units'] for x in data['cycles']] == [30, 50]
+          assert [x['opening_flags'] for x in data['cycles']] == [45, 75]
+          assert [x['observed_generated_samples'] for x in data['cycles']] == [13072, 16912]
+          ext = data['external_receiver']
+          assert ext['direct_decode_required'] == 2
+          assert ext['direct_decode_observed'] == 2
+          assert ext['direct_decode_gate_satisfied'] is True
+          assert ext['ywdnod_repeat_required'] == 2
+          assert ext['ywdnod_repeat_observed'] == 0
+          assert ext['ywdnod_repeat_gate_satisfied'] is False
+          assert data['direct_txdelay_physical_gate_satisfied'] is True
+          assert data['ywdnod_repeat_gate_satisfied'] is False
+          assert data['full_physical_qualification_complete'] is False
+          assert data['rerun_completed_two_burst_harness_permitted'] is False
+          assert data['duplicate_dispatch'] is False
+          assert data['automatic_tx_retry'] is False
+          assert data['flash_written'] is False
+          assert data['gpio_accessed'] is False
+          assert data['option_bytes_written'] is False
+          print('P5_LIVE_PARTIAL_PHYSICAL_EVIDENCE_PARSE=PASS')
+          print('DIRECT_EXTERNAL_DECODE_GATE=PASS_2_OF_2')
+          print('YWDNOD_REPEAT_GATE=PENDING_0_OF_2_PROVEN')
+          print('FULL_P5_LIVE_QUALIFICATION=NO')
+          print('RERUN_COMPLETED_TWO_BURST_HARNESS=FORBIDDEN')
+          PY
