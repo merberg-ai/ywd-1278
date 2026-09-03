@@ -7,10 +7,15 @@ import sys
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
-from ywd1278.tx.rssi_analysis import correlate_rssi_window, largest_cluster_gap
+from ywd1278.tx.rssi_analysis import (
+    cluster_gaps,
+    correlate_rssi_window,
+    guard_gap_above_signal,
+)
 
 # Reproduce the physically observed P2 separation shape without making the
-# production classifier depend on a single capture.
+# production classifier depend on a single capture. The one 73-count sample is
+# deliberately retained because it was observed at an RF-event edge.
 observed_shape = (
     [47] + [48] * 40 + [49] * 5 + [73]
     + [95, 96, 97] + [98] * 6 + [99] * 8 + [100] * 13
@@ -22,7 +27,20 @@ observed_shape = (
     + [121] * 3 + [122]
 )
 
-sep = largest_cluster_gap(observed_shape, min_low_count=5, min_high_count=20)
+gaps = cluster_gaps(observed_shape, min_low_count=5, min_high_count=20)
+assert any(item.low_max == 49 and item.high_min == 73 and item.gap == 24 for item in gaps)
+assert any(item.low_max == 73 and item.high_min == 95 and item.gap == 22 for item in gaps)
+
+# Packet-correlated signal evidence lives in the 47..49 core. The guard-gap
+# rule intentionally chooses the highest still-large gap above that signal
+# reference, keeping transition value 73 on the signal/busy side.
+sep = guard_gap_above_signal(
+    observed_shape,
+    signal_reference_max=49,
+    min_gap=12,
+    min_low_count=5,
+    min_high_count=20,
+)
 assert sep.low_max == 73
 assert sep.high_min == 95
 assert sep.gap == 22
@@ -54,11 +72,22 @@ assert corr.raw_max == 49
 # Guard malformed or underdetermined characterization inputs.
 for bad in ([], [100] * 24):
     try:
-        largest_cluster_gap(bad, min_low_count=5, min_high_count=20)
+        cluster_gaps(bad, min_low_count=5, min_high_count=20)
     except ValueError:
         pass
     else:
         raise AssertionError("underdetermined RSSI data did not fail closed")
+
+try:
+    guard_gap_above_signal(
+        [47] * 10 + [48] * 10 + [50] * 30,
+        signal_reference_max=48,
+        min_gap=12,
+    )
+except ValueError:
+    pass
+else:
+    raise AssertionError("weakly separated RSSI data did not fail closed")
 
 try:
     correlate_rssi_window(samples, sample_start=6000, sample_end=1000)
@@ -68,7 +97,8 @@ else:
     raise AssertionError("invalid frame interval did not fail closed")
 
 print("RSSI_ANALYSIS_REGRESSION=PASS")
-print("PHYSICAL_SHAPE_GAP=22")
-print("PHYSICAL_SHAPE_MIDPOINT_DESCRIPTIVE_ONLY=84")
+print("PHYSICAL_SIGNAL_CORE_GAP=49_TO_73")
+print("PHYSICAL_GUARD_GAP=73_TO_95")
+print("PHYSICAL_GUARD_MIDPOINT_DESCRIPTIVE_ONLY=84")
 print("CARRIER_THRESHOLD_SELECTED=NO")
 print("CSMA_INTEGRATION=NO")
