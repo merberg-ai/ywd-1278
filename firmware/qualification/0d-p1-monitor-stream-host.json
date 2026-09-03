@@ -1,0 +1,51 @@
+{
+  "schema": 1,
+  "phase": "0D-P1",
+  "stage": "decoded-monitor-stream-host",
+  "status": "host-qualified",
+  "date": "2026-09-03",
+  "base_checkpoint": "checkpoint/0c-complete-p8-physical-qualified",
+  "base_checkpoint_sha": "fc70386a3857e69437641d1be6f9f8cd0a6e7a13",
+  "qualified_implementation_head_sha": "164f0a6b5d8976f94f5824c1224d778a2ef40e99",
+  "monitor_stream_blob": "703b7e803d39d915b60d79c30c154151e3820098",
+  "packet_event_boundary": "RXOnlyBackend.open_stream",
+  "history_before_live": true,
+  "structured_ax25_records": true,
+  "ui_tnc2_style_rendering": true,
+  "connected_control_metadata_preserved": true,
+  "repeated_path_flag_rendering": true,
+  "single_line_binary_escaping": true,
+  "malformed_internal_events_counted_and_skipped": true,
+  "metadata_consistency_checked": true,
+  "additional_worker_thread": false,
+  "additional_monitor_queue": false,
+  "source_queue_bounded": true,
+  "source_subscriber_drop_accounting_reused": true,
+  "monitor_tx_capability": false,
+  "modem_dependency": false,
+  "uart_access": false,
+  "rf_access": false,
+  "flash_gpio_option_byte_activity": false,
+  "dedicated_push_ci": {
+    "run_id": 33814562850,
+    "result": "success"
+  },
+  "pull_request_ci": {
+    "pull_request": 25,
+    "workflow_runs": 14,
+    "framework_run_id": 33814566960,
+    "framework_result": "success",
+    "pending_runs": 0,
+    "failed_runs": 0
+  },
+  "frozen_0c_blobs": {
+    "src/ywd1278/ax25/codec.py": "866a500d9f3a5d3fc80f6918d07ff83a6672ad64",
+    "src/ywd1278/kiss/server.py": "d586fe9cbef9f42c5ec4d2e18880dfad32548b33",
+    "src/ywd1278/kiss/control.py": "b6c23879027c15ef944a9e411429694a312d606e",
+    "src/ywd1278/kiss/sustained.py": "63cf33f4b6d4cedd091af0349a8037669d45e84d",
+    "src/ywd1278/kiss/tx_path.py": "44f4b6c0bddd6ac0977646ac417e448c9a1398ea",
+    "src/ywd1278/service/rx_runtime.py": "ea63eb82cb82ed273cab8d393aedf797b46ff123",
+    "src/ywd1278/service/tnc_runtime.py": "f1a74ae44824bafc2b89c09e77fa416ac26bb4f1"
+  },
+  "qualification_complete": true
+}

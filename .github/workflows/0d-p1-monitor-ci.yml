@@ -2,7 +2,7 @@ name: 0d-p1-monitor-ci
 
 on:
   push:
-    branches: [dev-0d-p1-monitor-stream]
+    branches: [dev-0d-p1-monitor-stream, dev]
   pull_request:
     branches: [dev]
 
@@ -23,12 +23,16 @@ jobs:
           python -m py_compile src/ywd1278/monitor/stream.py
           python -m py_compile tests/monitor_stream_test.py
           python -m py_compile tests/monitor_stream_contract_test.py
+          python -m py_compile tests/monitor_stream_qualification_contract_test.py
 
       - name: Decoded monitor stream regression
         run: python tests/monitor_stream_test.py
 
       - name: Decoded monitor architecture and safety contract
         run: python tests/monitor_stream_contract_test.py
+
+      - name: Frozen 0D-P1 host qualification evidence
+        run: python tests/monitor_stream_qualification_contract_test.py
 
       - name: Preserve AX.25 parser and bounded KISS event source
         run: |
@@ -46,3 +50,16 @@ jobs:
         run: |
           python tests/live_p8_r3_physical_evidence_contract_test.py
           python tests/live_p8_r3_sustained_kiss_tnc_contract_test.py
+
+      - name: Parse 0D-P1 host evidence
+        run: |
+          python - <<'PY'
+          import json
+          d=json.load(open('firmware/qualification/0d-p1-monitor-stream-host.json', encoding='utf-8'))
+          assert d['status'] == 'host-qualified'
+          assert d['qualification_complete'] is True
+          assert d['monitor_tx_capability'] is False
+          assert d['uart_access'] is False
+          assert d['rf_access'] is False
+          print('OD_P1_HOST_MANIFEST_PARSE=PASS')
+          PY
