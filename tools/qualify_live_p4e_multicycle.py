@@ -49,6 +49,7 @@ CONFIRMATION_TOKEN = "P4E-LIVE-145050-P200-MULTICYCLE-3"
 INTERACTIVE_CONFIRMATION = "TRANSMIT-P4E-LIVE-THREE-CYCLES"
 ACTIVE_RX_REQUIRED_MASK = 0x0D
 TX_FLAG = 0x02
+MIN_FULL_SLOT_SECONDS = 0.100
 
 
 def load_stage() -> dict:
@@ -272,6 +273,7 @@ def main() -> int:
         default_transaction_timeout=1.50,
     )
     broker: TXBroker | None = None
+    lifecycle: PersistentHalfDuplexSubmitter | None = None
     owner_started = False
     rx_started = False
     accepted_tx_count = 0
@@ -449,6 +451,15 @@ def main() -> int:
                         defer_elapsed = elapsed
 
                 if obs.downstream_called:
+                    # A P4e post-transmit lifecycle failure can make the access
+                    # queue report DOWNSTREAM_FAILED even though the broker
+                    # already accepted the physical TX. Account from both
+                    # qualified layers before deciding whether rerun is safe.
+                    accepted_tx_count = max(
+                        accepted_tx_count,
+                        lifecycle.snapshot.downstream_accepted,
+                        broker.snapshot.accepted,
+                    )
                     if not seen_busy or not decoded_trigger:
                         raise RuntimeError(
                             f"cycle {cycle_index} reached downstream before fresh decoded BUSY trigger"
@@ -462,7 +473,6 @@ def main() -> int:
                         raise RuntimeError(f"cycle {cycle_index} returned unexpected downstream receipt")
                     receipt = obs.downstream_result
                     dispatch_elapsed = elapsed
-                    accepted_tx_count += 1
                     # PersistentHalfDuplexSubmitter returns only after RF idle
                     # and RX_START + active-status verification have succeeded.
                     restarted = owner.rx_status(timeout=1.25)
@@ -493,6 +503,11 @@ def main() -> int:
                     break
 
                 if obs.request_state in {AccessRequestState.TIMED_OUT, AccessRequestState.DOWNSTREAM_FAILED}:
+                    accepted_tx_count = max(
+                        accepted_tx_count,
+                        lifecycle.snapshot.downstream_accepted,
+                        broker.snapshot.accepted,
+                    )
                     raise RuntimeError(
                         f"cycle {cycle_index} request terminated: "
                         f"{obs.request_state.value} {obs.downstream_error}"
@@ -506,6 +521,21 @@ def main() -> int:
                 raise RuntimeError(
                     f"cycle {cycle_index} expected exactly two post-trigger persistence trials, "
                     f"got {post_trigger_trials}"
+                )
+            if None in (busy_elapsed, decoded_elapsed, clear_elapsed, defer_elapsed, dispatch_elapsed):
+                raise RuntimeError(f"cycle {cycle_index} did not record the complete access timeline")
+            assert clear_elapsed is not None
+            assert defer_elapsed is not None
+            assert dispatch_elapsed is not None
+            if defer_elapsed - clear_elapsed + 1e-9 < MIN_FULL_SLOT_SECONDS:
+                raise RuntimeError(
+                    f"cycle {cycle_index} first post-clear persistence trial occurred before a full 100ms slot: "
+                    f"clear={clear_elapsed:.6f} defer={defer_elapsed:.6f}"
+                )
+            if dispatch_elapsed - defer_elapsed + 1e-9 < MIN_FULL_SLOT_SECONDS:
+                raise RuntimeError(
+                    f"cycle {cycle_index} dispatch occurred before a second full 100ms slot: "
+                    f"defer={defer_elapsed:.6f} dispatch={dispatch_elapsed:.6f}"
                 )
             snap = lifecycle.snapshot
             if snap.cycles_completed != cycle_index or snap.downstream_accepted != cycle_index:
@@ -635,6 +665,8 @@ def main() -> int:
             print(f"CYCLE_{index}_PERSIST_255_DEFER=PASS")
             print(f"CYCLE_{index}_PERSIST_0_DISPATCH=PASS")
             print(f"CYCLE_{index}_RX_STOP_TX_RX_RESTART=PASS")
+            print(f"CYCLE_{index}_CLEAR_TO_DEFER_SECONDS={record['defer_elapsed'] - record['clear_elapsed']:.3f}")
+            print(f"CYCLE_{index}_DEFER_TO_DISPATCH_SECONDS={record['dispatch_elapsed'] - record['defer_elapsed']:.3f}")
         print("SINGLE_MODEM_OWNER=PASS")
         print("UART_RELEASED=YES")
         print("DUPLICATE_DISPATCH=NO")
@@ -650,8 +682,13 @@ def main() -> int:
         return 0
 
     except BaseException:
-        print(f"P4E_LIVE_ACCEPTED_TX_BEFORE_FAILURE={accepted_tx_count}", file=sys.stderr)
-        if accepted_tx_count:
+        actual_accepted = accepted_tx_count
+        if lifecycle is not None:
+            actual_accepted = max(actual_accepted, lifecycle.snapshot.downstream_accepted)
+        if broker is not None:
+            actual_accepted = max(actual_accepted, broker.snapshot.accepted)
+        print(f"P4E_LIVE_ACCEPTED_TX_BEFORE_FAILURE={actual_accepted}", file=sys.stderr)
+        if actual_accepted:
             print("DO_NOT_RERUN_FULL_P4E_LIVE_HARNESS=YES", file=sys.stderr)
             print("PRESERVE_OUTPUT_AND_DIAGNOSE_FROM_CURRENT_STATE=YES", file=sys.stderr)
         else:
