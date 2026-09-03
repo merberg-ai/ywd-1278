@@ -109,6 +109,22 @@ jobs:
         run: |
           python tests/channel_busy_contract_test.py
 
+      - name: P3 detector to CSMA integration regression
+        run: |
+          python tests/channel_access_integration_test.py
+
+      - name: P3 live channel-access sampler regression
+        run: |
+          python tests/live_channel_access_sampler_test.py
+
+      - name: P3 shadow channel-access architecture contract
+        run: |
+          python tests/channel_access_live_contract_test.py
+
+      - name: P3 live physical staging contract
+        run: |
+          python tests/live_shadow_channel_access_contract_test.py
+
       - name: P13b one-shot TX qualification contract
         run: |
           python tests/single_tx_qualification_contract_test.py
@@ -191,6 +207,7 @@ jobs:
           json.load(open('firmware/qualification/0c-p2-rssi-live-stage.json', encoding='utf-8'))
           json.load(open('firmware/qualification/0c-p2-rssi-live-physical-evidence.json', encoding='utf-8'))
           json.load(open('firmware/qualification/0c-p2-rssi-packet-correlation-physical-evidence.json', encoding='utf-8'))
+          json.load(open('firmware/qualification/0c-p3-live-shadow-channel-access.json', encoding='utf-8'))
           with open('config/ywd-1278.example.toml', 'rb') as f:
               tomllib.load(f)
           print('MANIFEST_CONFIG_PARSE=PASS')
