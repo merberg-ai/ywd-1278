@@ -103,13 +103,15 @@ for source in (sustained, runtime):
 
 manifest = json.loads(text("firmware/qualification/0c-p8-sustained-kiss-tnc-host.json"))
 assert manifest["phase"] == "0C-P8-host"
-assert manifest["status"] == "staged"
+assert manifest["status"] == "host-qualified"
 assert manifest["base_checkpoint_sha"] == "80249ab34da4c64d40d23d98d639db78d1691f5d"
 assert manifest["architecture"]["preserve_p7_queue_source"] is True
 assert manifest["architecture"]["thread_safe_queue_by_composition"] is True
 assert manifest["qualification"]["sustained_tx_cycles"] == 4
 assert manifest["qualification"]["captured_txdelay_profiles"] == [20, 30, 40, 50]
 assert manifest["qualification"]["automatic_retry"] is False
+assert manifest["qualification_evidence"]["full_framework_pr_run"] == 439
+assert manifest["qualification_evidence"]["all_green_before_promotion"] is True
 assert manifest["safety"]["host_fake_modem_only"] is True
 assert manifest["safety"]["posix_serial"] is False
 assert manifest["safety"]["uart_access"] is False
@@ -131,6 +133,7 @@ print("THREAD_SAFE_QUEUE=COMPOSITION")
 print("CALLER_SUPPLIED_TIME_AND_RANDOMNESS=PASS")
 print("POST_TX_DECODER_RESET=REQUIRED")
 print("AUTOMATIC_RETRY=NO")
+print("PHYSICAL_P8_AUTHORIZED=NO")
 print("DAEMON_PRODUCT_TX_ENABLED=NO")
 print("POSIX_SERIAL_TRANSPORT=NO")
 print("RF_TRANSMITTED=NO")
