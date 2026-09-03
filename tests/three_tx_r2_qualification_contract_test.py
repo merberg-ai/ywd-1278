@@ -27,9 +27,9 @@ tool = TOOL.read_text(encoding="utf-8")
 kiss = KISS.read_text(encoding="utf-8")
 daemon = DAEMON.read_text(encoding="utf-8")
 
-# P13b is now the latest physical target boundary. Historical P12a/P12b
-# evidence must remain present and unchanged beneath the qualified TX result.
-assert target["status"] == "0b-p13b-known-packet-tx-qualified"
+# The current target has advanced through 0C-P2. Historical P12a/P12b and P13b
+# evidence must remain present and unchanged beneath the later channel-access result.
+assert target["status"] == "0c-p2-channel-busy-detector-qualified"
 assert target["flash_enabled"] is False
 assert target["option_bytes_permitted"] is False
 assert target["packet_live_rx_qualification"]["packet_firmware_left_installed"] is True
@@ -55,6 +55,11 @@ assert p13b["flash_written"] is False
 assert p13b["gpio_accessed"] is False
 assert p13b["option_bytes_written"] is False
 assert p13b["automatic_tx_retry"] is False
+p2 = target["channel_busy_qualification"]
+assert p2["status"] == "host-qualified"
+assert p2["modem_integration"] is False
+assert p2["csma_integration"] is False
+assert p2["kiss_tx_connected"] is False
 
 assert stage["phase"] == "0B-P13b-R2"
 assert stage["status"] == "qualified"
@@ -233,6 +238,7 @@ assert 'print("RF_TRANSMITTED=NO")' in tool
 print("P13B_R2_THREE_TX_CONTRACT=PASS")
 print("P13B_PHYSICAL_QUALIFICATION=PASS")
 print("P12B_HISTORICAL_EVIDENCE_FROZEN=PASS")
+print("P2_CURRENT_TARGET_BOUNDARY=QUALIFIED")
 print("P13B_R2_FREQUENCY_HZ=145050000")
 print("P13B_R2_RF_POWER=200")
 print("RESET_ON_ACCEPT_COUNTER_SEMANTICS=PASS")
