@@ -1,0 +1,118 @@
+name: p8-live-ci
+
+on:
+  push:
+    branches: [dev-0c-p8-live-sustained-kiss-tnc]
+  pull_request:
+    branches: [dev]
+    paths:
+      - '.github/workflows/p8-live-ci.yml'
+      - 'firmware/qualification/0c-p8-live-sustained-kiss-tnc.json'
+      - 'tools/qualify_live_p8_sustained_kiss_tnc.py'
+      - 'tests/live_p8_sustained_kiss_tnc_contract_test.py'
+      - 'src/ywd1278/**'
+
+jobs:
+  p8-live-staging:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Compile live and frozen host boundaries
+        run: |
+          python -m py_compile tools/qualify_live_p8_sustained_kiss_tnc.py
+          python -m py_compile tests/live_p8_sustained_kiss_tnc_contract_test.py
+          python -m py_compile src/ywd1278/kiss/sustained.py
+          python -m py_compile src/ywd1278/service/tnc_runtime.py
+          python -m py_compile src/ywd1278/kiss/tx_path.py
+          python -m py_compile src/ywd1278/tx/half_duplex.py
+          python -m py_compile src/ywd1278/tx/txdelay.py
+
+      - name: P8 live static safety and frozen-source contract
+        run: python tests/live_p8_sustained_kiss_tnc_contract_test.py
+
+      - name: P8 live dry-run must remain hardware inert
+        run: |
+          set -euo pipefail
+          python tools/qualify_live_p8_sustained_kiss_tnc.py | tee /tmp/p8-live-dry-run.txt
+          grep -Fx 'P8_LIVE_SUSTAINED_KISS_DRY_RUN=PASS' /tmp/p8-live-dry-run.txt
+          grep -Fx 'TX_MODEM_OWNER_CONSTRUCTED=NO' /tmp/p8-live-dry-run.txt
+          grep -Fx 'KISS_LISTENER_OPENED=NO' /tmp/p8-live-dry-run.txt
+          grep -Fx 'HARDWARE_UART_OPENED=NO' /tmp/p8-live-dry-run.txt
+          grep -Fx 'RF_TRANSMITTED=NO' /tmp/p8-live-dry-run.txt
+
+      - name: Preserve hardened P8 host qualification
+        run: |
+          python tests/sustained_kiss_queue_concurrency_test.py
+          python tests/sustained_kiss_tnc_integration_test.py
+          python tests/sustained_kiss_tnc_contract_test.py
+
+      - name: Preserve qualified P7 KISS ingress and live evidence contracts
+        run: |
+          python tests/kiss_data_admission_test.py
+          python tests/kiss_data_full_graph_integration_test.py
+          python tests/kiss_data_admission_contract_test.py
+          python tests/live_p7_kiss_one_shot_contract_test.py
+          python tests/live_p7_kiss_one_shot_evidence_contract_test.py
+
+      - name: Preserve P6 control plane and P5 TXDELAY
+        run: |
+          python tests/kiss_control_plane_test.py
+          python tests/kiss_control_plane_server_test.py
+          python tests/kiss_control_plane_contract_test.py
+          python tests/txdelay_test.py
+          python tests/txdelay_contract_test.py
+
+      - name: Preserve P4e half-duplex lifecycle and physical evidence contracts
+        run: |
+          python tests/half_duplex_test.py
+          python tests/half_duplex_tx_owner_integration_test.py
+          python tests/half_duplex_contract_test.py
+          python tests/live_p4e_multicycle_contract_test.py
+          python tests/live_p4e_multicycle_physical_evidence_test.py
+
+      - name: Preserve channel-access, modem and Bell-202 regressions
+        run: |
+          python tests/csma_policy_test.py
+          python tests/channel_busy_test.py
+          python tests/channel_access_integration_test.py
+          python tests/modem_protocol_test.py
+          python tests/modem_serial_transport_test.py
+          python tests/modem_owner_test.py
+          python tests/bell202_tx_test.py
+          python tests/bell202_rx_test.py
+          python tests/ax25_codec_test.py
+
+      - name: Parse locked P8 live staging manifest
+        run: |
+          python - <<'PY'
+          import json
+          p = 'firmware/qualification/0c-p8-live-sustained-kiss-tnc.json'
+          d = json.load(open(p, encoding='utf-8'))
+          assert d['phase'] == '0C-P8-live'
+          assert d['status'] == 'staged'
+          assert d['base_checkpoint_sha'] == 'a835d2500dbdb4a8eaf1ae3cae4ea662203a852a'
+          assert d['device'] == '/dev/ttyAMA0'
+          assert d['frequency_hz'] == 145050000
+          assert d['rf_power'] == 200
+          assert d['packet_count'] == 3
+          assert d['path'] == ['YWDNOD']
+          assert d['txdelay_sequence'] == [30, 50, 30]
+          assert d['maximum_transmit_submissions'] == 3
+          assert d['automatic_tx_retry'] is False
+          assert d['requires_direct_external_decode'] is True
+          assert d['required_external_tx_decodes'] == 3
+          assert d['require_ywdnod_repeated_decode'] is False
+          assert d['product_tx_enabled'] is False
+          assert d['daemon_tx_enabled'] is False
+          assert d['systemd_tx_enabled'] is False
+          assert d['flash_permitted'] is False
+          assert d['gpio_reset_permitted'] is False
+          assert d['option_bytes_permitted'] is False
+          print('P8_LIVE_MANIFEST_PARSE=PASS')
+          PY
