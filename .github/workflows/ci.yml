@@ -173,6 +173,18 @@ jobs:
         run: |
           python tests/txdelay_contract_test.py
 
+      - name: P6 KISS control-plane policy regression
+        run: |
+          python tests/kiss_control_plane_test.py
+
+      - name: P6 KISS control-plane TCP regression
+        run: |
+          python tests/kiss_control_plane_server_test.py
+
+      - name: P6 KISS control-plane architecture contract
+        run: |
+          python tests/kiss_control_plane_contract_test.py
+
       - name: P13b one-shot TX qualification contract
         run: |
           python tests/single_tx_qualification_contract_test.py
@@ -264,6 +276,9 @@ jobs:
           assert p4e['status'] == 'host-qualified'
           p5 = json.load(open('firmware/qualification/0c-p5-txdelay-host.json', encoding='utf-8'))
           assert p5['status'] == 'host-qualified'
+          p6 = json.load(open('firmware/qualification/0c-p6-kiss-control-plane.json', encoding='utf-8'))
+          assert p6['status'] == 'host-qualified'
+          assert p6['safety']['kiss_data_tx_connected'] is False
           with open('config/ywd-1278.example.toml', 'rb') as f:
               tomllib.load(f)
           print('MANIFEST_CONFIG_PARSE=PASS')
