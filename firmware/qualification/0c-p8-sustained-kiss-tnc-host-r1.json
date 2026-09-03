@@ -1,0 +1,73 @@
+{
+  "schema": 1,
+  "phase": "0C-P8-host-R1",
+  "status": "staged",
+  "date": "2026-09-03",
+  "base_checkpoint": "checkpoint/0c-p8-sustained-kiss-tnc-host-qualified",
+  "base_checkpoint_sha": "a835d2500dbdb4a8eaf1ae3cae4ea662203a852a",
+  "scope": "hardware-realistic sustained KISS scheduler RX backlog regression repair",
+  "supersedes_for_physical_use": "0C-P8-host checkpoint runtime scheduler only",
+  "historical_checkpoint_preserved": true,
+  "regression": {
+    "discovered_by": "0C-P8 physical attempt 1",
+    "accepted_tx_before_failure": 0,
+    "failure_phase": "cycle-1 pre-dispatch",
+    "observed_error": "timed out waiting for cycle 1 guarded sustained TX",
+    "root_cause": "scheduler waited for zero-length RX_READ while AX25R4 continuously produced packed samples at 19.2 ksps",
+    "fake_modem_gap": "finite host fake buffer eventually returned empty and did not model continuous hardware sampling",
+    "rf_retry_safe_after_fix": true
+  },
+  "architecture": {
+    "preserve_p7_queue_source": true,
+    "thread_safe_queue_by_composition": true,
+    "serialized_queue_clock_sampling": true,
+    "rx_fifo_backlog_priority_before_tx_access": true,
+    "bounded_live_fifo_drain": true,
+    "firmware_fifo_capacity_bytes": 512,
+    "rx_read_maximum_bytes": 200,
+    "drain_read_limit": 4,
+    "maximum_bytes_per_drain_pass": 800,
+    "partial_read_ends_drain_pass": true,
+    "zero_length_read_required": false,
+    "single_scheduler_worker": true,
+    "single_modem_owner": true
+  },
+  "qualification": {
+    "continuous_rx_source_never_empty_regression": true,
+    "continuous_source_drain_returns": true,
+    "continuous_source_expected_reads_per_pass": 4,
+    "partial_read_regression": true,
+    "partial_read_expected_stop": true,
+    "existing_p8_sustained_integration_required": true,
+    "existing_p8_concurrency_required": true,
+    "existing_p7_p6_p4e_p5_regressions_required": true,
+    "automatic_retry": false
+  },
+  "qualification_evidence": {
+    "implementation_head_sha": "pending",
+    "dedicated_ci": "pending",
+    "full_framework_ci": "pending",
+    "final_exact_head_ci": "pending"
+  },
+  "safety": {
+    "host_only": true,
+    "fake_modem_only": true,
+    "posix_serial": false,
+    "uart_access": false,
+    "rf_transmitted": false,
+    "flash_written": false,
+    "gpio_accessed": false,
+    "option_bytes_written": false,
+    "daemon_product_tx_enabled": false,
+    "systemd_product_tx_enabled": false,
+    "automatic_tx_retry": false
+  },
+  "physical_follow_on": {
+    "authorized": false,
+    "requires_new_checkpoint_after_r1_ci": true,
+    "frequency_hz": 145050000,
+    "rf_power": 200,
+    "require_path": ["YWDNOD"],
+    "require_ywdnod_repeated_decode": false
+  }
+}
