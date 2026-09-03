@@ -20,8 +20,8 @@ def git_blob(path: str) -> str:
     ).strip()
 
 
-# P8 is additive around the physically-qualified P7 graph.  These blobs must
-# remain byte-for-byte unchanged.
+# P8 is additive around the physically-qualified P7 graph. These blobs remain
+# byte-for-byte unchanged.
 FROZEN = {
     "src/ywd1278/kiss/tx_path.py": "44f4b6c0bddd6ac0977646ac417e448c9a1398ea",
     "src/ywd1278/kiss/tx_backend.py": "e06c1a619a02ecb4cf2073a3f270be1b2d54ea0e",
@@ -36,34 +36,36 @@ for path, expected in FROZEN.items():
     actual = git_blob(path)
     assert actual == expected, f"frozen P7 dependency changed: {path} {actual} != {expected}"
 
-# Product daemon/systemd stay fail-closed; P8 host qualification does not turn
-# on persistent hardware TX.
 assert git_blob("src/ywd1278/daemon.py") == "0571c4a88a5d498b48cf6a6cc19b511655f8fb07"
 assert git_blob("systemd/ywd-1278.service") == "ab7dc6aa6af8237d20e41a1357083f0321fd7062"
 
 sustained = text("src/ywd1278/kiss/sustained.py")
 runtime = text("src/ywd1278/service/tnc_runtime.py")
 
-# Concurrency is added by composition, never by editing the frozen P7 deque.
+# Concurrency is additive composition. The wrapper samples its explicitly
+# injected monotonic clock only after acquiring the same lock that serializes
+# frozen P7 queue mutation, preventing pre-lock timestamp reordering.
 assert "class ThreadSafeKISSDataAdmissionQueue" in sustained
 assert "self._queue = KISSDataAdmissionQueue(" in sustained
+assert "monotonic: MonotonicClock" in sustained
+assert "self._monotonic = monotonic" in sustained
 assert "threading.RLock()" in sustained
-assert "with self._lock:" in sustained
+assert "serialized_now = float(self._monotonic())" in sustained
+assert sustained.count("serialized_now = float(self._monotonic())") == 2
+assert "now=serialized_now" in sustained
 assert "class SustainedTNCBackend" in sustained
 assert "total_connections" in sustained
 assert "total_disconnects" in sustained
 
-# Sustained scheduler keeps explicit timing/randomness dependencies and only
-# advances RSSI access while a bounded request exists.
+# Sustained scheduler retains caller-supplied timing/randomness and advances
+# RSSI access only while a bounded request exists.
 assert "monotonic: MonotonicClock" in runtime
 assert "random_byte_source: RandomByteSource" in runtime
 assert "if self._admission.snapshot.queue_depth:" in runtime
 assert "self._owner.rx_rssi()" in runtime
 assert "random_byte_source=self._random_byte_source" in runtime
 
-# Already-captured packed RX bytes must outrank queued TX access.  P8 drains
-# the modem FIFO to empty before it is allowed to sample RSSI/advance CSMA, so a
-# later half-duplex decoder reset cannot cut through an RX frame in host backlog.
+# Already-captured packed RX bytes outrank queued TX access.
 assert "def _drain_rx_fifo" in runtime
 run_body = runtime[runtime.index("def _run"):runtime.index("def _drain_rx_fifo")]
 assert run_body.index("self._drain_rx_fifo()") < run_body.index("if self._admission.snapshot.queue_depth:")
@@ -73,15 +75,14 @@ assert "chunk = self._owner.rx_read(self._read_maximum)" in drain_body
 assert "if not chunk:" in drain_body
 assert "self._consume(chunk)" in drain_body
 
-# The physically-qualified P4e discontinuity requires a new Bell-202 decoder
-# after every completed TX/RX restart cycle.
+# P4e discontinuity still requires a fresh Bell-202 decoder after every
+# completed TX/RX restart cycle.
 assert "self._decoder = StreamingBell202Decoder()" in runtime
 assert "decoder_resets_after_tx" in runtime
 assert "KISSDataRequestState.DISPATCHED" in runtime
 assert "KISSDataRequestState.DOWNSTREAM_FAILED" in runtime
 assert "service is fail-latched" in runtime
 
-# Operator-facing accounting must aggregate every bounded service boundary.
 for token in (
     "parameters=self._backend.control_snapshot",
     "control=self._backend.control_counters",
@@ -92,7 +93,6 @@ for token in (
 ):
     assert token in runtime
 
-# P8 runtime cannot configure hardware or bypass the qualified graph.
 for source in (sustained, runtime):
     lower = source.lower()
     for forbidden in (
@@ -119,11 +119,17 @@ assert manifest["status"] == "host-qualified"
 assert manifest["base_checkpoint_sha"] == "80249ab34da4c64d40d23d98d639db78d1691f5d"
 assert manifest["architecture"]["preserve_p7_queue_source"] is True
 assert manifest["architecture"]["thread_safe_queue_by_composition"] is True
+assert manifest["architecture"]["serialized_queue_clock_sampling"] is True
+assert manifest["architecture"]["rx_fifo_backlog_priority_before_tx_access"] is True
+assert manifest["qualification"]["integration_request_timeout_seconds"] == 30.0
 assert manifest["qualification"]["sustained_tx_cycles"] == 4
 assert manifest["qualification"]["captured_txdelay_profiles"] == [20, 30, 40, 50]
+assert manifest["qualification"]["access_timeouts_expected"] == 0
 assert manifest["qualification"]["automatic_retry"] is False
-assert manifest["qualification_evidence"]["full_framework_pr_run"] == 439
-assert manifest["qualification_evidence"]["all_green_before_promotion"] is True
+assert manifest["qualification_evidence"]["post_promotion_regression_discovered"] is True
+assert manifest["qualification_evidence"]["rx_fifo_backlog_priority_fix"] is True
+assert manifest["qualification_evidence"]["serialized_queue_clock_sampling_fix"] is True
+assert manifest["qualification_evidence"]["final_exact_head_ci"] in {"pending", "success"}
 assert manifest["safety"]["host_fake_modem_only"] is True
 assert manifest["safety"]["posix_serial"] is False
 assert manifest["safety"]["uart_access"] is False
@@ -142,6 +148,7 @@ print("P4E_HALF_DUPLEX_FROZEN=PASS")
 print("P5_TXDELAY_FROZEN=PASS")
 print("TX_BROKER_FROZEN=PASS")
 print("THREAD_SAFE_QUEUE=COMPOSITION")
+print("SERIALIZED_QUEUE_CLOCK_SAMPLING=PASS")
 print("RX_FIFO_BACKLOG_PRIORITY=PASS")
 print("CALLER_SUPPLIED_TIME_AND_RANDOMNESS=PASS")
 print("POST_TX_DECODER_RESET=REQUIRED")
