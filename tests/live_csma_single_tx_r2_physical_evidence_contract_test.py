@@ -18,22 +18,29 @@ def main() -> None:
     assert evidence["phase"] == "0C-P4d-R2"
     assert evidence["status"] == "physically-qualified"
     assert evidence["staging_checkpoint_sha"] == "b1bed159afe981496c54c0f7182a7e89149ede65"
-    assert evidence["frequency_hz"] == 145_050_000
-    assert evidence["rf_power"] == 200
+    assert evidence["frequency_hz"] == stage["frequency_hz"] == 145_050_000
+    assert evidence["rf_power"] == stage["rf_power"] == 200
+    assert evidence["runtime_identity"] == stage["expected_identity"]
 
     for key in (
         "source",
         "destination",
         "information_text",
         "frame_bytes",
-        "frame_hex",
-        "frame_sha256",
         "selector_count",
         "packed_selector_bytes",
         "packed_selector_sha256",
         "expected_generated_samples",
     ):
         assert evidence[key] == stage[key], key
+
+    # R2 staging intentionally stores only the minimum locked-vector fields;
+    # preserve the additional exact physical-evidence hashes independently.
+    assert evidence["frame_hex"] == (
+        "b2ae88688840e096946cb2ae887503f05957442d31323738205034442043534d"
+        "412056455249465920312f310a32"
+    )
+    assert evidence["frame_sha256"] == "2f700a4dd7675473a183e119b711ed44c1f0a1ed3a70505523c63af8d42d6655"
 
     assert evidence["rssi_samples"] == 242
     assert evidence["packed_rx_bytes_drained"] == 28_942
@@ -66,7 +73,12 @@ def main() -> None:
     ):
         assert evidence[key] is True, key
 
-    assert evidence["transmit_submissions"] == 1
+    assert stage["rx_start_required_before_rssi"] is True
+    assert stage["rx_fifo_drain_while_sampling"] is True
+    assert stage["half_duplex_handoff"] == "RX_STOP_AFTER_READY_BEFORE_BROKER_SUBMIT"
+    assert stage["rx_must_be_inactive_before_tx_tones"] is True
+
+    assert evidence["transmit_submissions"] == stage["maximum_transmit_submissions"] == 1
     assert evidence["diagnostic_counter_semantics"] == "reset-on-accepted-burst"
     # These are absolute reset-on-accept diagnostics, not lifetime deltas.
     assert evidence["rf_keyups_before"] == 1
@@ -75,9 +87,9 @@ def main() -> None:
     assert evidence["rf_generated_samples_completed_burst_absolute"] == 12_048
     assert evidence["duplicate_dispatch"] is False
 
-    assert evidence["kiss_tx_connected"] is False
-    assert evidence["product_tx_enabled"] is False
-    assert evidence["automatic_tx_retry"] is False
+    assert evidence["kiss_tx_connected"] is stage["kiss_tx_connected"] is False
+    assert evidence["product_tx_enabled"] is stage["product_tx_enabled"] is False
+    assert evidence["automatic_tx_retry"] is stage["automatic_tx_retry"] is False
     assert evidence["flash_written"] is False
     assert evidence["gpio_accessed"] is False
     assert evidence["option_bytes_written"] is False
@@ -85,6 +97,7 @@ def main() -> None:
     assert evidence["rf_transmission_count"] == 1
 
     external = evidence["external_decode"]
+    assert stage["external_decode_required"] is True
     assert external["required"] is True
     assert external["observed"] is True
     assert external["count"] == 1
@@ -95,6 +108,7 @@ def main() -> None:
 
     r1 = evidence["r1_pre_tx_failure"]
     assert r1["preserved"] is True
+    assert r1["checkpoint_sha"] == stage["r1_staged_checkpoint_sha"]
     assert r1["checkpoint_sha"] == "d2ff131b989ad4fe81baa8a86067383e98e66c73"
     assert r1["transmit_submissions"] == 0
     assert r1["rf_transmitted"] is False
