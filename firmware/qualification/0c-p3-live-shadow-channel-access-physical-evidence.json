@@ -1,0 +1,80 @@
+{
+  "schema": 1,
+  "phase": "0C-P3",
+  "status": "physically-qualified-shadow-channel-access",
+  "date": "2026-09-02",
+  "target": "mmdvm-hs-hat-stm32f103-simplex-14.7456-adf7021",
+  "starting_checkpoint": "ddd881b868f851cf955703e1e7d277d1537b76d9",
+  "staged_checkpoint": "c9333b9e57101ed8c210030becde3265939d21b0",
+  "firmware_identity": "MMDVM_HS_Hat-YWD-1278-AX25R4-v0.1.0-alpha1 14.7456MHz ADF7021 FW based on CA6JAU GitID #7ff74ed",
+  "firmware_sha256": "b06fcbf0baa36e865198091cee27c66e1624ef08117ee685253a7a5613c7c616",
+  "receive_frequency_hz": 145050000,
+  "maximum_window_seconds": 20.0,
+  "rssi_poll_seconds": 0.05,
+  "detector": {
+    "busy_assert_raw_max": 83,
+    "clear_release_raw_min": 90,
+    "recent_rx_hold_seconds": 0.25
+  },
+  "csma": {
+    "persist": 63,
+    "slottime_10ms": 10,
+    "slot_seconds": 0.1,
+    "max_wait_seconds": 30.0,
+    "qualification_randomness": "explicit-255-until-live-busy-then-255-0"
+  },
+  "transitions": [
+    {"elapsed_seconds": 0.008, "raw": 106, "detector": "recent-rx", "csma": "wait-clear", "random": null, "persistence_trials": 0, "busy_observations": 1},
+    {"elapsed_seconds": 0.300, "raw": 112, "detector": "clear", "csma": "wait-slot", "random": null, "persistence_trials": 0, "busy_observations": 6},
+    {"elapsed_seconds": 3.552, "raw": 112, "detector": "clear", "csma": "wait-slot", "random": 255, "persistence_trials": 26, "busy_observations": 6},
+    {"elapsed_seconds": 3.652, "raw": 48, "detector": "busy", "csma": "wait-clear", "random": null, "persistence_trials": 26, "busy_observations": 7},
+    {"elapsed_seconds": 4.450, "raw": 111, "detector": "recent-rx", "csma": "wait-clear", "random": null, "persistence_trials": 26, "busy_observations": 23},
+    {"elapsed_seconds": 4.701, "raw": 107, "detector": "clear", "csma": "wait-slot", "random": null, "persistence_trials": 26, "busy_observations": 27},
+    {"elapsed_seconds": 4.850, "raw": 113, "detector": "clear", "csma": "wait-slot", "random": 255, "persistence_trials": 27, "busy_observations": 27},
+    {"elapsed_seconds": 4.955, "raw": 101, "detector": "clear", "csma": "ready", "random": 0, "persistence_trials": 28, "busy_observations": 27}
+  ],
+  "timing_proofs": {
+    "post_busy_clear_elapsed_seconds": 4.701,
+    "first_post_busy_trial_elapsed_seconds": 4.850,
+    "first_post_busy_clear_to_trial_seconds": 0.149,
+    "second_post_busy_trial_elapsed_seconds": 4.955,
+    "post_busy_trial_spacing_seconds": 0.105,
+    "minimum_required_slot_seconds": 0.1,
+    "full_post_busy_slot_proven": true,
+    "full_second_slot_proven": true
+  },
+  "decoded_frames": [
+    {
+      "source": "KJ6YWD",
+      "destination": "JIM",
+      "frame_type": "UI",
+      "bytes_no_fcs": 61
+    }
+  ],
+  "rssi_samples": 100,
+  "decoded_ax25_frames": 1,
+  "packed_bytes": 11965,
+  "fifo_dropped_bytes": 0,
+  "pre_busy_defer_trials": 26,
+  "post_busy_persist_trials": 2,
+  "live_busy_observed": true,
+  "busy_forced_csma_wait_clear": true,
+  "recent_rx_busy_for_access": true,
+  "post_busy_clear_observed": true,
+  "post_busy_full_100ms_slot": true,
+  "post_busy_persist_255_defer": true,
+  "post_busy_persist_0_ready": true,
+  "shadow_ready_only": true,
+  "rf_keyups_before": 0,
+  "rf_keyups_after": 0,
+  "rf_tx_generated_samples_before": 0,
+  "rf_tx_generated_samples_after": 0,
+  "single_modem_owner": true,
+  "kiss_tx_connected": false,
+  "tx_broker_connected": false,
+  "product_tx_enabled": false,
+  "rf_transmitted": false,
+  "flash_written": false,
+  "gpio_accessed": false,
+  "option_bytes_written": false
+}
