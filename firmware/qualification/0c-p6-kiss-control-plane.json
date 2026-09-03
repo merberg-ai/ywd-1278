@@ -2,7 +2,7 @@
   "schema": 1,
   "phase": "0C-P6",
   "stage": "kiss-tnc-control-plane",
-  "status": "staged",
+  "status": "host-qualified",
   "date": "2026-09-03",
   "base_checkpoint": "checkpoint/0c-p5-txdelay-host-qualified",
   "base_checkpoint_sha": "30cc677fbcc9fc9bab1aa1a18c18850ed1ef40a1",
@@ -73,6 +73,18 @@
     "flash_written": false,
     "gpio_accessed": false,
     "option_bytes_written": false
+  },
+  "host_qualification": {
+    "p6_ci_run_id": 33755445058,
+    "p6_ci_run_number": 2,
+    "p6_ci_conclusion": "success",
+    "framework_ci_run_id": 33755445048,
+    "framework_ci_run_number": 410,
+    "framework_ci_conclusion": "success",
+    "policy_regression": true,
+    "tcp_regression": true,
+    "architecture_contract": true,
+    "historical_kiss_regressions_preserved": true
   },
   "deferred_non_blocking": {
     "p5_ywdnod_repeat_proof": true,
