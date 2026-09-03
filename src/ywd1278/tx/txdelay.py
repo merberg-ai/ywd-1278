@@ -5,13 +5,33 @@ an HDLC flag preamble rather than an unstructured key-up tone, so requested
 TXDELAY is rounded *up* to a whole number of 8-bit flags.  Rounding upward
 ensures the effective preamble is never shorter than requested.
 
-This module is pure policy/math.  It has no modem, UART, RF, KISS-server,
-clock, randomness, or runtime configuration side effects.
+The historically qualified :class:`~ywd1278.tx.broker.TXBroker` remains
+unchanged with its fixed 45-flag P5 profile.  ``TXDelayBroker`` is the later
+0C-P5 boundary: it inherits that broker's bounded queue, modem-busy preflight,
+worker, accounting, and fail-closed behavior while varying only the opening
+HDLC flag count used during frame preparation.
+
+There is intentionally no runtime TXDELAY setter here.  A value is validated
+and frozen when the broker instance is constructed.  Safe live parameter
+mutation belongs to the later KISS-parameter phase.
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass
+import hashlib
+
+from ywd1278.ax25 import verify_fcs
+from ywd1278.modem import protocol
+from ywd1278.phy import MARK, duration_seconds, frame_to_selectors, pack_selectors
+from ywd1278.tx.broker import (
+    P5_INITIAL_TONE,
+    P5_POST_FLAGS,
+    TXBroker,
+    TXBrokerFrameRejected,
+    TXModemPort,
+    TXReceipt,
+)
 
 KISS_TXDELAY_MIN = 0
 KISS_TXDELAY_MAX = 255
@@ -64,3 +84,66 @@ def resolve_txdelay(units: int = KISS_TXDELAY_DEFAULT) -> TXDelayProfile:
         effective_seconds=effective_seconds,
         rounding_overrun_seconds=effective_seconds - requested_seconds,
     )
+
+
+class TXDelayBroker(TXBroker):
+    """Qualified TX broker behavior with one construction-time TXDELAY value.
+
+    The parent broker remains the source of queueing, worker, timeout,
+    preflight, and modem-submission semantics.  This subclass overrides only
+    the deterministic frame-preparation step.
+    """
+
+    def __init__(
+        self,
+        owner: TXModemPort,
+        *,
+        txdelay_units: int = KISS_TXDELAY_DEFAULT,
+        transmit_enabled: bool = False,
+        queue_capacity: int = 4,
+        submit_timeout: float = 0.05,
+        default_transaction_timeout: float = 1.5,
+        thread_name: str = "ywd1278-txdelay-broker",
+    ) -> None:
+        self._txdelay_profile = resolve_txdelay(txdelay_units)
+        super().__init__(
+            owner,
+            transmit_enabled=transmit_enabled,
+            queue_capacity=queue_capacity,
+            submit_timeout=submit_timeout,
+            default_transaction_timeout=default_transaction_timeout,
+            thread_name=thread_name,
+        )
+
+    @property
+    def txdelay_profile(self) -> TXDelayProfile:
+        """Return the immutable construction-time TXDELAY profile."""
+
+        return self._txdelay_profile
+
+    def _prepare_frame(self, frame: bytes) -> tuple[TXReceipt, bytes]:
+        if len(frame) < 3 or not verify_fcs(frame):
+            raise TXBrokerFrameRejected("AX.25 frame must include a valid FCS")
+
+        selectors = frame_to_selectors(
+            frame,
+            pre_flags=self._txdelay_profile.pre_flags,
+            post_flags=P5_POST_FLAGS,
+            initial_tone=P5_INITIAL_TONE,
+        )
+        selector_count = len(selectors)
+        if selector_count > protocol.MAX_SELECTORS:
+            raise TXBrokerFrameRejected(
+                f"serialized frame exceeds modem selector limit: "
+                f"{selector_count}>{protocol.MAX_SELECTORS}"
+            )
+        packed = pack_selectors(selectors)
+        receipt = TXReceipt(
+            frame_bytes=len(frame),
+            frame_sha256=hashlib.sha256(frame).hexdigest(),
+            selector_count=selector_count,
+            packed_selector_bytes=len(packed),
+            packed_selector_sha256=hashlib.sha256(packed).hexdigest(),
+            nominal_duration_seconds=duration_seconds(selector_count),
+        )
+        return receipt, packed
