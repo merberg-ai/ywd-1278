@@ -16,6 +16,9 @@
   "kiss_listener_port": 0,
   "kiss_listener_ephemeral": true,
   "kiss_listener_closed_before_channel_access_dispatch": true,
+  "kiss_data_messages_required": 1,
+  "kiss_data_payload_includes_fcs": false,
+  "tnc_appends_fcs_exactly_once": true,
   "kiss_port": 0,
   "kiss_parameter_commands": {
     "txdelay": 30,
@@ -58,6 +61,10 @@
     ]
   },
   "requires_rx_active_after_tx": true,
+  "requires_final_non_qualification_fcs_valid_rx": true,
+  "final_post_tx_receive_timeout_seconds": 60.0,
+  "required_total_qualifying_non_p7_inbound_frames": 2,
+  "p7_qualification_echo_must_not_count_as_rx_proof": true,
   "rx_fifo_dropped_bytes_required": 0,
   "maximum_transmit_submissions": 1,
   "automatic_tx_retry": false,
