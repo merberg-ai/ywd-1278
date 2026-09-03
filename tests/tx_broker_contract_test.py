@@ -26,9 +26,10 @@ tx_owner_text = TX_OWNER.read_text(encoding="utf-8")
 kiss_text = KISS_SERVER.read_text(encoding="utf-8")
 daemon_text = DAEMON.read_text(encoding="utf-8")
 
-# P13b is now the latest physically qualified boundary. P12b receive evidence
-# and the host-only P13a broker architecture remain frozen prerequisites.
-assert target["status"] == "0b-p13b-known-packet-tx-qualified"
+# The current target boundary has advanced through 0C-P2. P12b receive evidence,
+# P13b physical TX evidence, and the host-only P13a broker architecture remain
+# frozen prerequisites and are not rewritten by later channel-access work.
+assert target["status"] == "0c-p2-channel-busy-detector-qualified"
 assert target["flash_enabled"] is False
 assert target["option_bytes_permitted"] is False
 p12b = target["packet_live_rf_kiss_qualification"]
@@ -43,6 +44,13 @@ assert p13b["phase"] == "0B-P13b"
 assert p13b["status"] == "qualified"
 assert p13b["kiss_tx_connected"] is False
 assert p13b["product_tx_enabled"] is False
+p2 = target["channel_busy_qualification"]
+assert p2["phase"] == "0C-P2"
+assert p2["status"] == "host-qualified"
+assert p2["modem_integration"] is False
+assert p2["csma_integration"] is False
+assert p2["tx_broker_integration"] is False
+assert p2["kiss_tx_connected"] is False
 
 # Preserve the exact RX-only owner used for P12a/P12b. TX capability exists
 # only on the narrow subclass intended for the broker.
@@ -101,6 +109,7 @@ assert default_broker.snapshot.transmit_enabled is False
 print("TX_BROKER_CONTRACT=PASS")
 print("P12B_PHYSICAL_EVIDENCE_FROZEN=PASS")
 print("P13B_PHYSICAL_TX_BOUNDARY=QUALIFIED")
+print("P2_CURRENT_TARGET_BOUNDARY=QUALIFIED")
 print("BASE_MODEM_OWNER_RX_ONLY=PASS")
 print("TYPED_TX_OWNER_SUBCLASS=PASS")
 print("P5_FIXED_SERIALIZER_PROFILE=PASS")
