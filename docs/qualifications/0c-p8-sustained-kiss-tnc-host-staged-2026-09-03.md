@@ -44,7 +44,7 @@ The dedicated P8 gate requires:
    - zero automatic retries.
 3. Operator-visible aggregate accounting for runtime, current parameters, P6 control counters, P7 DATA ingress, normalized bounded queue outcomes, TCP connections, and subscriber drops.
 
-Dedicated P8 CI run #1 on initial candidate `84572fe0a4c2a5ed06368915a0cecec5e849644e` passed every staged step, including concurrency, sustained localhost integration, architecture contract, P7 physical-evidence preservation, P6/P4e/P5 regressions, and manifest parse.
+Dedicated P8 CI run #1 on initial candidate `84572fe0a4c2a5ed06368915a0cecec5e849644e` passed every staged step, including concurrency, sustained localhost integration, architecture contract, P7 physical-evidence preservation, P6/P4e/P5 regressions, and manifest parse. The same complete dedicated gate passed again as P8 CI run #2 on `0535027eaaa3b50f57c3948e4b383acdd7245675` before the PR was switched from draft to review for full-framework gating.
 
 ## Safety boundary
 
