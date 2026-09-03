@@ -1,0 +1,74 @@
+name: p7-live-ci
+
+on:
+  pull_request:
+    branches: [dev]
+  push:
+    branches: [dev-0c-p7-live-kiss-one-shot]
+
+jobs:
+  p7-live-kiss-one-shot:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Compile P7 live staging
+        run: |
+          python -m py_compile tools/qualify_live_p7_kiss_one_shot.py
+          python -m py_compile tests/live_p7_kiss_one_shot_contract_test.py
+
+      - name: P7 live no-hardware dry run
+        run: python tools/qualify_live_p7_kiss_one_shot.py
+
+      - name: P7 live one-shot safety contract
+        run: python tests/live_p7_kiss_one_shot_contract_test.py
+
+      - name: Preserve host-qualified P7 graph
+        run: |
+          python tests/kiss_data_admission_test.py
+          python tests/kiss_data_full_graph_integration_test.py
+          python tests/kiss_data_admission_contract_test.py
+
+      - name: Preserve P6 controls and P4e/P5 lifecycle
+        run: |
+          python tests/kiss_control_plane_test.py
+          python tests/kiss_control_plane_server_test.py
+          python tests/half_duplex_test.py
+          python tests/half_duplex_tx_owner_integration_test.py
+          python tests/txdelay_test.py
+          python tests/txdelay_contract_test.py
+
+      - name: Parse fixed physical manifest
+        run: |
+          python - <<'PY'
+          import json
+          p = 'firmware/qualification/0c-p7-live-kiss-one-shot.json'
+          d = json.load(open(p, encoding='utf-8'))
+          assert d['phase'] == '0C-P7-live'
+          assert d['status'] == 'staged'
+          assert d['base_checkpoint_sha'] == '3df9a46f0851876e55c078ab41504584304bef38'
+          assert d['frequency_hz'] == 145050000
+          assert d['rf_power'] == 200
+          assert d['packet_count'] == 1
+          assert d['kiss_listener_host'] == '127.0.0.1'
+          assert d['kiss_listener_port'] == 0
+          assert d['kiss_data_messages_required'] == 1
+          assert d['kiss_data_payload_includes_fcs'] is False
+          assert d['tnc_appends_fcs_exactly_once'] is True
+          assert d['path'] == ['YWDNOD']
+          assert d['maximum_transmit_submissions'] == 1
+          assert d['automatic_tx_retry'] is False
+          assert d['requires_direct_external_decode'] is True
+          assert d['require_ywdnod_repeated_decode'] is False
+          assert d['persistent_kiss_tx_enabled'] is False
+          assert d['product_tx_enabled'] is False
+          assert d['flash_permitted'] is False
+          assert d['gpio_reset_permitted'] is False
+          assert d['option_bytes_permitted'] is False
+          print('P7_LIVE_MANIFEST_PARSE=PASS')
+          PY
