@@ -1,0 +1,40 @@
+name: p4d-ci
+
+on:
+  push:
+    branches: [dev]
+  pull_request:
+    branches: [dev]
+
+jobs:
+  p4d-staging:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Compile P4d harness and contract
+        run: |
+          python -m py_compile tools/qualify_live_csma_single_tx.py tests/live_csma_single_tx_contract_test.py
+
+      - name: P4d guarded harness dry run
+        run: |
+          python tools/qualify_live_csma_single_tx.py
+
+      - name: P4d guarded physical architecture contract
+        run: |
+          python tests/live_csma_single_tx_contract_test.py
+
+      - name: Parse P4d staging manifest
+        run: |
+          python - <<'PY'
+          import json
+          data = json.load(open('firmware/qualification/0c-p4d-live-csma-single-tx.json', encoding='utf-8'))
+          assert data['phase'] == '0C-P4d'
+          assert data['status'] == 'staged'
+          print('P4D_STAGING_MANIFEST_PARSE=PASS')
+          PY
