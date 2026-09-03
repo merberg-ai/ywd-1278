@@ -2,7 +2,8 @@
   "schema": 1,
   "phase": "0C-P5",
   "stage": "txdelay-host-policy",
-  "status": "staged",
+  "status": "host-qualified",
+  "date": "2026-09-02",
   "base_checkpoint": "checkpoint/0c-p4e-live-multicycle-qualified",
   "base_checkpoint_sha": "b6b18631e9e1abaa2854f1a69a7a4dc56d08e71d",
   "historical_tx_broker_git_blob_sha1": "1e3307dccea4f2805d32cb9be5b34f3537e29c4f",
@@ -21,6 +22,15 @@
   "product_tx_enabled": false,
   "hardware_access": false,
   "rf_transmitted": false,
+  "host_qualification": {
+    "p5_ci_run_id": 33713270977,
+    "p5_ci_conclusion": "success",
+    "framework_ci_run_id": 33713284950,
+    "framework_ci_run_number": 393,
+    "framework_ci_conclusion": "success",
+    "default_p5_vector_preserved": true,
+    "historical_broker_blob_preserved": true
+  },
   "physical_follow_on": {
     "frequency_hz": 145050000,
     "rf_power": 200,
