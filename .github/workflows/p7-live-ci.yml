@@ -21,12 +21,16 @@ jobs:
         run: |
           python -m py_compile tools/qualify_live_p7_kiss_one_shot.py
           python -m py_compile tests/live_p7_kiss_one_shot_contract_test.py
+          python -m py_compile tests/live_p7_kiss_one_shot_evidence_contract_test.py
 
       - name: P7 live no-hardware dry run
         run: python tools/qualify_live_p7_kiss_one_shot.py
 
       - name: P7 live one-shot safety contract
         run: python tests/live_p7_kiss_one_shot_contract_test.py
+
+      - name: P7 live physical evidence contract
+        run: python tests/live_p7_kiss_one_shot_evidence_contract_test.py
 
       - name: Preserve host-qualified P7 graph
         run: |
