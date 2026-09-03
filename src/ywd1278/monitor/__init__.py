@@ -6,6 +6,13 @@ from .policy import (
     MonitorViewContext,
     MonitorViewDecision,
 )
+from .sqlite_log import (
+    SQLITE_FRAME_LOG_SCHEMA_VERSION,
+    SQLiteFrameLogError,
+    SQLiteFrameLogSchemaError,
+    SQLiteFrameLogSnapshot,
+    SQLiteFrameLogger,
+)
 from .stream import (
     DecodedMonitorStream,
     MonitorRecord,
@@ -23,5 +30,10 @@ __all__ = [
     "MonitorSubscription",
     "MonitorViewContext",
     "MonitorViewDecision",
+    "SQLITE_FRAME_LOG_SCHEMA_VERSION",
+    "SQLiteFrameLogError",
+    "SQLiteFrameLogSchemaError",
+    "SQLiteFrameLogSnapshot",
+    "SQLiteFrameLogger",
     "render_monitor_line",
 ]
