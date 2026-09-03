@@ -1,1 +1,0 @@
-0C-P7 live one-shot staging head; physical execution remains unauthorized pending CI.
