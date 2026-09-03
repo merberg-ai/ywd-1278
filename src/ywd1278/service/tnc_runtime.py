@@ -8,9 +8,11 @@ thread-safe P8 admission queue used by the KISS backend.
 One worker serially drains packet RX, checks FIFO health, polls RSSI only while
 DATA is queued, advances the captured P2/P1 policy, and lets the unchanged P7
 contextual submitter perform RX_STOP -> TX -> RF-idle -> RX_START.  Before any
-queued request may advance channel access, all packed RX bytes already waiting
-in the modem FIFO are drained through the Bell-202 decoder.  Bell-202 RX state
-is reset after every completed half-duplex TX discontinuity.
+queued request may advance channel access, the worker performs a bounded RX
+backlog drain through the Bell-202 decoder.  The drain preserves priority for
+already-captured bytes without chasing the continuously-producing 19.2 ksps
+hardware sampler forever.  Bell-202 RX state is reset after every completed
+half-duplex TX discontinuity.
 
 Time and persistence randomness are explicit caller dependencies.  There is no
 hidden RNG, POSIX serial, GPIO, flash, raw modem transaction, or direct TX call.
@@ -38,6 +40,12 @@ from ywd1278.phy.bell202_rx import StreamingBell202Decoder, StreamingFrame
 
 
 ACTIVE_RX_FLAGS = 0x0D
+# AX25R4 has a 512-byte packed RX FIFO and the qualified host read maximum is
+# 200 bytes.  Four reads can consume 800 bytes, comfortably more than one full
+# hardware FIFO snapshot, while remaining bounded when the 19.2 ksps sampler
+# continues producing new bytes during the UART transactions.  This mirrors
+# the physically-qualified P4e/P7 live drain discipline.
+RX_FIFO_DRAIN_READ_LIMIT = 4
 MonotonicClock = Callable[[], float]
 RandomByteSource = Callable[[], int]
 
@@ -210,12 +218,10 @@ class SustainedTNCRuntime:
         next_status = float(self._monotonic()) + self._status_interval_seconds
         try:
             while not self._stop.is_set():
-                # Drain every packed byte already queued by the modem before
-                # allowing a TX request to advance.  A single 200-byte read can
-                # be smaller than one Bell-202 frame; letting CSMA dispatch in
-                # the middle of that backlog would reset the streaming decoder
-                # at the following half-duplex gap and lose an already-captured
-                # receive frame.
+                # Preserve RX backlog priority, but do not chase the live raw
+                # sampler indefinitely.  A bounded pass consumes more than one
+                # complete 512-byte hardware FIFO snapshot and then gives RSSI/
+                # CSMA a scheduling opportunity before RX is serviced again.
                 self._drain_rx_fifo()
 
                 now = float(self._monotonic())
@@ -266,15 +272,29 @@ class SustainedTNCRuntime:
             self._stop.set()
 
     def _drain_rx_fifo(self) -> None:
-        """Consume the currently queued RX FIFO completely before TX access."""
+        """Drain pre-existing RX backlog without chasing continuous new samples.
 
-        while not self._stop.is_set():
+        AX25R4's raw sampler keeps producing packed bytes while RX is active,
+        including during RF silence.  Waiting for a zero-length RX_READ can
+        therefore starve RSSI/CSMA forever on real hardware even though a finite
+        fake buffer eventually returns empty.  Four 200-byte reads exceed the
+        complete 512-byte firmware FIFO capacity, so a bounded four-read pass
+        preserves backlog priority while guaranteeing scheduler progress.
+        """
+
+        for _ in range(RX_FIFO_DRAIN_READ_LIMIT):
+            if self._stop.is_set():
+                return
             chunk = self._owner.rx_read(self._read_maximum)
             with self._lock:
                 self._rx_reads += 1
-            if not chunk:
+            if chunk:
+                self._consume(chunk)
+            # A partial read proves the backlog present at this instant was
+            # overtaken; do not issue another read merely to wait for an exact
+            # zero while the hardware sampler continues producing bytes.
+            if len(chunk) < self._read_maximum:
                 return
-            self._consume(chunk)
 
     def _consume(self, packed: bytes) -> None:
         fresh = self._decoder.feed(packed)
