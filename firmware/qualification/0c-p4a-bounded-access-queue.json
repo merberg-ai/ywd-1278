@@ -1,0 +1,36 @@
+{
+  "schema": 1,
+  "phase": "0C-P4a",
+  "status": "staged-host-only",
+  "date": "2026-09-02",
+  "base_checkpoint": "checkpoint/0c-p3-live-shadow-channel-access-qualified",
+  "base_checkpoint_sha": "6303f3e49ec4ace2df3855b14f0c488aa3638926",
+  "queue_capacity": 4,
+  "total_request_lifetime_seconds": 30.0,
+  "downstream_timeout_seconds": 1.5,
+  "valid_fcs_required_before_queue": true,
+  "queue_wait_consumes_request_lifetime": true,
+  "fresh_access_attempt_per_head_request": true,
+  "one_rssi_observation_advances_one_head_request": true,
+  "fresh_observation_required_for_next_request": true,
+  "ready_dispatch_exactly_once": true,
+  "automatic_downstream_retry": false,
+  "p1": {
+    "persist": 63,
+    "slot_time_10ms": 10,
+    "maximum_wait_seconds": 30.0
+  },
+  "p2": {
+    "busy_assert_raw_max": 83,
+    "clear_release_raw_min": 90,
+    "recent_rx_hold_seconds": 0.25
+  },
+  "concrete_tx_broker_connected": false,
+  "tx_modem_owner_connected": false,
+  "kiss_tx_connected": false,
+  "product_tx_enabled": false,
+  "hardware_access": false,
+  "rf_transmitted": false,
+  "flash_written": false,
+  "option_bytes_written": false
+}
