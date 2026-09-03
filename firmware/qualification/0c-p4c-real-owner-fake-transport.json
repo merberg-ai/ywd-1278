@@ -1,0 +1,51 @@
+{
+  "schema": 1,
+  "phase": "0C-P4c",
+  "status": "staged-host-only",
+  "date": "2026-09-02",
+  "base_checkpoint": "checkpoint/0c-p4b-real-broker-fake-modem-qualified",
+  "base_checkpoint_sha": "3b22251582f532f5b7c388bde8d5eef50b01f22d",
+  "software_graph": {
+    "bounded_channel_access_queue": "real",
+    "tx_broker": "real",
+    "tx_modem_owner": "real",
+    "modem_transport": "fake-thread-bound"
+  },
+  "access": {
+    "persist": 63,
+    "slot_time_10ms": 10,
+    "maximum_wait_seconds": 30.0,
+    "busy_assert_raw_max": 83,
+    "clear_release_raw_min": 90,
+    "recent_rx_hold_seconds": 0.25,
+    "downstream_called_before_ready": false,
+    "ready_dispatch_exactly_once": true,
+    "duplicate_dispatch": false
+  },
+  "broker": {
+    "transmit_enabled_for_fake_transport_test": true,
+    "transaction_timeout_seconds": 1.5,
+    "rf_status_preflight_required": true
+  },
+  "wire": {
+    "transactions": 2,
+    "request_1": "YWD_RF_GET_STATUS",
+    "request_2": "YWD_RF_TX_TONES",
+    "p5_frame_bytes": 38,
+    "p5_selector_count": 691,
+    "p5_packed_selector_bytes": 87,
+    "p5_packed_selector_sha256": "30718ba5a4368e82bab69e6343f95c7e226cd08426844ed328ad8c52fbfd750e",
+    "all_transactions_on_single_owner_thread": true,
+    "transport_close_on_owner_thread": true
+  },
+  "posix_serial_transport_used": false,
+  "uart_opened": false,
+  "kiss_tx_connected": false,
+  "daemon_tx_connected": false,
+  "product_tx_enabled": false,
+  "hardware_access": false,
+  "rf_transmitted": false,
+  "flash_written": false,
+  "gpio_accessed": false,
+  "option_bytes_written": false
+}
