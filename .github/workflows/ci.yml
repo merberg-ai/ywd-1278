@@ -208,6 +208,7 @@ jobs:
           json.load(open('firmware/qualification/0c-p2-rssi-live-physical-evidence.json', encoding='utf-8'))
           json.load(open('firmware/qualification/0c-p2-rssi-packet-correlation-physical-evidence.json', encoding='utf-8'))
           json.load(open('firmware/qualification/0c-p3-live-shadow-channel-access.json', encoding='utf-8'))
+          json.load(open('firmware/qualification/0c-p3-live-shadow-channel-access-physical-evidence.json', encoding='utf-8'))
           with open('config/ywd-1278.example.toml', 'rb') as f:
               tomllib.load(f)
           print('MANIFEST_CONFIG_PARSE=PASS')
