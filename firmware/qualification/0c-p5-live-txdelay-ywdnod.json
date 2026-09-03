@@ -1,7 +1,10 @@
 {
   "schema": 1,
   "phase": "0C-P5-live",
+  "attempt": "R2",
   "status": "staged",
+  "supersedes_unrun_harness": "tools/qualify_live_p5_txdelay_ywdnod.py",
+  "authorized_harness": "tools/qualify_live_p5_txdelay_ywdnod_r2.py",
   "base_checkpoint": "checkpoint/0c-p5-txdelay-host-qualified",
   "base_checkpoint_sha": "30cc677fbcc9fc9bab1aa1a18c18850ed1ef40a1",
   "target_id": "mmdvm-hs-hat-stm32f103-simplex-14.7456-adf7021",
@@ -54,8 +57,10 @@
     }
   ],
   "requires_fresh_fcs_valid_rx_trigger_before_each_tx": true,
+  "qualification_frames_may_authorize_later_tx": false,
   "required_pre_tx_decoded_frames": 2,
   "requires_final_fcs_valid_rx_after_cycle_2_restart": true,
+  "final_rx_proof_may_be_qualification_frame": false,
   "required_total_inbound_decoded_frames": 3,
   "qualification_randomness": {
     "before_fresh_decoded_busy_trigger": 255,
@@ -71,8 +76,9 @@
   "required_external_ywdnod_repeat_decodes": 2,
   "maximum_transmit_submissions": 2,
   "automatic_tx_retry": false,
-  "confirmation_token": "P5-LIVE-YWDNOD-TXDELAY-30-50",
-  "interactive_phrase": "TRANSMIT-P5-TXDELAY-VIA-YWDNOD-TWO",
+  "failure_accepted_tx_accounting": "exact-active-cycle-base-plus-current-broker-or-lifecycle-acceptance",
+  "confirmation_token": "P5-LIVE-YWDNOD-TXDELAY-30-50-R2",
+  "interactive_phrase": "TRANSMIT-P5-R2-TXDELAY-VIA-YWDNOD-TWO",
   "kiss_parameter_ingress_connected": false,
   "kiss_data_tx_connected": false,
   "product_tx_enabled": false,
