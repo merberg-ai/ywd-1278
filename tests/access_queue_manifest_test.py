@@ -13,7 +13,7 @@ data = json.loads(
 
 assert data["schema"] == 1
 assert data["phase"] == "0C-P4a"
-assert data["status"] == "staged-host-only"
+assert data["status"] == "host-qualified"
 assert data["base_checkpoint"] == "checkpoint/0c-p3-live-shadow-channel-access-qualified"
 assert data["base_checkpoint_sha"] == "6303f3e49ec4ace2df3855b14f0c488aa3638926"
 assert data["queue_capacity"] == 4
@@ -32,6 +32,13 @@ assert data["p2"] == {
     "clear_release_raw_min": 90,
     "recent_rx_hold_seconds": 0.25,
 }
+assert data["initial_ci"] == {
+    "workflow": "framework-ci",
+    "run_number": 346,
+    "run_id": 33705580315,
+    "head_sha": "f9f87c28df3b21ac2d8402d6f20646554036f835",
+    "conclusion": "success",
+}
 for key in (
     "concrete_tx_broker_connected",
     "tx_modem_owner_connected",
@@ -44,8 +51,10 @@ for key in (
 ):
     assert data[key] is False, key
 
-print("P4A_STAGING_MANIFEST=PASS")
+print("P4A_QUALIFICATION_MANIFEST=PASS")
+print("STATUS=HOST_QUALIFIED")
 print("BASE_CHECKPOINT=0C-P3_QUALIFIED")
+print("INITIAL_CI_RUN=346_SUCCESS")
 print("CONCRETE_TX_BROKER_CONNECTED=NO")
 print("KISS_TX_CONNECTED=NO")
 print("HARDWARE_ACCESS=NO")
