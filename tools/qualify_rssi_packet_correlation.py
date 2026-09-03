@@ -47,7 +47,7 @@ RSSI_POLL_SECONDS = 0.05
 STATUS_SECONDS = 0.50
 READ_BYTES = 100
 FRAME_CORRELATION_PADDING_SAMPLES = 0
-OUTSIDE_FRAME_GUARD_SAMPLES = int(round(0.20 * SAMPLE_RATE))
+OUTSIDE_FRAME_GUARD_SAMPLES = int(round(0.50 * SAMPLE_RATE))
 MIN_OUTSIDE_SAMPLES = 20
 MIN_POLARITY_MARGIN = 12
 MIN_SEPARATING_GAP = 12
@@ -237,9 +237,16 @@ def main() -> int:
         if after_generated != before_generated:
             raise RuntimeError(f"RF TX generated samples changed: {before_generated}->{after_generated}")
 
-        if not frames:
-            print("CHARACTERIZATION_INCOMPLETE=NO_FCS_VALID_AX25_FRAME_OBSERVED")
+        if len(frames) < TARGET_VALID_FRAMES:
+            print(
+                f"CHARACTERIZATION_INCOMPLETE=FCS_VALID_AX25_FRAMES_{len(frames)}_OF_{TARGET_VALID_FRAMES}"
+            )
+            print(f"FIFO_DROPPED_BYTES={dropped}")
+            print(f"RF_KEYUPS={before_keyups}->{after_keyups}")
+            print(f"RF_TX_GENERATED_SAMPLES={before_generated}->{after_generated}")
             print("SAFE_TO_REPEAT_LATER=YES")
+            print("FIRMWARE_CHANGED=NO")
+            print("RF_TRANSMITTED=NO")
             return 2
 
         correlations = []
@@ -259,8 +266,11 @@ def main() -> int:
                 f"median={corr.raw_median} max={corr.raw_max}"
             )
 
-        if not correlations:
-            raise RuntimeError("decoded frames had no overlapping RSSI telemetry samples")
+        if len(correlations) < TARGET_VALID_FRAMES:
+            raise RuntimeError(
+                f"only {len(correlations)} of {len(frames)} decoded frames had overlapping RSSI telemetry; "
+                f"need {TARGET_VALID_FRAMES}"
+            )
 
         frame_windows = [(corr.sample_start, corr.sample_end) for corr in correlations]
         outside_raws = rssi_values_outside_windows(
