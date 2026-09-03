@@ -78,6 +78,7 @@ def main() -> int:
         "runtime.check_health()",
         "P8_R2_RX_FRAME",
         "P8_R2_WAIT",
+        "accounting.queue.tx_queue_depth",
         "guard={snap}",
         "runtime={counters}",
         "queue={accounting.queue}",
@@ -88,6 +89,7 @@ def main() -> int:
         "P8_R2_ATTEMPT1_ACCEPTED_TX=0",
     ):
         assert required in wrapper, required
+    assert "accounting.queue.queue_depth" not in wrapper
 
     # Health must be checked inside the active dispatch wait, before dispatch is
     # accepted. This specifically prevents attempt 1's masked worker failure.
@@ -174,6 +176,7 @@ def main() -> int:
     print("PRESERVED_PHYSICAL_HARNESS_HASH=PASS")
     print("DISPATCH_WAIT_RUNTIME_HEALTH=CONTINUOUS")
     print("LIVE_RX_OPERATOR_VISIBILITY=PASS")
+    print("QUEUE_ACCOUNTING_FIELD=TX_QUEUE_DEPTH")
     print("R2_DRY_RUN_NO_UART_RF=PASS")
     return 0
 
