@@ -17,10 +17,11 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Compile P4d R2 harness and contract
+      - name: Compile P4d R2 harness and contracts
         run: |
           python -m py_compile tools/qualify_live_csma_single_tx_r2.py
           python -m py_compile tests/live_csma_single_tx_r2_contract_test.py
+          python -m py_compile tests/live_csma_single_tx_r2_physical_evidence_contract_test.py
 
       - name: P4d R2 guarded harness dry run
         run: |
@@ -30,17 +31,29 @@ jobs:
         run: |
           python tests/live_csma_single_tx_r2_contract_test.py
 
-      - name: Parse P4d R2 staging manifest
+      - name: P4d R2 physical evidence contract
+        run: |
+          python tests/live_csma_single_tx_r2_physical_evidence_contract_test.py
+
+      - name: Parse P4d R2 manifests
         run: |
           python - <<'PY'
           import json
-          data = json.load(open('firmware/qualification/0c-p4d-r2-live-csma-single-tx.json', encoding='utf-8'))
-          assert data['phase'] == '0C-P4d-R2'
-          assert data['status'] == 'staged'
-          assert data['maximum_transmit_submissions'] == 1
-          assert data['automatic_tx_retry'] is False
-          assert data['rx_start_required_before_rssi'] is True
-          assert data['rx_fifo_drain_while_sampling'] is True
-          assert data['half_duplex_handoff'] == 'RX_STOP_AFTER_READY_BEFORE_BROKER_SUBMIT'
-          print('P4D_R2_MANIFEST_PARSE=PASS')
+          stage = json.load(open('firmware/qualification/0c-p4d-r2-live-csma-single-tx.json', encoding='utf-8'))
+          assert stage['phase'] == '0C-P4d-R2'
+          assert stage['status'] == 'staged'
+          assert stage['maximum_transmit_submissions'] == 1
+          assert stage['automatic_tx_retry'] is False
+          assert stage['rx_start_required_before_rssi'] is True
+          assert stage['rx_fifo_drain_while_sampling'] is True
+          assert stage['half_duplex_handoff'] == 'RX_STOP_AFTER_READY_BEFORE_BROKER_SUBMIT'
+
+          evidence = json.load(open('firmware/qualification/0c-p4d-r2-live-csma-single-tx-physical-evidence.json', encoding='utf-8'))
+          assert evidence['phase'] == '0C-P4d-R2'
+          assert evidence['status'] == 'physically-qualified'
+          assert evidence['transmit_submissions'] == 1
+          assert evidence['rf_transmission_count'] == 1
+          assert evidence['external_decode']['exact_expected_frame_observed'] is True
+          assert evidence['automatic_tx_retry'] is False
+          print('P4D_R2_MANIFESTS_PARSE=PASS')
           PY
