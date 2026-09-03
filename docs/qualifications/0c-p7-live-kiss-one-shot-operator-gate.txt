@@ -1,0 +1,1 @@
+DO NOT RUN PHYSICAL P7 UNTIL checkpoint/0c-p7-live-kiss-one-shot-staged-green IS CREATED.
