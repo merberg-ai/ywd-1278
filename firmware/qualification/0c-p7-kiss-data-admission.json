@@ -1,0 +1,102 @@
+{
+  "schema": 1,
+  "phase": "0C-P7",
+  "stage": "guarded-kiss-data-admission",
+  "status": "staged",
+  "date": "2026-09-03",
+  "base_checkpoint": "checkpoint/0c-p6-kiss-control-plane-host-qualified",
+  "base_checkpoint_sha": "860104a7dbaff3dac642b72cc040d746375e7264",
+  "kiss_data": {
+    "port": 0,
+    "command": 0,
+    "payload_semantics": "AX.25 frame body without FCS",
+    "payload_has_fcs": false,
+    "validate_ax25_before_admission": true,
+    "tnc_appends_fcs_exactly_once": true
+  },
+  "request_policy": {
+    "queue_capacity": 4,
+    "total_request_timeout_seconds": 30.0,
+    "per_request_parameter_snapshot": true,
+    "snapshot_generation_tagged": true,
+    "captured_parameters": [
+      "TXDELAY",
+      "PERSIST",
+      "SLOTTIME",
+      "FULLDUPLEX"
+    ],
+    "captured_persist_controls_channel_access": true,
+    "captured_slottime_controls_channel_access": true,
+    "captured_txdelay_controls_serialization": true,
+    "later_parameter_updates_mutate_queued_request": false,
+    "one_head_request_per_rssi_observation": true,
+    "ready_dispatch_exactly_once": true,
+    "automatic_retry": false,
+    "downstream_failure_terminal": true,
+    "queue_wait_consumes_total_lifetime": true
+  },
+  "qualified_components_reused": {
+    "p2_rssi_busy_detector": true,
+    "p1_persistent_csma": true,
+    "p4e_persistent_half_duplex": true,
+    "p5_txdelay_policy": true,
+    "p13a_tx_broker_semantics": true,
+    "single_modem_owner": true,
+    "historical_p4a_queue_modified": false,
+    "historical_p4e_modified": false,
+    "historical_p5_txdelay_modified": false,
+    "historical_tx_broker_modified": false
+  },
+  "host_qualification": {
+    "real_localhost_kiss_tcp": true,
+    "real_tx_modem_owner": true,
+    "real_txdelay_broker": true,
+    "real_p4e_lifecycle": true,
+    "thread_bound_fake_modem_transport": true,
+    "captured_context_vector": {
+      "generation": 3,
+      "txdelay": 50,
+      "txdelay_pre_flags": 75,
+      "persist": 200,
+      "slottime": 20
+    },
+    "post_admission_live_context_vector": {
+      "generation": 6,
+      "txdelay": 30,
+      "persist": 0,
+      "slottime": 10
+    }
+  },
+  "safety": {
+    "host_fake_modem_only": true,
+    "transmit_enabled_only_inside_fake_host_graph": true,
+    "posix_serial": false,
+    "uart_access": false,
+    "rf_transmitted": false,
+    "product_tx_enabled": false,
+    "flash_written": false,
+    "gpio_accessed": false,
+    "option_bytes_written": false,
+    "physical_p7_harness_present": false
+  },
+  "deferred_non_blocking": {
+    "p5_ywdnod_repeat_proof": true,
+    "checkpoint": "checkpoint/0c-p5-live-txdelay-direct-qualified-repeat-pending",
+    "checkpoint_sha": "83c97ea91c6a914cb3614040a74606ac7a929e2e",
+    "direct_txdelay_physical_proof_preserved": true,
+    "digipeater_repeat_required_for_p7": false
+  },
+  "physical_follow_on": {
+    "authorized": false,
+    "frequency_hz": 145050000,
+    "rf_power": 200,
+    "packet_count": 1,
+    "require_path": [
+      "YWDNOD"
+    ],
+    "require_direct_external_decode": true,
+    "require_ywdnod_repeated_decode": false,
+    "automatic_retry": false,
+    "must_be_separately_staged_after_host_qualification": true
+  }
+}
