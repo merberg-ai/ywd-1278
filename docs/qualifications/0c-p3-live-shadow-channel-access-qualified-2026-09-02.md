@@ -68,4 +68,8 @@ This phase does **not** qualify transmission from READY. It does not connect `TX
 
 Exact machine-readable evidence is frozen in `firmware/qualification/0c-p3-live-shadow-channel-access-physical-evidence.json`.
 
-Final feature-head validation: framework-ci run #342, SUCCESS. The final qualification checkpoint is created only after this documented head is promoted to `dev` and the exact mainline SHA passes CI again.
+Feature validation history:
+- framework-ci #342: SUCCESS on `dcd0fae580af2fe1e2311204bd94995504984fa6`
+- framework-ci #343: SUCCESS on the final documented feature head `73ab93b909890e40e3ce23360ebb397af764d3ec`
+
+The final qualification checkpoint is created only after that exact head is promoted to `dev` and the mainline push CI also succeeds.
