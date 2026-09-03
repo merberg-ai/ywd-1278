@@ -4,7 +4,7 @@ on:
   pull_request:
     branches: [dev]
   push:
-    branches: [dev-0c-p4e-live-multicycle]
+    branches: [dev, dev-0c-p4e-live-multicycle]
 
 jobs:
   p4e-live-staging:
@@ -17,10 +17,11 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Compile P4e live harness and contract
+      - name: Compile P4e live harness and contracts
         run: |
           python -m py_compile tools/qualify_live_p4e_multicycle.py
           python -m py_compile tests/live_p4e_multicycle_contract_test.py
+          python -m py_compile tests/live_p4e_multicycle_physical_evidence_test.py
 
       - name: P4e live guarded harness dry run
         run: python tools/qualify_live_p4e_multicycle.py
@@ -28,27 +29,42 @@ jobs:
       - name: P4e live multi-cycle safety contract
         run: python tests/live_p4e_multicycle_contract_test.py
 
-      - name: Parse P4e live staging manifest
+      - name: P4e live physical evidence contract
+        run: python tests/live_p4e_multicycle_physical_evidence_test.py
+
+      - name: Parse P4e live staging manifest and evidence
         run: |
           python - <<'PY'
           import json
-          data = json.load(open('firmware/qualification/0c-p4e-live-multicycle.json', encoding='utf-8'))
-          assert data['phase'] == '0C-P4e-live'
-          assert data['status'] == 'staged'
-          assert data['base_checkpoint_sha'] == '0257f9947aea60d943b6b6b52e2ad7d9e28766de'
-          assert data['frequency_hz'] == 145050000
-          assert data['rf_power'] == 200
-          assert data['cycles'] == 3
-          assert len(data['frames']) == 3
-          assert data['required_pre_tx_decoded_frames'] == 3
-          assert data['required_total_inbound_decoded_frames'] == 4
-          assert data['required_external_tx_decodes'] == 3
-          assert data['maximum_transmit_submissions'] == 3
-          assert data['automatic_tx_retry'] is False
-          assert data['kiss_tx_connected'] is False
-          assert data['product_tx_enabled'] is False
-          assert data['flash_permitted'] is False
-          assert data['gpio_reset_permitted'] is False
-          assert data['option_bytes_permitted'] is False
-          print('P4E_LIVE_MANIFEST_PARSE=PASS')
+          stage = json.load(open('firmware/qualification/0c-p4e-live-multicycle.json', encoding='utf-8'))
+          evidence = json.load(open('firmware/qualification/0c-p4e-live-multicycle-physical-evidence.json', encoding='utf-8'))
+          assert stage['phase'] == '0C-P4e-live'
+          assert stage['status'] == 'staged'
+          assert stage['base_checkpoint_sha'] == '0257f9947aea60d943b6b6b52e2ad7d9e28766de'
+          assert stage['frequency_hz'] == 145050000
+          assert stage['rf_power'] == 200
+          assert stage['cycles'] == 3
+          assert len(stage['frames']) == 3
+          assert stage['required_pre_tx_decoded_frames'] == 3
+          assert stage['required_total_inbound_decoded_frames'] == 4
+          assert stage['required_external_tx_decodes'] == 3
+          assert stage['maximum_transmit_submissions'] == 3
+          assert stage['automatic_tx_retry'] is False
+          assert stage['kiss_tx_connected'] is False
+          assert stage['product_tx_enabled'] is False
+          assert stage['flash_permitted'] is False
+          assert stage['gpio_reset_permitted'] is False
+          assert stage['option_bytes_permitted'] is False
+          assert evidence['status'] == 'physically-qualified'
+          assert evidence['staged_checkpoint_sha'] == 'b19784a37f9500b14546a32410f6988be8a76c80'
+          assert evidence['complete_rx_tx_rx_cycles'] == 3
+          assert evidence['total_rx_starts'] == 4
+          assert evidence['inbound_fcs_valid_frames'] == 4
+          assert evidence['external_receiver']['observed_exact_decodes'] == 3
+          assert evidence['fifo_dropped_bytes'] == 0
+          assert evidence['external_decode_gate_satisfied'] is True
+          assert evidence['qualification_complete'] is True
+          assert evidence['kiss_tx_connected'] is False
+          assert evidence['product_tx_enabled'] is False
+          print('P4E_LIVE_MANIFEST_AND_EVIDENCE_PARSE=PASS')
           PY
