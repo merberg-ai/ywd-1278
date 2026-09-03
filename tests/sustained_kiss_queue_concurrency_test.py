@@ -29,14 +29,50 @@ def body(index: int) -> bytes:
     )
 
 
+# First lock the race that motivated P8's serialized clock sampling.  The
+# historical P7 call shape can hand the wrapper stale pre-lock ``now`` values,
+# but the explicitly injected clock is sampled only after queue serialization.
+class OrderedClock:
+    def __init__(self) -> None:
+        self.value = 0.0
+        self.lock = threading.Lock()
+
+    def __call__(self) -> float:
+        with self.lock:
+            self.value += 1.0
+            return self.value
+
+
+ordered_clock = OrderedClock()
+race_queue = ThreadSafeKISSDataAdmissionQueue(
+    NeverSubmit(),
+    monotonic=ordered_clock,
+    queue_capacity=1,
+    request_timeout_seconds=30.0,
+)
+race_session = TNCSessionState()
+race_context = race_session.capture_tx_context(max_wait_seconds=30.0)
+race_receipt = race_queue.enqueue(body(99), race_context, now=1000.0)
+assert race_receipt.enqueued_at == 1.0
+race_observation = race_queue.observe_rssi(
+    now=0.0,  # intentionally older external sample; must not reach frozen P7
+    raw_magnitude=106,
+)
+assert race_observation.now == 2.0
+assert race_queue.snapshot.queue_depth == 1
+
+
+# Then prove actual simultaneous producer pressure remains bounded/correct.
+static_clock = lambda: 1.0
 admission = ThreadSafeKISSDataAdmissionQueue(
     NeverSubmit(),
+    monotonic=static_clock,
     queue_capacity=4,
     request_timeout_seconds=30.0,
 )
 backend = SustainedTNCBackend(
     admission,
-    monotonic=lambda: 1.0,
+    monotonic=static_clock,
     session=TNCSessionState(),
     history_capacity=0,
 )
@@ -80,6 +116,8 @@ assert backend.ingress_counters.data_other_rejections == 0
 assert backend.control_snapshot.generation == 0
 
 print("P8_THREAD_SAFE_KISS_ADMISSION_CONCURRENCY=PASS")
+print("SERIALIZED_QUEUE_CLOCK_SAMPLING=PASS")
+print("STALE_PRELOCK_TIMESTAMP_REJECTED_FROM_P7=PASS")
 print("CONCURRENT_PRODUCERS=8")
 print("QUEUE_CAPACITY=4")
 print("DATA_ADMITTED=4")
