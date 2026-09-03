@@ -2,7 +2,7 @@
 
 0D-P2 intentionally implements policy, not a command shell.  Future 0E console
 code may bind textual commands to this typed state, but this module has no
-terminal, socket, KISS-control, modem, or transmit dependency.
+terminal, network-listener, KISS-control, modem, or transmit dependency.
 
 Semantics follow the familiar TNC shape:
 
