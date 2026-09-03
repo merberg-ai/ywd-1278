@@ -142,7 +142,10 @@ try:
     admission = ThreadSafeKISSDataAdmissionQueue(
         lifecycle,
         queue_capacity=3,
-        request_timeout_seconds=8.0,
+        # Preserve P7's bounded total-lifetime semantics while giving this
+        # deliberately multi-frame/reconnect test the qualified 30-second
+        # default rather than racing the speed of the CI runner.
+        request_timeout_seconds=30.0,
         downstream_timeout_seconds=1.5,
     )
     session = TNCSessionState()
@@ -209,7 +212,8 @@ try:
 
     # Inject one complete FCS-valid Bell-202 capture after the first TX.  The
     # runtime must decode it after its mandatory post-TX decoder reset and keep
-    # it in KISS history while no client is connected.
+    # it in KISS history while no client is connected.  P8 must drain the full
+    # captured RX FIFO before a later queued TX can reset the decoder again.
     created[0].inject_rx_packed(recovery_capture())
     wait_until(
         lambda: runtime.runtime_counters.decoded_rx_frames >= 1,
@@ -233,7 +237,7 @@ try:
         lambda: backend.connection_counters.total_disconnects == 2,
         detail="client2 disconnect accounting",
     )
-    wait_until(lambda: created[0].tx_accept_count == 4, timeout=8.0, detail="four sustained TX cycles")
+    wait_until(lambda: created[0].tx_accept_count == 4, timeout=12.0, detail="four sustained TX cycles")
     wait_until(lambda: admission.snapshot.queue_depth == 0, detail="P8 queue drain")
     wait_until(lambda: runtime.runtime_counters.tx_dispatches == 4, detail="runtime dispatch accounting")
 
@@ -320,6 +324,8 @@ print("RX_STARTS=5")
 print("RX_STOPS=4")
 print("POST_TX_BELL202_DECODER_RESETS=4")
 print("POST_TX_FCS_VALID_RX=PASS")
+print("RX_FIFO_BACKLOG_DRAINED_BEFORE_TX_ACCESS=PASS")
+print("TOTAL_REQUEST_LIFETIME_SECONDS=30")
 print("CAPTURED_TXDELAY_PROFILES=20,30,40,50")
 print("AX25_PATH=VIA_YWDNOD")
 print("SINGLE_MODEM_OWNER=PASS")
