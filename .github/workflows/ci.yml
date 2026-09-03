@@ -197,6 +197,18 @@ jobs:
         run: |
           python tests/kiss_data_admission_contract_test.py
 
+      - name: P8 concurrent bounded KISS admission
+        run: |
+          python tests/sustained_kiss_queue_concurrency_test.py
+
+      - name: P8 sustained localhost KISS TNC graph
+        run: |
+          python tests/sustained_kiss_tnc_integration_test.py
+
+      - name: P8 sustained KISS architecture contract
+        run: |
+          python tests/sustained_kiss_tnc_contract_test.py
+
       - name: P13b one-shot TX qualification contract
         run: |
           python tests/single_tx_qualification_contract_test.py
@@ -296,6 +308,11 @@ jobs:
           assert p7['safety']['host_fake_modem_only'] is True
           assert p7['safety']['rf_transmitted'] is False
           assert p7['physical_follow_on']['authorized'] is False
+          p8 = json.load(open('firmware/qualification/0c-p8-sustained-kiss-tnc-host.json', encoding='utf-8'))
+          assert p8['status'] == 'host-qualified'
+          assert p8['safety']['host_fake_modem_only'] is True
+          assert p8['safety']['rf_transmitted'] is False
+          assert p8['physical_follow_on']['authorized'] is False
           with open('config/ywd-1278.example.toml', 'rb') as f:
               tomllib.load(f)
           print('MANIFEST_CONFIG_PARSE=PASS')
