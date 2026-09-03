@@ -66,13 +66,18 @@ assert stage == {
     },
 }
 
-# The exact physical boundary remains P13b until this new firmware is actually
-# activated and observed on the HAT.
-assert target["status"] == "0b-p13b-known-packet-tx-qualified"
+# The staged activation record remains frozen with its exact P13b starting base.
+# The live activation/correlation has since completed and the current target has
+# advanced through the separate host-only 0C-P2 detector qualification.
+assert stage["physical_base"]["status"] == "0b-p13b-known-packet-tx-qualified"
+assert target["status"] == "0c-p2-channel-busy-detector-qualified"
 assert target["packet_firmware_candidate"]["artifact_size_bytes"] == 59812
 assert target["packet_firmware_candidate"]["artifact_sha256"] == stage["physical_base"]["artifact_sha256"]
 assert target["packet_live_tx_qualification"]["status"] == "qualified"
 assert target["packet_live_tx_qualification"]["external_decodes_observed"] == 3
+assert target["packet_rssi_qualification"]["firmware_sha256"] == stage["candidate"]["artifact_sha256"]
+assert target["packet_rssi_qualification"]["status"] == "physically-qualified-correlation"
+assert target["channel_busy_qualification"]["status"] == "host-qualified"
 assert stage["candidate"]["artifact_size_bytes"] - stage["physical_base"]["artifact_size_bytes"] == 80
 
 # Activation is intentionally one-purpose. No operator-selected target, device,
@@ -172,6 +177,7 @@ for forbidden in (
 
 print("P2_RSSI_LIVE_ACTIVATION_CONTRACT=PASS")
 print("PHYSICAL_BASE_STATUS=0b-p13b-known-packet-tx-qualified")
+print("CURRENT_TARGET_STATUS=0c-p2-channel-busy-detector-qualified")
 print("BASE_ARTIFACT_BYTES=59812")
 print("BASE_ARTIFACT_SHA256=a069d9a9f1c3d5014984e5d73a5b57155ffa50f8908c9d80c5da221b8ea07310")
 print("AX25R4_ARTIFACT_BYTES=59892")
@@ -182,7 +188,7 @@ print("RSSI_POLL_INTERVAL_SECONDS=0.05")
 print("RSSI_OBSERVATION_SECONDS=20.0")
 print("AUTOMATIC_AX25R3_ROLLBACK=YES")
 print("FALLBACK_EXACT_STOCK_RECOVERY=YES")
-print("CARRIER_THRESHOLD_SELECTED=NO")
+print("PHYSICAL_RUN_CARRIER_THRESHOLD_SELECTED=NO")
 print("KISS_TX_CONNECTED=NO")
 print("PRODUCT_TX_ENABLED=NO")
 print("RF_TRANSMITTED_BY_CI=NO")
