@@ -61,6 +61,18 @@ assert "if self._admission.snapshot.queue_depth:" in runtime
 assert "self._owner.rx_rssi()" in runtime
 assert "random_byte_source=self._random_byte_source" in runtime
 
+# Already-captured packed RX bytes must outrank queued TX access.  P8 drains
+# the modem FIFO to empty before it is allowed to sample RSSI/advance CSMA, so a
+# later half-duplex decoder reset cannot cut through an RX frame in host backlog.
+assert "def _drain_rx_fifo" in runtime
+run_body = runtime[runtime.index("def _run"):runtime.index("def _drain_rx_fifo")]
+assert run_body.index("self._drain_rx_fifo()") < run_body.index("if self._admission.snapshot.queue_depth:")
+drain_body = runtime[runtime.index("def _drain_rx_fifo"):runtime.index("def _consume")]
+assert "while not self._stop.is_set():" in drain_body
+assert "chunk = self._owner.rx_read(self._read_maximum)" in drain_body
+assert "if not chunk:" in drain_body
+assert "self._consume(chunk)" in drain_body
+
 # The physically-qualified P4e discontinuity requires a new Bell-202 decoder
 # after every completed TX/RX restart cycle.
 assert "self._decoder = StreamingBell202Decoder()" in runtime
@@ -130,6 +142,7 @@ print("P4E_HALF_DUPLEX_FROZEN=PASS")
 print("P5_TXDELAY_FROZEN=PASS")
 print("TX_BROKER_FROZEN=PASS")
 print("THREAD_SAFE_QUEUE=COMPOSITION")
+print("RX_FIFO_BACKLOG_PRIORITY=PASS")
 print("CALLER_SUPPLIED_TIME_AND_RANDOMNESS=PASS")
 print("POST_TX_DECODER_RESET=REQUIRED")
 print("AUTOMATIC_RETRY=NO")
