@@ -1,0 +1,44 @@
+{
+  "schema": 1,
+  "phase": "0D-P2",
+  "stage": "mcom-mcon-mrpt-monitor-policy-host",
+  "status": "host-qualified",
+  "date": "2026-09-03",
+  "base_checkpoint": "checkpoint/0d-p1-decoded-monitor-host-qualified",
+  "base_checkpoint_sha": "1972f4c92552085202c810e3b605c8e46275634c",
+  "qualified_implementation_head_sha": "b42842b36ff29dee146a2c74ede1e98bb7d144ba",
+  "policy_blob": "f7d105554f682dfc533a09bff8823b192e5debe9",
+  "p1_monitor_stream_blob": "703b7e803d39d915b60d79c30c154151e3820098",
+  "defaults": {
+    "mcom": false,
+    "mcon": false,
+    "mrpt": true
+  },
+  "mcom_control_frame_gate": true,
+  "mcon_connected_context_gate": true,
+  "mrpt_presentation_only": true,
+  "connected_mode_context_injected": true,
+  "connected_mode_engine_present": false,
+  "text_command_parser_present": false,
+  "thread_safe": true,
+  "generation_tagged": true,
+  "idempotent_update_increments_generation": false,
+  "monitor_tx_capability": false,
+  "modem_dependency": false,
+  "uart_access": false,
+  "rf_access": false,
+  "flash_gpio_option_byte_activity": false,
+  "dedicated_push_ci": {
+    "run_id": 33815606268,
+    "result": "success"
+  },
+  "pull_request_ci": {
+    "pull_request": 26,
+    "workflow_runs": 15,
+    "framework_run_id": 33815650153,
+    "framework_result": "success",
+    "pending_runs": 0,
+    "failed_runs": 0
+  },
+  "qualification_complete": true
+}

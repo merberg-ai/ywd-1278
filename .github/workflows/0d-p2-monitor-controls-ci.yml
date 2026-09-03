@@ -2,7 +2,7 @@ name: 0d-p2-monitor-controls-ci
 
 on:
   push:
-    branches: [dev-0d-p2-monitor-controls]
+    branches: [dev-0d-p2-monitor-controls, dev]
   pull_request:
     branches: [dev]
 
@@ -22,12 +22,16 @@ jobs:
           python -m py_compile src/ywd1278/monitor/policy.py
           python -m py_compile tests/monitor_policy_test.py
           python -m py_compile tests/monitor_policy_contract_test.py
+          python -m py_compile tests/monitor_policy_qualification_contract_test.py
 
       - name: MCOM MCON MRPT policy regression
         run: python tests/monitor_policy_test.py
 
       - name: Monitor policy architecture and safety contract
         run: python tests/monitor_policy_contract_test.py
+
+      - name: Frozen 0D-P2 host qualification evidence
+        run: python tests/monitor_policy_qualification_contract_test.py
 
       - name: Preserve frozen 0D-P1 qualification
         run: |
@@ -42,16 +46,16 @@ jobs:
           python tests/sustained_live_fifo_drain_regression_test.py
           python tests/sustained_kiss_tnc_integration_test.py
 
-      - name: Parse P2 stage
+      - name: Parse P2 host evidence
         run: |
           python - <<'PY'
           import json
-          d=json.load(open('firmware/qualification/0d-p2-monitor-controls-stage.json', encoding='utf-8'))
-          assert d['status'] == 'staged'
+          d=json.load(open('firmware/qualification/0d-p2-monitor-controls-host.json', encoding='utf-8'))
+          assert d['status'] == 'host-qualified'
+          assert d['qualification_complete'] is True
           assert d['defaults'] == {'mcom': False, 'mcon': False, 'mrpt': True}
-          assert d['typed_policy_controls_only'] is True
           assert d['monitor_tx_capability'] is False
           assert d['uart_access'] is False
           assert d['rf_access'] is False
-          print('0D_P2_STAGE_PARSE=PASS')
+          print('0D_P2_HOST_MANIFEST_PARSE=PASS')
           PY
