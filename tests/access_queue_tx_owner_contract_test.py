@@ -24,7 +24,7 @@ daemon = DAEMON.read_text(encoding="utf-8")
 
 assert manifest["schema"] == 1
 assert manifest["phase"] == "0C-P4c"
-assert manifest["status"] == "staged-host-only"
+assert manifest["status"] == "host-qualified"
 assert manifest["base_checkpoint"] == "checkpoint/0c-p4b-real-broker-fake-modem-qualified"
 assert manifest["base_checkpoint_sha"] == "3b22251582f532f5b7c388bde8d5eef50b01f22d"
 assert manifest["software_graph"] == {
@@ -56,6 +56,13 @@ assert manifest["wire"]["p5_packed_selector_bytes"] == 87
 assert manifest["wire"]["p5_packed_selector_sha256"] == "30718ba5a4368e82bab69e6343f95c7e226cd08426844ed328ad8c52fbfd750e"
 assert manifest["wire"]["all_transactions_on_single_owner_thread"] is True
 assert manifest["wire"]["transport_close_on_owner_thread"] is True
+assert manifest["qualification_ci"] == {
+    "workflow": "framework-ci",
+    "run_number": 357,
+    "run_id": 33706718537,
+    "conclusion": "success",
+    "staged_head_sha": "d5afd9af8e4ef3d618e5c202acd076fb886f7bca",
+}
 for key in (
     "posix_serial_transport_used",
     "uart_opened",
@@ -130,6 +137,7 @@ for forbidden in (
     assert forbidden not in daemon, forbidden
 
 print("P4C_REAL_OWNER_FAKE_TRANSPORT_CONTRACT=PASS")
+print("P4C_STATUS=HOST_QUALIFIED")
 print("BASE_CHECKPOINT=0C-P4B_QUALIFIED")
 print("ACCESS_QUEUE=REAL")
 print("TX_BROKER=REAL")
@@ -137,6 +145,7 @@ print("TX_MODEM_OWNER=REAL")
 print("MODEM_TRANSPORT=FAKE_THREAD_BOUND")
 print("MODEM_TRANSACTIONS=2")
 print("SINGLE_MODEM_OWNER_THREAD=REQUIRED")
+print("QUALIFICATION_CI_357=SUCCESS")
 print("POSIX_SERIAL_TRANSPORT=NO")
 print("UART_OPENED=NO")
 print("KISS_TX_CONNECTED=NO")
