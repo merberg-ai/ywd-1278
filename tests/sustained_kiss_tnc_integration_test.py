@@ -141,6 +141,7 @@ try:
     )
     admission = ThreadSafeKISSDataAdmissionQueue(
         lifecycle,
+        monotonic=time.monotonic,
         queue_capacity=3,
         # Preserve P7's bounded total-lifetime semantics while giving this
         # deliberately multi-frame/reconnect test the qualified 30-second
@@ -222,7 +223,9 @@ try:
 
     # Client 2 reconnects, receives the stored RX history frame, then retries
     # the previously-full fourth DATA frame.  Its fresh generation must use the
-    # already-updated TXDELAY=50 state.
+    # already-updated TXDELAY=50 state.  P8's wrapper samples the authoritative
+    # queue timestamp while holding its lock, so this concurrent enqueue cannot
+    # race a stale pre-RSSI scheduler timestamp into the frozen P7 queue.
     with socket.create_connection((host, port), timeout=1.0) as client2:
         history = recv_one(client2)
         assert history.port == 0 and history.command == DATA
@@ -325,6 +328,7 @@ print("RX_STOPS=4")
 print("POST_TX_BELL202_DECODER_RESETS=4")
 print("POST_TX_FCS_VALID_RX=PASS")
 print("RX_FIFO_BACKLOG_DRAINED_BEFORE_TX_ACCESS=PASS")
+print("SERIALIZED_QUEUE_CLOCK_SAMPLING=PASS")
 print("TOTAL_REQUEST_LIFETIME_SECONDS=30")
 print("CAPTURED_TXDELAY_PROFILES=20,30,40,50")
 print("AX25_PATH=VIA_YWDNOD")
