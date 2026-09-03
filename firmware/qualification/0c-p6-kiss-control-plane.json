@@ -1,0 +1,90 @@
+{
+  "schema": 1,
+  "phase": "0C-P6",
+  "stage": "kiss-tnc-control-plane",
+  "status": "staged",
+  "date": "2026-09-03",
+  "base_checkpoint": "checkpoint/0c-p5-txdelay-host-qualified",
+  "base_checkpoint_sha": "30cc677fbcc9fc9bab1aa1a18c18850ed1ef40a1",
+  "supported_port": 0,
+  "defaults": {
+    "txdelay": 30,
+    "persist": 63,
+    "slottime": 10,
+    "fullduplex": 0
+  },
+  "supported_commands": {
+    "txdelay": 1,
+    "persist": 2,
+    "slottime": 3,
+    "fullduplex": 5
+  },
+  "policy": {
+    "txdelay_min": 0,
+    "txdelay_max": 255,
+    "txdelay_units": "10ms",
+    "txdelay_uses_qualified_p5_policy": true,
+    "persist_min": 0,
+    "persist_max": 255,
+    "slottime_min": 1,
+    "slottime_max": 255,
+    "slottime_units": "10ms",
+    "slottime_zero_rejected": true,
+    "fullduplex_only_value": 0,
+    "nonzero_fullduplex_rejected": true,
+    "nonzero_ports_ignored": true,
+    "unknown_commands_ignored": true,
+    "supported_parameter_payload_bytes": 1,
+    "malformed_controls_fail_closed": true,
+    "stream_decoder_discards_accounted": true
+  },
+  "runtime_state": {
+    "atomic_thread_safe_updates": true,
+    "immutable_snapshot": true,
+    "generation_counter": true,
+    "future_tx_context_capture": true,
+    "captured_context_immune_to_later_updates": true
+  },
+  "operator_accounting": {
+    "kiss_messages_received": true,
+    "kiss_parameter_updates": true,
+    "kiss_parameter_rejections": true,
+    "kiss_malformed_frames": true,
+    "kiss_unknown_commands": true,
+    "kiss_unsupported_ports": true,
+    "kiss_full_duplex_rejected": true,
+    "kiss_slot_time_rejected": true,
+    "kiss_data_tx_rejected": true,
+    "existing_access_queue_snapshot_normalized": true,
+    "tx_queue_accepted": true,
+    "tx_invalid_rejections": true,
+    "tx_queue_full_drops": true,
+    "tx_dispatched": true,
+    "tx_access_timeouts": true,
+    "tx_downstream_failures": true
+  },
+  "safety": {
+    "kiss_data_tx_connected": false,
+    "tx_broker_connected_from_kiss": false,
+    "product_tx_enabled": false,
+    "modem_dependency": false,
+    "uart_access": false,
+    "rf_transmitted": false,
+    "flash_written": false,
+    "gpio_accessed": false,
+    "option_bytes_written": false
+  },
+  "deferred_non_blocking": {
+    "p5_ywdnod_repeat_proof": true,
+    "checkpoint": "checkpoint/0c-p5-live-txdelay-direct-qualified-repeat-pending",
+    "checkpoint_sha": "83c97ea91c6a914cb3614040a74606ac7a929e2e",
+    "direct_txdelay_physical_proof_preserved": true,
+    "digipeater_repeat_required_for_p6": false
+  },
+  "next_gate": {
+    "phase": "0C-P7",
+    "description": "guarded KISS DATA admission with per-request parameter snapshot into the qualified bounded channel-access and persistent half-duplex TX path",
+    "physical_tx_if_tested_must_use_path": "YWDNOD",
+    "ywdnod_repeat_required": false
+  }
+}
