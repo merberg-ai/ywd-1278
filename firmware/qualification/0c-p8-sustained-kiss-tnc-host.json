@@ -59,8 +59,21 @@
     "post_promotion_regression_discovered": true,
     "rx_fifo_backlog_priority_fix": true,
     "serialized_queue_clock_sampling_fix": true,
-    "final_exact_head_ci": "pending",
-    "all_green_before_checkpoint": false
+    "implementation_head_sha": "b7c912c4a6ddc4459f92b4c190316a308f0ed378",
+    "dedicated_push_run_number": 34,
+    "dedicated_push_run_id": 33783592110,
+    "dedicated_push_conclusion": "success",
+    "dedicated_pr_run_number": 35,
+    "dedicated_pr_run_id": 33783599612,
+    "dedicated_pr_conclusion": "success",
+    "full_framework_pr_run_number": 454,
+    "full_framework_pr_run_id": 33783599785,
+    "full_framework_pr_conclusion": "success",
+    "implementation_head_check_runs": 11,
+    "implementation_head_all_checks_success": true,
+    "final_exact_head_ci": "success",
+    "all_green_before_checkpoint": true,
+    "note": "The host-qualified checkpoint is frozen only after the evidence/documentation commit containing this record itself passes exact-head CI."
   },
   "safety": {
     "host_fake_modem_only": true,
