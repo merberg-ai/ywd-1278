@@ -1,0 +1,80 @@
+name: p6-ci
+
+on:
+  pull_request:
+    branches: [dev]
+  push:
+    branches: [dev, dev-0c-p6-kiss-control-plane]
+
+jobs:
+  p6-kiss-control-plane:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Compile P6 boundary
+        run: |
+          python -m py_compile src/ywd1278/kiss/framing.py
+          python -m py_compile src/ywd1278/kiss/server.py
+          python -m py_compile src/ywd1278/kiss/control.py
+          python -m py_compile tests/kiss_control_plane_test.py
+          python -m py_compile tests/kiss_control_plane_server_test.py
+          python -m py_compile tests/kiss_control_plane_contract_test.py
+
+      - name: KISS control-plane policy regression
+        run: python tests/kiss_control_plane_test.py
+
+      - name: KISS control-plane TCP regression
+        run: python tests/kiss_control_plane_server_test.py
+
+      - name: KISS control-plane architecture contract
+        run: python tests/kiss_control_plane_contract_test.py
+
+      - name: Preserve historical KISS framing/server regressions
+        run: |
+          python tests/kiss_framing_test.py
+          python tests/kiss_server_test.py
+
+      - name: Parse P6 qualification manifest
+        run: |
+          python - <<'PY'
+          import json
+          data = json.load(open('firmware/qualification/0c-p6-kiss-control-plane.json', encoding='utf-8'))
+          assert data['phase'] == '0C-P6'
+          assert data['status'] in {'staged', 'host-qualified'}
+          assert data['base_checkpoint_sha'] == '30cc677fbcc9fc9bab1aa1a18c18850ed1ef40a1'
+          assert data['supported_port'] == 0
+          assert data['defaults'] == {'txdelay': 30, 'persist': 63, 'slottime': 10, 'fullduplex': 0}
+          assert data['supported_commands'] == {'txdelay': 1, 'persist': 2, 'slottime': 3, 'fullduplex': 5}
+          policy = data['policy']
+          assert policy['txdelay_uses_qualified_p5_policy'] is True
+          assert policy['slottime_zero_rejected'] is True
+          assert policy['nonzero_fullduplex_rejected'] is True
+          assert policy['malformed_controls_fail_closed'] is True
+          assert policy['stream_decoder_discards_accounted'] is True
+          runtime = data['runtime_state']
+          assert runtime['atomic_thread_safe_updates'] is True
+          assert runtime['immutable_snapshot'] is True
+          assert runtime['future_tx_context_capture'] is True
+          assert runtime['captured_context_immune_to_later_updates'] is True
+          safety = data['safety']
+          assert safety['kiss_data_tx_connected'] is False
+          assert safety['tx_broker_connected_from_kiss'] is False
+          assert safety['product_tx_enabled'] is False
+          assert safety['uart_access'] is False
+          assert safety['rf_transmitted'] is False
+          deferred = data['deferred_non_blocking']
+          assert deferred['p5_ywdnod_repeat_proof'] is True
+          assert deferred['checkpoint_sha'] == '83c97ea91c6a914cb3614040a74606ac7a929e2e'
+          assert deferred['digipeater_repeat_required_for_p6'] is False
+          nxt = data['next_gate']
+          assert nxt['phase'] == '0C-P7'
+          assert nxt['physical_tx_if_tested_must_use_path'] == 'YWDNOD'
+          assert nxt['ywdnod_repeat_required'] is False
+          print('P6_KISS_CONTROL_PLANE_MANIFEST_PARSE=PASS')
+          PY
