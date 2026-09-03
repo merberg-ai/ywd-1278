@@ -67,3 +67,5 @@ This confirms the RSSI BUSY event occurred during real packet-channel activity r
 This phase does **not** qualify transmission from READY. It does not connect `TXModemOwner`, `TXBroker`, KISS-originated TX, daemon TX, or persistent product TX. The next phase may connect a bounded queued transmit request to this already-qualified channel-access result in host-only/fail-closed form before any further over-air transmission is considered.
 
 Exact machine-readable evidence is frozen in `firmware/qualification/0c-p3-live-shadow-channel-access-physical-evidence.json`.
+
+Final feature-head validation: framework-ci run #342, SUCCESS. The final qualification checkpoint is created only after this documented head is promoted to `dev` and the exact mainline SHA passes CI again.
