@@ -159,7 +159,21 @@ class KISSHandler(socketserver.BaseRequestHandler):
                 if not data:
                     break
 
-                for message in decoder.feed(data):
+                discarded_before = decoder.discarded_frames
+                messages = decoder.feed(data)
+                discarded = decoder.discarded_frames - discarded_before
+                if discarded:
+                    # 0C-P6's control-aware backend exposes this optional hook.
+                    # Historical RXOnlyBackend behavior remains unchanged.
+                    note_malformed = getattr(
+                        self.server.backend,
+                        "note_malformed_stream_frames",
+                        None,
+                    )
+                    if callable(note_malformed):
+                        note_malformed(discarded)
+
+                for message in messages:
                     self.server.backend.reject_client_message(message)
         finally:
             self.server.backend.close_stream(event_queue)
