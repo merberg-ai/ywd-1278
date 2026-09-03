@@ -1,0 +1,46 @@
+name: p4d-r2-ci
+
+on:
+  pull_request:
+    branches: [dev]
+  push:
+    branches: [dev-0c-p4d-live-csma-single-tx]
+
+jobs:
+  p4d-r2-staging:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Compile P4d R2 harness and contract
+        run: |
+          python -m py_compile tools/qualify_live_csma_single_tx_r2.py
+          python -m py_compile tests/live_csma_single_tx_r2_contract_test.py
+
+      - name: P4d R2 guarded harness dry run
+        run: |
+          python tools/qualify_live_csma_single_tx_r2.py
+
+      - name: P4d R2 half-duplex architecture contract
+        run: |
+          python tests/live_csma_single_tx_r2_contract_test.py
+
+      - name: Parse P4d R2 staging manifest
+        run: |
+          python - <<'PY'
+          import json
+          data = json.load(open('firmware/qualification/0c-p4d-r2-live-csma-single-tx.json', encoding='utf-8'))
+          assert data['phase'] == '0C-P4d-R2'
+          assert data['status'] == 'staged'
+          assert data['maximum_transmit_submissions'] == 1
+          assert data['automatic_tx_retry'] is False
+          assert data['rx_start_required_before_rssi'] is True
+          assert data['rx_fifo_drain_while_sampling'] is True
+          assert data['half_duplex_handoff'] == 'RX_STOP_AFTER_READY_BEFORE_BROKER_SUBMIT'
+          print('P4D_R2_MANIFEST_PARSE=PASS')
+          PY
