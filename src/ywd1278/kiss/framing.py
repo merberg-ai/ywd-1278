@@ -12,7 +12,17 @@ FEND = 0xC0
 FESC = 0xDB
 TFEND = 0xDC
 TFESC = 0xDD
+
+# KISS low-nibble command identifiers.  0C-P6 handles only the classic runtime
+# parameters named below; TXTAIL/SETHARDWARE/RETURN remain unsupported commands.
 DATA = 0x00
+TXDELAY = 0x01
+PERSIST = 0x02
+SLOTTIME = 0x03
+TXTAIL = 0x04
+FULLDUPLEX = 0x05
+SETHARDWARE = 0x06
+RETURN = 0x0F
 
 
 @dataclass(frozen=True)
