@@ -145,6 +145,14 @@ jobs:
         run: |
           python tests/access_queue_broker_contract_test.py
 
+      - name: P4c real owner fake transport integration
+        run: |
+          python tests/access_queue_tx_owner_integration_test.py
+
+      - name: P4c real owner fake transport architecture contract
+        run: |
+          python tests/access_queue_tx_owner_contract_test.py
+
       - name: P13b one-shot TX qualification contract
         run: |
           python tests/single_tx_qualification_contract_test.py
@@ -231,6 +239,7 @@ jobs:
           json.load(open('firmware/qualification/0c-p3-live-shadow-channel-access-physical-evidence.json', encoding='utf-8'))
           json.load(open('firmware/qualification/0c-p4a-bounded-access-queue.json', encoding='utf-8'))
           json.load(open('firmware/qualification/0c-p4b-real-broker-fake-modem.json', encoding='utf-8'))
+          json.load(open('firmware/qualification/0c-p4c-real-owner-fake-transport.json', encoding='utf-8'))
           with open('config/ywd-1278.example.toml', 'rb') as f:
               tomllib.load(f)
           print('MANIFEST_CONFIG_PARSE=PASS')
