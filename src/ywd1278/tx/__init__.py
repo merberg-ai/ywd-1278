@@ -1,5 +1,17 @@
 """Bounded transmit scheduling and channel-access primitives for YWD-1278."""
 
+from .access_queue import (
+    AccessQueueError,
+    AccessQueueFrameRejected,
+    AccessQueueFull,
+    AccessQueueObservation,
+    AccessQueueSnapshot,
+    AccessQueueTimeError,
+    AccessRequestReceipt,
+    AccessRequestState,
+    BoundedChannelAccessQueue,
+    FrameSubmitter,
+)
 from .broker import (
     TXBroker,
     TXBrokerBusy,
@@ -42,6 +54,16 @@ from .csma import (
 )
 
 __all__ = [
+    "AccessQueueError",
+    "AccessQueueFrameRejected",
+    "AccessQueueFull",
+    "AccessQueueObservation",
+    "AccessQueueSnapshot",
+    "AccessQueueTimeError",
+    "AccessRequestReceipt",
+    "AccessRequestState",
+    "BoundedChannelAccessQueue",
+    "FrameSubmitter",
     "TXBroker",
     "TXBrokerBusy",
     "TXBrokerDisabled",
