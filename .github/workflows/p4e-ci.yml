@@ -1,0 +1,57 @@
+name: p4e-ci
+
+on:
+  pull_request:
+    branches: [dev]
+  push:
+    branches: [dev-0c-p4e-persistent-half-duplex]
+
+jobs:
+  p4e-host:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Compile P4e lifecycle and tests
+        run: |
+          python -m py_compile src/ywd1278/tx/half_duplex.py
+          python -m py_compile tests/half_duplex_test.py
+          python -m py_compile tests/half_duplex_tx_owner_integration_test.py
+          python -m py_compile tests/half_duplex_contract_test.py
+
+      - name: P4e lifecycle failure semantics
+        run: python tests/half_duplex_test.py
+
+      - name: P4e repeated real graph over fake transport
+        run: python tests/half_duplex_tx_owner_integration_test.py
+
+      - name: P4e architecture contract
+        run: python tests/half_duplex_contract_test.py
+
+      - name: Parse P4e host manifest
+        run: |
+          python - <<'PY'
+          import json
+          data = json.load(open('firmware/qualification/0c-p4e-persistent-half-duplex-host.json', encoding='utf-8'))
+          assert data['phase'] == '0C-P4e'
+          assert data['status'] == 'staged-host-only'
+          assert data['base_checkpoint_sha'] == '16bef377c1986ae2222b014da93abd80141bd041'
+          assert data['repeated_host_cycles_required'] == 3
+          assert data['downstream_failure_frame_retry'] is False
+          assert data['post_transmit_failure_frame_retry'] is False
+          assert data['post_transmit_failure_latches_lifecycle'] is True
+          assert data['real_access_queue_integration'] is True
+          assert data['real_tx_broker_integration'] is True
+          assert data['real_tx_modem_owner_integration'] is True
+          assert data['fake_thread_bound_transport_only'] is True
+          assert data['posix_serial_transport'] is False
+          assert data['uart_access'] is False
+          assert data['rf_transmitted'] is False
+          assert data['kiss_tx_connected'] is False
+          print('P4E_HOST_MANIFEST_PARSE=PASS')
+          PY
