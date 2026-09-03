@@ -1,0 +1,66 @@
+name: p5-live-ci
+
+on:
+  pull_request:
+    branches: [dev]
+  push:
+    branches: [dev-0c-p5-live-txdelay-ywdnod]
+
+jobs:
+  p5-live-txdelay-ywdnod:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Compile final P5 live harness and contract
+        run: |
+          python -m py_compile tools/qualify_live_p5_txdelay_ywdnod.py
+          python -m py_compile tools/qualify_live_p5_txdelay_ywdnod_r2.py
+          python -m py_compile tools/qualify_live_p5_txdelay_ywdnod_r3.py
+          python -m py_compile tests/live_p5_txdelay_ywdnod_contract_test.py
+
+      - name: Final R3 guarded harness dry run
+        run: python tools/qualify_live_p5_txdelay_ywdnod_r3.py
+
+      - name: P5 live YWDNOD safety contract
+        run: python tests/live_p5_txdelay_ywdnod_contract_test.py
+
+      - name: Parse P5 live R3 staging manifest
+        run: |
+          python - <<'PY'
+          import json
+          data = json.load(open('firmware/qualification/0c-p5-live-txdelay-ywdnod.json', encoding='utf-8'))
+          assert data['phase'] == '0C-P5-live'
+          assert data['attempt'] == 'R3'
+          assert data['status'] == 'staged'
+          assert data['authorized_harness'] == 'tools/qualify_live_p5_txdelay_ywdnod_r3.py'
+          assert data['base_checkpoint_sha'] == '30cc677fbcc9fc9bab1aa1a18c18850ed1ef40a1'
+          assert data['frequency_hz'] == 145050000
+          assert data['rf_power'] == 200
+          assert data['digipeater_station'] == 'KJ6YWD-5'
+          assert data['digipeater_alias'] == 'YWDNOD'
+          assert data['path'] == ['YWDNOD']
+          assert data['cycles'] == 2
+          assert [x['txdelay_units'] for x in data['frames']] == [30, 50]
+          assert [x['pre_flags'] for x in data['frames']] == [45, 75]
+          assert [x['expected_generated_samples'] for x in data['frames']] == [13072, 16912]
+          assert data['qualification_frames_may_authorize_later_tx'] is False
+          assert data['final_rx_proof_may_be_qualification_frame'] is False
+          assert data['required_external_direct_decodes'] == 2
+          assert data['required_external_ywdnod_repeat_decodes'] == 2
+          assert data['expected_repeated_path_marker'] == 'YWDNOD*'
+          assert data['maximum_transmit_submissions'] == 2
+          assert data['automatic_tx_retry'] is False
+          assert data['kiss_parameter_ingress_connected'] is False
+          assert data['kiss_data_tx_connected'] is False
+          assert data['product_tx_enabled'] is False
+          assert data['flash_permitted'] is False
+          assert data['gpio_reset_permitted'] is False
+          assert data['option_bytes_permitted'] is False
+          print('P5_LIVE_R3_MANIFEST_PARSE=PASS')
+          PY
