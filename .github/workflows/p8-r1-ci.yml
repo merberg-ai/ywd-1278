@@ -1,0 +1,78 @@
+name: p8-r1-ci
+
+on:
+  push:
+    branches: [dev-0c-p8-r1-live-fifo-drain]
+  pull_request:
+    branches: [dev]
+
+jobs:
+  p8-r1-continuous-rx-drain:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Compile R1 boundary
+        run: |
+          python -m py_compile src/ywd1278/service/tnc_runtime.py
+          python -m py_compile tests/sustained_live_fifo_drain_regression_test.py
+          python -m py_compile tests/sustained_kiss_tnc_integration_test.py
+          python -m py_compile tests/sustained_kiss_tnc_contract_test.py
+
+      - name: Hardware-realistic continuously producing RX FIFO regression
+        run: python tests/sustained_live_fifo_drain_regression_test.py
+
+      - name: Preserve P8 concurrent bounded admission
+        run: python tests/sustained_kiss_queue_concurrency_test.py
+
+      - name: Preserve P8 sustained localhost KISS graph
+        run: python tests/sustained_kiss_tnc_integration_test.py
+
+      - name: P8 R1 architecture and safety contract
+        run: python tests/sustained_kiss_tnc_contract_test.py
+
+      - name: Preserve P7 ingress and physical evidence contracts
+        run: |
+          python tests/kiss_data_admission_test.py
+          python tests/kiss_data_full_graph_integration_test.py
+          python tests/kiss_data_admission_contract_test.py
+          python tests/live_p7_kiss_one_shot_evidence_contract_test.py
+
+      - name: Preserve P6 controls and P4e/P5 lifecycle
+        run: |
+          python tests/kiss_control_plane_test.py
+          python tests/kiss_control_plane_server_test.py
+          python tests/half_duplex_test.py
+          python tests/half_duplex_tx_owner_integration_test.py
+          python tests/txdelay_test.py
+          python tests/txdelay_contract_test.py
+
+      - name: Parse R1 staging manifest
+        run: |
+          python - <<'PY'
+          import json
+          p = 'firmware/qualification/0c-p8-sustained-kiss-tnc-host-r1.json'
+          d = json.load(open(p, encoding='utf-8'))
+          assert d['phase'] == '0C-P8-host-R1'
+          assert d['status'] in {'staged', 'host-qualified'}
+          assert d['base_checkpoint_sha'] == 'a835d2500dbdb4a8eaf1ae3cae4ea662203a852a'
+          assert d['regression']['accepted_tx_before_failure'] == 0
+          assert d['architecture']['firmware_fifo_capacity_bytes'] == 512
+          assert d['architecture']['rx_read_maximum_bytes'] == 200
+          assert d['architecture']['drain_read_limit'] == 4
+          assert d['architecture']['maximum_bytes_per_drain_pass'] == 800
+          assert d['architecture']['partial_read_ends_drain_pass'] is True
+          assert d['architecture']['zero_length_read_required'] is False
+          assert d['qualification']['continuous_rx_source_never_empty_regression'] is True
+          assert d['safety']['host_only'] is True
+          assert d['safety']['posix_serial'] is False
+          assert d['safety']['uart_access'] is False
+          assert d['safety']['rf_transmitted'] is False
+          assert d['physical_follow_on']['authorized'] is False
+          print('P8_R1_MANIFEST_PARSE=PASS')
+          PY
