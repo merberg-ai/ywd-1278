@@ -1,0 +1,54 @@
+name: p5-ci
+
+on:
+  pull_request:
+    branches: [dev]
+  push:
+    branches: [dev-0c-p5-txdelay]
+
+jobs:
+  p5-txdelay:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Compile TXDELAY boundary
+        run: |
+          python -m py_compile src/ywd1278/tx/txdelay.py
+          python -m py_compile tests/txdelay_test.py
+          python -m py_compile tests/txdelay_contract_test.py
+
+      - name: TXDELAY policy and broker regression
+        run: python tests/txdelay_test.py
+
+      - name: TXDELAY architecture contract
+        run: python tests/txdelay_contract_test.py
+
+      - name: Parse P5 staging manifest
+        run: |
+          python - <<'PY'
+          import json
+          data = json.load(open('firmware/qualification/0c-p5-txdelay-host.json', encoding='utf-8'))
+          assert data['phase'] == '0C-P5'
+          assert data['status'] == 'staged'
+          assert data['base_checkpoint_sha'] == 'b6b18631e9e1abaa2854f1a69a7a4dc56d08e71d'
+          assert data['default'] == 30
+          assert data['default_pre_flags'] == 45
+          assert data['runtime_mutation'] is False
+          assert data['kiss_parameter_ingress_connected'] is False
+          assert data['kiss_data_tx_connected'] is False
+          assert data['hardware_access'] is False
+          assert data['rf_transmitted'] is False
+          physical = data['physical_follow_on']
+          assert physical['digipeater_station'] == 'KJ6YWD-5'
+          assert physical['digipeater_alias_path'] == 'YWDNOD'
+          assert physical['require_path'] == ['YWDNOD']
+          assert physical['txdelay_profiles'] == [30, 50]
+          assert physical['require_ywdnod_repeated_decode'] is True
+          print('P5_TXDELAY_MANIFEST_PARSE=PASS')
+          PY
