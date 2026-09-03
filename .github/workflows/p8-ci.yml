@@ -4,7 +4,7 @@ on:
   pull_request:
     branches: [dev]
   push:
-    branches: [dev-0c-p8-sustained-kiss-tnc]
+    branches: [dev, dev-0c-p8-sustained-kiss-tnc]
 
 jobs:
   p8-sustained-kiss-tnc:
@@ -58,7 +58,7 @@ jobs:
           p = 'firmware/qualification/0c-p8-sustained-kiss-tnc-host.json'
           d = json.load(open(p, encoding='utf-8'))
           assert d['phase'] == '0C-P8-host'
-          assert d['status'] == 'staged'
+          assert d['status'] == 'host-qualified'
           assert d['base_checkpoint_sha'] == '80249ab34da4c64d40d23d98d639db78d1691f5d'
           assert d['architecture']['thread_safe_queue_by_composition'] is True
           assert d['qualification']['concurrent_kiss_producers'] == 8
@@ -66,6 +66,7 @@ jobs:
           assert d['qualification']['client_reconnect_required'] is True
           assert d['qualification']['post_tx_fcs_valid_rx_required'] is True
           assert d['qualification']['automatic_retry'] is False
+          assert d['qualification_evidence']['full_framework_pr_run'] == 439
           assert d['safety']['host_fake_modem_only'] is True
           assert d['safety']['posix_serial'] is False
           assert d['safety']['uart_access'] is False
