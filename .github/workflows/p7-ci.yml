@@ -1,0 +1,72 @@
+name: p7-ci
+
+on:
+  pull_request:
+    branches: [dev]
+  push:
+    branches: [dev, dev-0c-p7-kiss-data-admission]
+
+jobs:
+  p7-kiss-data-admission:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Compile P7 boundary
+        run: |
+          python -m py_compile src/ywd1278/kiss/tx_path.py
+          python -m py_compile src/ywd1278/kiss/tx_backend.py
+          python -m py_compile src/ywd1278/tx/contextual.py
+          python -m py_compile tests/p7_fake_modem.py
+          python -m py_compile tests/kiss_data_admission_test.py
+          python -m py_compile tests/kiss_data_full_graph_integration_test.py
+          python -m py_compile tests/kiss_data_admission_contract_test.py
+
+      - name: P7 bounded DATA admission policy
+        run: python tests/kiss_data_admission_test.py
+
+      - name: P7 localhost KISS to full fake-hardware graph
+        run: python tests/kiss_data_full_graph_integration_test.py
+
+      - name: P7 architecture contract
+        run: python tests/kiss_data_admission_contract_test.py
+
+      - name: Preserve P6 KISS control plane
+        run: |
+          python tests/kiss_control_plane_test.py
+          python tests/kiss_control_plane_server_test.py
+          python tests/kiss_control_plane_contract_test.py
+
+      - name: Preserve P4e and P5 qualified boundaries
+        run: |
+          python tests/half_duplex_test.py
+          python tests/half_duplex_tx_owner_integration_test.py
+          python tests/txdelay_test.py
+          python tests/txdelay_contract_test.py
+
+      - name: Parse P7 qualification manifest
+        run: |
+          python - <<'PY'
+          import json
+          data = json.load(open('firmware/qualification/0c-p7-kiss-data-admission.json', encoding='utf-8'))
+          assert data['phase'] == '0C-P7'
+          assert data['status'] in {'staged', 'host-qualified'}
+          assert data['base_checkpoint_sha'] == '860104a7dbaff3dac642b72cc040d746375e7264'
+          assert data['kiss_data']['payload_has_fcs'] is False
+          assert data['kiss_data']['tnc_appends_fcs_exactly_once'] is True
+          assert data['request_policy']['per_request_parameter_snapshot'] is True
+          assert data['request_policy']['automatic_retry'] is False
+          assert data['safety']['host_fake_modem_only'] is True
+          assert data['safety']['uart_access'] is False
+          assert data['safety']['rf_transmitted'] is False
+          assert data['safety']['product_tx_enabled'] is False
+          assert data['physical_follow_on']['authorized'] is False
+          assert data['physical_follow_on']['require_path'] == ['YWDNOD']
+          assert data['physical_follow_on']['require_ywdnod_repeated_decode'] is False
+          print('P7_KISS_DATA_MANIFEST_PARSE=PASS')
+          PY
