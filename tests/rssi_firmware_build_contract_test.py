@@ -149,10 +149,15 @@ for required in (
 ):
     assert required in brander, required
 
-# Staging this candidate must not alter the current P13b physical boundary or
-# connect any ordinary product/KISS transmit path.
-assert targets["status"] == "0b-p13b-known-packet-tx-qualified"
+# The build manifest remains historical evidence that the firmware itself
+# selected no carrier threshold. The current target has since advanced through
+# physical AX25R4 correlation and the separate host-only 0C-P2 detector policy.
+assert targets["status"] == "0c-p2-channel-busy-detector-qualified"
 assert targets["packet_live_tx_qualification"]["external_decodes_observed"] == 3
+assert targets["packet_rssi_qualification"]["status"] == "physically-qualified-correlation"
+assert targets["channel_busy_qualification"]["status"] == "host-qualified"
+assert targets["channel_busy_qualification"]["modem_integration"] is False
+assert targets["channel_busy_qualification"]["csma_integration"] is False
 for forbidden in (
     "RX_RSSI",
     "rx_rssi",
@@ -173,8 +178,9 @@ print("ENGINEERING_EXTERNAL_REPO_REQUIRED=NO")
 print("ENGINEERING_FILES=13")
 print("YWD_RX_RSSI_SUBCOMMAND=0x05")
 print("RX_STATUS_REVISION=3")
-print("CARRIER_THRESHOLD_SELECTED=NO")
+print("FIRMWARE_CARRIER_THRESHOLD_SELECTED=NO")
 print("P13B_PHYSICAL_BOUNDARY_RETAINED=PASS")
+print("P2_CURRENT_TARGET_BOUNDARY=QUALIFIED")
 print("KISS_TX_CONNECTED=NO")
 print("PRODUCT_TX_ENABLED=NO")
 print("HARDWARE_ACCESS=NO")
