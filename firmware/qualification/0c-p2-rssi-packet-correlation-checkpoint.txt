@@ -1,0 +1,3 @@
+0C-P2 packet-correlated RSSI physical evidence
+qualification commit before policy staging: 3a81fcdf8825af1267ce03af255c5f02c2242ba6
+checkpoint branch: checkpoint/0c-p2-rssi-packet-correlation-qualified
