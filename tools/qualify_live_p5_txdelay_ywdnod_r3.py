@@ -2,12 +2,12 @@
 """Final 0C-P5 guarded live TXDELAY qualification VIA YWDNOD.
 
 This narrow wrapper uses the reviewed R2 physical lifecycle while replacing
-qualification-frame classification with semantic AX.25 matching.  A YWDNOD
+qualification-frame classification with semantic AX.25 matching. A YWDNOD
 repeat changes the repeater/H bit and FCS, so byte equality alone is not enough
 to prevent our own returned qualification traffic from authorizing a later TX.
 
 Both direct and digipeated copies of the two fixed P5 packets are therefore
-recognized by source, destination, and exact information field.  They remain
+recognized by source, destination, and exact information field. They remain
 visible to the decoder but cannot satisfy pre-TX trigger or final RX-proof
 requirements.
 """
@@ -27,6 +27,8 @@ import qualify_live_p5_txdelay_ywdnod_r2 as r2  # noqa: E402
 from ywd1278.ax25 import parse_frame as parse_ax25_frame  # noqa: E402
 
 
+CONFIRMATION_TOKEN = "P5-LIVE-YWDNOD-TXDELAY-30-50-R3"
+INTERACTIVE_CONFIRMATION = "TRANSMIT-P5-R3-TXDELAY-VIA-YWDNOD-TWO"
 QUALIFICATION_SOURCE = "KJ6YWD-10"
 QUALIFICATION_DESTINATION = "YWD5TD"
 QUALIFICATION_INFO = {
@@ -47,6 +49,9 @@ def semantic_qualification_frame(frame: bytes, _direct_frames: set[bytes]) -> bo
 
 
 def main() -> int:
+    # R3 owns the operator gate while retaining the already-reviewed R2 core.
+    r2.CONFIRMATION_TOKEN = CONFIRMATION_TOKEN
+    r2.INTERACTIVE_CONFIRMATION = INTERACTIVE_CONFIRMATION
     r2.is_qualification_frame = semantic_qualification_frame
     return r2.main()
 
