@@ -29,14 +29,16 @@ kiss = KISS_SERVER.read_text(encoding="utf-8")
 daemon = DAEMON.read_text(encoding="utf-8")
 
 # R1 is retained exactly as the historical partial physical attempt. P13b was
-# ultimately qualified by R2, so the current target advances while P12b and R1
-# evidence remain frozen rather than being rewritten.
-assert target["status"] == "0b-p13b-known-packet-tx-qualified"
+# ultimately qualified by R2; the current target has since advanced through P2
+# while P12b, one-shot, R1, and R2 evidence remain frozen rather than rewritten.
+assert target["status"] == "0c-p2-channel-busy-detector-qualified"
 assert target["flash_enabled"] is False
 assert target["option_bytes_permitted"] is False
 assert target["packet_live_rx_qualification"]["packet_firmware_left_installed"] is True
 assert target["packet_live_rf_kiss_qualification"]["receive_frequency_hz"] == 145050000
 assert target["packet_live_tx_qualification"]["status"] == "qualified"
+assert target["channel_busy_qualification"]["status"] == "host-qualified"
+assert target["channel_busy_qualification"]["kiss_tx_connected"] is False
 
 # Preserve the exact original one-shot staging vector and tool rather than
 # silently repurposing the already-executed test.
@@ -210,6 +212,7 @@ for forbidden in ("TXBroker", "TXModemOwner", "transmit_selector_burst", "RF_TX_
 print("P13B_R1_THREE_TX_CONTRACT=PASS")
 print("ORIGINAL_P13B_ONE_SHOT_PRESERVED=PASS")
 print("P13B_R1_HISTORICAL_PARTIAL_ATTEMPT=PASS")
+print("P2_CURRENT_TARGET_BOUNDARY=QUALIFIED")
 print("P13B_R1_FREQUENCY_HZ=145050000")
 print("P13B_R1_FIXED_FRAMES=3")
 print("P13B_R1_SELECTOR_COUNT_EACH=721")
