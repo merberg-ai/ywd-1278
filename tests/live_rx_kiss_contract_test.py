@@ -11,9 +11,9 @@ TOOL = ROOT / "tools" / "qualify_live_rx_kiss.py"
 target = json.loads(TARGETS.read_text(encoding="utf-8"))["targets"][0]
 text = TOOL.read_text(encoding="utf-8")
 
-# The current target has advanced to P13b. All P12a/P12b physical receive
-# evidence remains frozen as historical prerequisite evidence.
-assert target["status"] == "0b-p13b-known-packet-tx-qualified"
+# The current target has advanced through P13b and now 0C-P2. All P12a/P12b
+# physical receive evidence remains frozen as historical prerequisite evidence.
+assert target["status"] == "0c-p2-channel-busy-detector-qualified"
 assert target["flash_enabled"] is False
 assert target["option_bytes_permitted"] is False
 assert target["packet_live_rx_activation"]["enabled"] is False
@@ -30,6 +30,8 @@ assert target["packet_live_rx_qualification"]["rf_tx_generated_samples_before"] 
 assert target["packet_live_rx_qualification"]["rf_tx_generated_samples_after"] == 0
 assert target["packet_live_rx_qualification"]["rf_transmitted"] is False
 assert target["packet_live_tx_qualification"]["status"] == "qualified"
+assert target["channel_busy_qualification"]["status"] == "host-qualified"
+assert target["channel_busy_qualification"]["modem_integration"] is False
 
 # P12b remains exact historical physical evidence at the local packet-network frequency.
 p12b = target["packet_live_rf_kiss_qualification"]
@@ -139,7 +141,7 @@ print("P12A_PHYSICAL_PREREQUISITE=PASS")
 print("P12A_144390_EVIDENCE_FROZEN=PASS")
 print("P12B_145050_PHYSICAL_EVIDENCE=PASS")
 print("P12B_LIVE_FRAME_LOCKED=PASS")
-print("TARGET_ADVANCED_TO_P13B=PASS")
+print("TARGET_ADVANCED_TO_0C_P2=PASS")
 print("REAL_UART_SINGLE_OWNER=PASS")
 print("LIVE_RX_RUNTIME=PASS")
 print("LOOPBACK_KISS_ONLY=PASS")
