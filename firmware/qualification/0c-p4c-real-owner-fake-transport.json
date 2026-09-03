@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "phase": "0C-P4c",
-  "status": "staged-host-only",
+  "status": "host-qualified",
   "date": "2026-09-02",
   "base_checkpoint": "checkpoint/0c-p4b-real-broker-fake-modem-qualified",
   "base_checkpoint_sha": "3b22251582f532f5b7c388bde8d5eef50b01f22d",
@@ -37,6 +37,13 @@
     "p5_packed_selector_sha256": "30718ba5a4368e82bab69e6343f95c7e226cd08426844ed328ad8c52fbfd750e",
     "all_transactions_on_single_owner_thread": true,
     "transport_close_on_owner_thread": true
+  },
+  "qualification_ci": {
+    "workflow": "framework-ci",
+    "run_number": 357,
+    "run_id": 33706718537,
+    "conclusion": "success",
+    "staged_head_sha": "d5afd9af8e4ef3d618e5c202acd076fb886f7bca"
   },
   "posix_serial_transport_used": false,
   "uart_opened": false,
