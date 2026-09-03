@@ -19,7 +19,6 @@ DAEMON = ROOT / "src" / "ywd1278" / "daemon.py"
 
 manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
 broker_bytes = BROKER.read_bytes()
-broker_text = broker_bytes.decode("utf-8")
 txdelay_text = TXDELAY.read_text(encoding="utf-8")
 kiss_text = KISS_SERVER.read_text(encoding="utf-8")
 daemon_text = DAEMON.read_text(encoding="utf-8")
@@ -27,10 +26,18 @@ daemon_text = DAEMON.read_text(encoding="utf-8")
 # The previously physically qualified P4e boundary is the exact base.
 assert manifest["phase"] == "0C-P5"
 assert manifest["stage"] == "txdelay-host-policy"
-assert manifest["status"] == "staged"
+assert manifest["status"] == "host-qualified"
 assert manifest["base_checkpoint_sha"] == "b6b18631e9e1abaa2854f1a69a7a4dc56d08e71d"
+host = manifest["host_qualification"]
+assert host["p5_ci_run_id"] == 33713270977
+assert host["p5_ci_conclusion"] == "success"
+assert host["framework_ci_run_id"] == 33713284950
+assert host["framework_ci_run_number"] == 393
+assert host["framework_ci_conclusion"] == "success"
+assert host["default_p5_vector_preserved"] is True
+assert host["historical_broker_blob_preserved"] is True
 
-# Historical P13/P4 broker implementation is byte-for-byte untouched.  P5 is a
+# Historical P13/P4 broker implementation is byte-for-byte untouched. P5 is a
 # later subclass boundary rather than a rewrite of frozen serializer evidence.
 blob_sha1 = hashlib.sha1(f"blob {len(broker_bytes)}\0".encode() + broker_bytes).hexdigest()
 assert blob_sha1 == manifest["historical_tx_broker_git_blob_sha1"]
@@ -57,7 +64,7 @@ assert "def set_txdelay" not in txdelay_text
 assert "set_txdelay(" not in txdelay_text
 
 # This phase owns no hardware, timing loop, randomness, sockets, or KISS
-# ingress.  TXDelayBroker only changes deterministic frame preparation.
+# ingress. TXDelayBroker only changes deterministic frame preparation.
 for forbidden in (
     "/dev/tty",
     "posix_serial_transport_factory",
@@ -97,6 +104,7 @@ assert physical["automatic_tx_retry"] is False
 assert physical["kiss_tx_connected"] is False
 
 print("P5_TXDELAY_ARCHITECTURE_CONTRACT=PASS")
+print("P5_TXDELAY_HOST_STATUS=QUALIFIED")
 print("HISTORICAL_TX_BROKER_BLOB_FROZEN=PASS")
 print("TXDELAY_DEFAULT_30_EQUALS_P5_45_FLAGS=PASS")
 print("RUNTIME_TXDELAY_MUTATION=NO")
