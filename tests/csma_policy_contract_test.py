@@ -103,12 +103,14 @@ for forbidden in (
     assert forbidden not in kiss_text, forbidden
     assert forbidden not in daemon_text, forbidden
 
-# Current target remains the P13b physical boundary; 0C-P1 is host-only and must
-# not alter RF/firmware qualification evidence.
-assert '"status": "0b-p13b-known-packet-tx-qualified"' in targets_text
+# The current target has advanced through qualified 0C-P2, but 0C-P1 itself is
+# still the same host-only policy and all earlier P13b RF evidence remains frozen.
+assert '"status": "0c-p2-channel-busy-detector-qualified"' in targets_text
 assert '"packet_live_tx_qualification"' in targets_text
 assert '"external_decodes_observed": 3' in targets_text
 assert '"all_three_exact_external_frames_observed": true' in targets_text
+assert '"channel_busy_qualification"' in targets_text
+assert '"csma_integration": false' in targets_text
 
 print("CSMA_POLICY_CONTRACT=PASS")
 print("PHASE=0C-P1")
@@ -122,6 +124,7 @@ print("EXPLICIT_CLEAR_REQUIRED=YES")
 print("CALLER_SUPPLIED_TIME=YES")
 print("CALLER_SUPPLIED_RANDOMNESS=YES")
 print("LIVE_CHANNEL_SENSOR_CONNECTED=NO")
+print("P2_DETECTOR_CONNECTED_TO_P1=NO")
 print("KISS_TX_CONNECTED=NO")
 print("PRODUCT_TX_ENABLED=NO")
 print("MODEM_ACCESS=NO")
