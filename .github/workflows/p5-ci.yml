@@ -4,7 +4,7 @@ on:
   pull_request:
     branches: [dev]
   push:
-    branches: [dev-0c-p5-txdelay]
+    branches: [dev, dev-0c-p5-txdelay]
 
 jobs:
   p5-txdelay:
@@ -29,13 +29,13 @@ jobs:
       - name: TXDELAY architecture contract
         run: python tests/txdelay_contract_test.py
 
-      - name: Parse P5 staging manifest
+      - name: Parse P5 host qualification manifest
         run: |
           python - <<'PY'
           import json
           data = json.load(open('firmware/qualification/0c-p5-txdelay-host.json', encoding='utf-8'))
           assert data['phase'] == '0C-P5'
-          assert data['status'] == 'staged'
+          assert data['status'] == 'host-qualified'
           assert data['base_checkpoint_sha'] == 'b6b18631e9e1abaa2854f1a69a7a4dc56d08e71d'
           assert data['default'] == 30
           assert data['default_pre_flags'] == 45
@@ -44,6 +44,11 @@ jobs:
           assert data['kiss_data_tx_connected'] is False
           assert data['hardware_access'] is False
           assert data['rf_transmitted'] is False
+          host = data['host_qualification']
+          assert host['p5_ci_conclusion'] == 'success'
+          assert host['framework_ci_conclusion'] == 'success'
+          assert host['default_p5_vector_preserved'] is True
+          assert host['historical_broker_blob_preserved'] is True
           physical = data['physical_follow_on']
           assert physical['digipeater_station'] == 'KJ6YWD-5'
           assert physical['digipeater_alias_path'] == 'YWDNOD'
