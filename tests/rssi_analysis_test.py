@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+import statistics
 import sys
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -11,6 +12,7 @@ from ywd1278.tx.rssi_analysis import (
     cluster_gaps,
     correlate_rssi_window,
     guard_gap_above_signal,
+    rssi_values_outside_windows,
 )
 
 # Reproduce the physically observed P2 separation shape without making the
@@ -48,8 +50,9 @@ assert sep.midpoint == 84
 assert sep.low_median == 48
 assert sep.high_median >= 100
 
-# A packet window whose RSSI measurements are in the low cluster must summarize
-# independently of the global separation calculation.
+# A packet window and an independently selected outside-frame population are
+# separate pieces of evidence. The polarity assertion is based on their direct
+# median difference, not on a gap chosen from the packet values themselves.
 samples = [
     (0, 106),
     (1000, 104),
@@ -58,6 +61,7 @@ samples = [
     (4000, 48),
     (5000, 47),
     (6000, 105),
+    (7000, 108),
 ]
 corr = correlate_rssi_window(
     samples,
@@ -68,6 +72,16 @@ assert corr.count == 4
 assert corr.raw_min == 47
 assert corr.raw_median == 48
 assert corr.raw_max == 49
+outside = rssi_values_outside_windows(samples, [(2000, 5000)])
+assert outside == (106, 104, 105, 108)
+assert statistics.median(outside) - corr.raw_median == 57.5
+
+outside_with_guard = rssi_values_outside_windows(
+    samples,
+    [(2500, 4500)],
+    padding_samples=500,
+)
+assert outside_with_guard == (106, 104, 105, 108)
 
 # Guard malformed or underdetermined characterization inputs.
 for bad in ([], [100] * 24):
@@ -96,7 +110,15 @@ except ValueError:
 else:
     raise AssertionError("invalid frame interval did not fail closed")
 
+try:
+    rssi_values_outside_windows(samples, [(0, 7000)], padding_samples=0)
+except ValueError:
+    pass
+else:
+    raise AssertionError("empty outside-frame RSSI population did not fail closed")
+
 print("RSSI_ANALYSIS_REGRESSION=PASS")
+print("INDEPENDENT_OUTSIDE_FRAME_POPULATION=PASS")
 print("PHYSICAL_SIGNAL_CORE_GAP=49_TO_73")
 print("PHYSICAL_GUARD_GAP=73_TO_95")
 print("PHYSICAL_GUARD_MIDPOINT_DESCRIPTIVE_ONLY=84")
