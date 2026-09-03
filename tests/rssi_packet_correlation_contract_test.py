@@ -31,6 +31,7 @@ for required in (
     'DEVICE = "/dev/ttyAMA0"',
     "FREQUENCY_HZ = 145_050_000",
     "MMDVM_HS_Hat-YWD-1278-AX25R4-v0.1.0-alpha1",
+    "TARGET_VALID_FRAMES = 2",
     "StreamingBell202Decoder",
     "ModemOwner(",
     "owner.rx_start",
@@ -42,9 +43,12 @@ for required in (
     "guard_gap_above_signal",
     "correlate_rssi_window",
     "rssi_values_outside_windows",
-    "OUTSIDE_FRAME_GUARD_SAMPLES",
+    "OUTSIDE_FRAME_GUARD_SAMPLES = int(round(0.50 * SAMPLE_RATE))",
     "MIN_OUTSIDE_SAMPLES = 20",
     "MIN_POLARITY_MARGIN = 12",
+    "len(frames) < TARGET_VALID_FRAMES",
+    "FCS_VALID_AX25_FRAMES_",
+    "len(correlations) < TARGET_VALID_FRAMES",
     "outside_median - packet_worst_median",
     "signal_reference_max",
     "MIN_SEPARATING_GAP = 12",
@@ -93,7 +97,9 @@ for forbidden in (
 
 print("P2_PACKET_CORRELATED_RSSI_CONTRACT=PASS")
 print("EXACT_AX25R4_INSTALLED_BOUNDARY=YES")
-print("FCS_VALID_PACKET_CORRELATION_REQUIRED=YES")
+print("FCS_VALID_PACKET_CORRELATION_REQUIRED=2")
+print("INCOMPLETE_IF_FEWER_THAN_TWO=YES")
+print("OUTSIDE_FRAME_GUARD_SECONDS=0.50")
 print("INDEPENDENT_OUTSIDE_FRAME_POLARITY_PROOF=YES")
 print("PACKET_REFERENCED_GUARD_GAP_REQUIRED=YES")
 print("MIN_POLARITY_MARGIN=12")
