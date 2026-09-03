@@ -11,6 +11,12 @@ from .broker import (
     TXBrokerSnapshot,
     TXReceipt,
 )
+from .channel_access import (
+    ChannelAccessObservation,
+    ChannelAccessRandomnessRequired,
+    RandomByteSource,
+    ShadowChannelAccessAttempt,
+)
 from .channel_busy import (
     BUSY_ASSERT_RAW_MAX,
     CLEAR_RELEASE_RAW_MIN,
@@ -45,6 +51,10 @@ __all__ = [
     "TXBrokerQueueFull",
     "TXBrokerSnapshot",
     "TXReceipt",
+    "ChannelAccessObservation",
+    "ChannelAccessRandomnessRequired",
+    "RandomByteSource",
+    "ShadowChannelAccessAttempt",
     "BUSY_ASSERT_RAW_MAX",
     "CLEAR_RELEASE_RAW_MIN",
     "PHYSICAL_BUSY_SIDE_MAX",
