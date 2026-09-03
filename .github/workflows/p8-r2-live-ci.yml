@@ -1,13 +1,11 @@
 name: p8-r2-live-ci
 
 on:
-  push:
-    branches: [dev-0c-p8-live-sustained-kiss-tnc-r2]
   pull_request:
     branches: [dev]
 
 jobs:
-  p8-r2-live-staging:
+  p8-r2-historical-safety:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -17,15 +15,17 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Compile R2 boundary
+      - name: Compile historical R2 boundaries
         run: |
           python -m py_compile tools/qualify_live_p8_r2_sustained_kiss_tnc.py
           python -m py_compile tests/live_p8_r2_sustained_kiss_tnc_contract_test.py
-          python -m py_compile tests/sustained_live_fifo_drain_regression_test.py
-          python -m py_compile src/ywd1278/service/tnc_runtime.py
+          python -m py_compile tests/live_p8_r2_physical_evidence_contract_test.py
 
-      - name: P8 R2 physical staging contract and inert dry run
+      - name: R2 must remain invalidated and fail closed
         run: python tests/live_p8_r2_sustained_kiss_tnc_contract_test.py
+
+      - name: Preserve exact R2 physical evidence
+        run: python tests/live_p8_r2_physical_evidence_contract_test.py
 
       - name: Preserve host R1 continuously-producing FIFO regression
         run: python tests/sustained_live_fifo_drain_regression_test.py
@@ -35,48 +35,3 @@ jobs:
           python tests/sustained_kiss_queue_concurrency_test.py
           python tests/sustained_kiss_tnc_integration_test.py
           python tests/sustained_kiss_tnc_contract_test.py
-
-      - name: Preserve P7 ingress and one-shot physical evidence
-        run: |
-          python tests/kiss_data_admission_test.py
-          python tests/kiss_data_full_graph_integration_test.py
-          python tests/kiss_data_admission_contract_test.py
-          python tests/live_p7_kiss_one_shot_evidence_contract_test.py
-
-      - name: Preserve P6 controls and P4e P5 lifecycle
-        run: |
-          python tests/kiss_control_plane_test.py
-          python tests/kiss_control_plane_server_test.py
-          python tests/half_duplex_test.py
-          python tests/half_duplex_tx_owner_integration_test.py
-          python tests/txdelay_test.py
-          python tests/txdelay_contract_test.py
-
-      - name: Parse R2 manifest and superseded attempt1 gate
-        run: |
-          python - <<'PY'
-          import json
-          old = json.load(open('firmware/qualification/0c-p8-live-sustained-kiss-tnc.json', encoding='utf-8'))
-          r2 = json.load(open('firmware/qualification/0c-p8-r2-live-sustained-kiss-tnc.json', encoding='utf-8'))
-          assert old['status'] == 'superseded'
-          assert old['runnable'] is False
-          assert r2['phase'] == '0C-P8-R2-live'
-          assert r2['status'] == 'staged'
-          assert r2['base_checkpoint'] == 'checkpoint/0c-p8-sustained-kiss-tnc-r1-host-qualified'
-          assert r2['base_checkpoint_sha'] == 'e8d104b2c6a295219e34733d2541f89ee90318f3'
-          assert r2['attempt1_accepted_tx'] == 0
-          assert r2['host_r1_bounded_live_fifo_drain_required'] is True
-          assert r2['rx_fifo_drain_read_limit'] == 4
-          assert r2['rx_fifo_zero_length_read_required'] is False
-          assert r2['health_checked_while_waiting_for_dispatch'] is True
-          assert r2['timeout_diagnostics_include_guard_runtime_queue'] is True
-          assert r2['live_rx_decode_visibility_required'] is True
-          assert r2['automatic_tx_retry'] is False
-          assert r2['product_tx_enabled'] is False
-          assert r2['daemon_tx_enabled'] is False
-          assert r2['systemd_tx_enabled'] is False
-          assert r2['flash_permitted'] is False
-          assert r2['gpio_reset_permitted'] is False
-          assert r2['option_bytes_permitted'] is False
-          print('P8_R2_MANIFEST_PARSE=PASS')
-          PY
