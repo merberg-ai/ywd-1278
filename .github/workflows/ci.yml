@@ -125,6 +125,14 @@ jobs:
         run: |
           python tests/live_shadow_channel_access_contract_test.py
 
+      - name: P4a bounded access queue regression
+        run: |
+          python tests/access_queue_test.py
+
+      - name: P4a bounded access queue architecture contract
+        run: |
+          python tests/access_queue_contract_test.py
+
       - name: P13b one-shot TX qualification contract
         run: |
           python tests/single_tx_qualification_contract_test.py
