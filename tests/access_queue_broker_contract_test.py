@@ -22,7 +22,7 @@ daemon = DAEMON.read_text(encoding="utf-8")
 
 assert manifest["schema"] == 1
 assert manifest["phase"] == "0C-P4b"
-assert manifest["status"] == "staged-host-only"
+assert manifest["status"] == "host-qualified"
 assert manifest["base_checkpoint"] == "checkpoint/0c-p4a-bounded-access-queue-qualified"
 assert manifest["base_checkpoint_sha"] == "384f408af286aca34e16b0480267b890cdcbdba9"
 assert manifest["broker"]["class"] == "TXBroker"
@@ -30,6 +30,13 @@ assert manifest["broker"]["concrete_broker_used"] is True
 assert manifest["broker"]["p5_selector_count"] == 691
 assert manifest["broker"]["p5_packed_selector_bytes"] == 87
 assert manifest["broker"]["p5_packed_selector_sha256"] == "30718ba5a4368e82bab69e6343f95c7e226cd08426844ed328ad8c52fbfd750e"
+assert manifest["qualification_ci"] == {
+    "workflow": "framework-ci",
+    "run_number": 352,
+    "run_id": 33706006503,
+    "head_sha": "6476faa3fc297f03883bdaf9bb72280a0cd420b3",
+    "conclusion": "success",
+}
 assert manifest["fake_modem_port_only"] is True
 for key in (
     "tx_modem_owner_used",
@@ -92,7 +99,9 @@ for forbidden in (
     assert forbidden not in daemon, forbidden
 
 print("P4B_REAL_BROKER_FAKE_MODEM_CONTRACT=PASS")
+print("STATUS=HOST_QUALIFIED")
 print("BASE_CHECKPOINT=0C-P4A_QUALIFIED")
+print("QUALIFICATION_CI=352_SUCCESS")
 print("REAL_TX_BROKER_CLASS_USED=YES")
 print("P4A_GENERIC_BOUNDARY_PRESERVED=YES")
 print("TX_MODEM_OWNER_USED=NO")
