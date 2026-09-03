@@ -146,3 +146,36 @@ def correlate_rssi_window(
         raw_median=statistics.median(selected),
         raw_max=max(selected),
     )
+
+
+def rssi_values_outside_windows(
+    rssi_samples: Iterable[tuple[int, int]],
+    windows: Iterable[tuple[int, int]],
+    *,
+    padding_samples: int = 0,
+) -> tuple[int, ...]:
+    """Return RSSI values outside every supplied capture-sample interval.
+
+    This is used only as an independent comparison population for physical
+    polarity characterization. Outside-frame samples are not automatically
+    called "clear" because they may include undecoded RF activity.
+    """
+
+    if padding_samples < 0:
+        raise ValueError("padding_samples must be non-negative")
+    normalized: list[tuple[int, int]] = []
+    for start, end in windows:
+        start = int(start)
+        end = int(end)
+        if start < 0 or end < start:
+            raise ValueError("invalid RSSI exclusion window")
+        normalized.append((max(0, start - padding_samples), end + padding_samples))
+
+    values = tuple(
+        int(raw)
+        for position, raw in rssi_samples
+        if not any(lo <= int(position) <= hi for lo, hi in normalized)
+    )
+    if not values:
+        raise ValueError("no RSSI samples remain outside the supplied windows")
+    return values
