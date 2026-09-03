@@ -25,6 +25,8 @@ assert evidence["safety"]["hysteresis_selected"] is False
 
 # The next live gate is fixed to the exact installed AX25R4 target state and
 # only correlates read-only RSSI telemetry with already-qualified RX decoding.
+# Polarity must be proven directly against an independent outside-frame sample
+# population before the descriptive guard gap is computed.
 for required in (
     'DEVICE = "/dev/ttyAMA0"',
     "FREQUENCY_HZ = 145_050_000",
@@ -39,18 +41,33 @@ for required in (
     "owner.rf_diagnostics",
     "guard_gap_above_signal",
     "correlate_rssi_window",
+    "rssi_values_outside_windows",
+    "OUTSIDE_FRAME_GUARD_SAMPLES",
+    "MIN_OUTSIDE_SAMPLES = 20",
+    "MIN_POLARITY_MARGIN = 12",
+    "outside_median - packet_worst_median",
     "signal_reference_max",
     "MIN_SEPARATING_GAP = 12",
     "RSSI_POLARITY=LOWER_RAW_IS_STRONGER_RF",
+    "PACKET_WORST_MEDIAN=",
+    "OUTSIDE_FRAME_MEDIAN=",
+    "POLARITY_MARGIN=",
+    "POLARITY_PROOF_INDEPENDENT_OF_GUARD_GAP=PASS",
     "PACKET_SIGNAL_REFERENCE_MAX=",
     "OBSERVED_BUSY_SIDE_MAX=",
-    "OBSERVED_CLEAR_SIDE_MIN=",
+    "OBSERVED_UPPER_SIDE_MIN=",
     "CARRIER_THRESHOLD_SELECTED=NO",
     "HYSTERESIS_SELECTED=NO",
     "CSMA_INTEGRATION=NO",
     "RF_TRANSMITTED=NO",
 ):
     assert required in text, required
+
+# Prevent the earlier circular test from reappearing: polarity may not be
+# inferred merely by comparing packet medians with a midpoint derived from the
+# same packet-referenced gap.
+assert "low_correlations" not in text
+assert "corr.raw_median < separation.midpoint" not in text
 
 # No operator knobs can redirect this characterization to arbitrary hardware or
 # RF settings; there is intentionally no argparse surface at all.
@@ -77,7 +94,9 @@ for forbidden in (
 print("P2_PACKET_CORRELATED_RSSI_CONTRACT=PASS")
 print("EXACT_AX25R4_INSTALLED_BOUNDARY=YES")
 print("FCS_VALID_PACKET_CORRELATION_REQUIRED=YES")
+print("INDEPENDENT_OUTSIDE_FRAME_POLARITY_PROOF=YES")
 print("PACKET_REFERENCED_GUARD_GAP_REQUIRED=YES")
+print("MIN_POLARITY_MARGIN=12")
 print("MIN_SEPARATING_GAP=12")
 print("CARRIER_THRESHOLD_SELECTED=NO")
 print("HYSTERESIS_SELECTED=NO")
