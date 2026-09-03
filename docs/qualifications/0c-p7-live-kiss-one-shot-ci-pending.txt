@@ -1,0 +1,1 @@
+Physical execution is not authorized until p7-live-ci, p7-ci, framework-ci, and historical guards are green on the exact staging head.
