@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "phase": "0C-P4b",
-  "status": "staged-host-only",
+  "status": "host-qualified",
   "date": "2026-09-02",
   "base_checkpoint": "checkpoint/0c-p4a-bounded-access-queue-qualified",
   "base_checkpoint_sha": "384f408af286aca34e16b0480267b890cdcbdba9",
@@ -21,6 +21,13 @@
     "p5_packed_selector_sha256": "30718ba5a4368e82bab69e6343f95c7e226cd08426844ed328ad8c52fbfd750e",
     "busy_preflight_tested": true,
     "selector_limit_tested": true
+  },
+  "qualification_ci": {
+    "workflow": "framework-ci",
+    "run_number": 352,
+    "run_id": 33706006503,
+    "head_sha": "6476faa3fc297f03883bdaf9bb72280a0cd420b3",
+    "conclusion": "success"
   },
   "fake_modem_port_only": true,
   "tx_modem_owner_used": false,
