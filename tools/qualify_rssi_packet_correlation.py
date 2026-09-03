@@ -13,8 +13,8 @@ broker, KISS server, GPIO, or firmware writer is imported or reachable.
 
 from __future__ import annotations
 
+import math
 from pathlib import Path
-import statistics
 import sys
 import time
 
@@ -24,7 +24,7 @@ sys.path.insert(0, str(ROOT / "src"))
 from ywd1278.modem._serial import posix_serial_transport_factory  # noqa: E402
 from ywd1278.modem.owner import ModemOwner  # noqa: E402
 from ywd1278.phy.bell202_rx import SAMPLE_RATE, StreamingBell202Decoder  # noqa: E402
-from ywd1278.tx.rssi_analysis import correlate_rssi_window, largest_cluster_gap  # noqa: E402
+from ywd1278.tx.rssi_analysis import correlate_rssi_window, guard_gap_above_signal  # noqa: E402
 
 DEVICE = "/dev/ttyAMA0"
 FREQUENCY_HZ = 145_050_000
@@ -230,14 +230,6 @@ def main() -> int:
             print("SAFE_TO_REPEAT_LATER=YES")
             return 2
 
-        raws = [raw for _, raw in rssi_samples]
-        separation = largest_cluster_gap(raws, min_low_count=5, min_high_count=20)
-        if separation.gap < MIN_SEPARATING_GAP:
-            raise RuntimeError(
-                f"largest RSSI population gap is only {separation.gap}; "
-                f"minimum characterization margin is {MIN_SEPARATING_GAP}"
-            )
-
         correlations = []
         for index, item in enumerate(frames, 1):
             try:
@@ -257,6 +249,20 @@ def main() -> int:
 
         if not correlations:
             raise RuntimeError("decoded frames had no overlapping RSSI telemetry samples")
+
+        # The decoded packet windows establish the signal reference. Only after
+        # that do we choose the highest large observed guard gap above the
+        # packet-correlated signal population. This keeps transition values on
+        # the signal side instead of blindly choosing the numerically largest gap.
+        signal_reference_max = math.ceil(max(corr.raw_median for corr in correlations))
+        raws = [raw for _, raw in rssi_samples]
+        separation = guard_gap_above_signal(
+            raws,
+            signal_reference_max=signal_reference_max,
+            min_gap=MIN_SEPARATING_GAP,
+            min_low_count=5,
+            min_high_count=20,
+        )
         low_correlations = [corr for corr in correlations if corr.raw_median < separation.midpoint]
         if not low_correlations:
             raise RuntimeError(
@@ -271,9 +277,10 @@ def main() -> int:
         print(f"Valid AX.25 frames        : {len(frames)}")
         print(f"Correlated frame windows  : {len(correlations)}")
         print(f"Lower-cluster frame wins  : {len(low_correlations)}")
-        print(f"Observed low cluster      : {separation.low_min}..{separation.low_max} median={separation.low_median}")
-        print(f"Observed high cluster     : {separation.high_min}..{separation.high_max} median={separation.high_median}")
-        print(f"Observed empty gap        : {separation.low_max}..{separation.high_min} width={separation.gap}")
+        print(f"Packet signal reference   : <= {signal_reference_max}")
+        print(f"Observed signal/guard side: {separation.low_min}..{separation.low_max} median={separation.low_median}")
+        print(f"Observed clear side       : {separation.high_min}..{separation.high_max} median={separation.high_median}")
+        print(f"Observed guard gap        : {separation.low_max}..{separation.high_min} width={separation.gap}")
         print(f"Descriptive midpoint      : {separation.midpoint}")
         print(f"Packed bytes drained      : {packed_bytes}")
         print(f"Read transactions         : {read_transactions}")
@@ -299,9 +306,10 @@ def main() -> int:
     print(f"VALID_AX25_FRAMES={len(frames)}")
     print(f"CORRELATED_FRAME_WINDOWS={len(correlations)}")
     print("RSSI_POLARITY=LOWER_RAW_IS_STRONGER_RF")
-    print(f"OBSERVED_LOW_MAX={separation.low_max}")
-    print(f"OBSERVED_HIGH_MIN={separation.high_min}")
-    print(f"OBSERVED_CLUSTER_GAP={separation.gap}")
+    print(f"PACKET_SIGNAL_REFERENCE_MAX={signal_reference_max}")
+    print(f"OBSERVED_BUSY_SIDE_MAX={separation.low_max}")
+    print(f"OBSERVED_CLEAR_SIDE_MIN={separation.high_min}")
+    print(f"OBSERVED_GUARD_GAP={separation.gap}")
     print(f"DESCRIPTIVE_MIDPOINT={separation.midpoint}")
     print(f"FIFO_DROPPED_BYTES={dropped}")
     print(f"RF_KEYUPS={before_keyups}->{after_keyups}")
