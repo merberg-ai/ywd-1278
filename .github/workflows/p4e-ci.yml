@@ -39,9 +39,14 @@ jobs:
           import json
           data = json.load(open('firmware/qualification/0c-p4e-persistent-half-duplex-host.json', encoding='utf-8'))
           assert data['phase'] == '0C-P4e'
-          assert data['status'] == 'staged-host-only'
+          assert data['status'] == 'host-qualified'
           assert data['base_checkpoint_sha'] == '16bef377c1986ae2222b014da93abd80141bd041'
           assert data['repeated_host_cycles_required'] == 3
+          assert data['repeated_host_cycles_observed'] == 3
+          assert data['host_rx_start_count'] == 4
+          assert data['host_rx_stop_count'] == 3
+          assert data['host_tx_tones_accepted'] == 3
+          assert data['host_rx_active_after_each_cycle'] is True
           assert data['downstream_failure_frame_retry'] is False
           assert data['post_transmit_failure_frame_retry'] is False
           assert data['post_transmit_failure_latches_lifecycle'] is True
