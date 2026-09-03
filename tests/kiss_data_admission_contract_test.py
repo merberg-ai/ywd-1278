@@ -46,9 +46,10 @@ assert "self._submitter.submit_frame(" in admission
 assert "request.context" in admission
 assert "self.session.capture_tx_context" in backend
 
-# No automatic retry or same-request requeue exists.
+# No same-request requeue or retry helper exists.  Safety documentation is
+# allowed to contain the words "no automatic retry".
 assert ".appendleft(" not in admission
-assert "automatic retry" not in admission.lower()
+assert "def retry" not in admission
 assert "is terminal and is not retried" in admission
 
 # P7 backend can admit DATA but cannot advance channel access by itself.
