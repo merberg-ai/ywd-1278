@@ -2,7 +2,7 @@
   "schema": 1,
   "phase": "0C-P7",
   "stage": "guarded-kiss-data-admission",
-  "status": "staged",
+  "status": "host-qualified",
   "date": "2026-09-03",
   "base_checkpoint": "checkpoint/0c-p6-kiss-control-plane-host-qualified",
   "base_checkpoint_sha": "860104a7dbaff3dac642b72cc040d746375e7264",
@@ -65,7 +65,17 @@
       "txdelay": 30,
       "persist": 0,
       "slottime": 10
-    }
+    },
+    "p7_ci_run_id": 33758497774,
+    "p7_ci_run_number": 4,
+    "p7_ci_conclusion": "success",
+    "framework_ci_run_id": 33758497758,
+    "framework_ci_run_number": 418,
+    "framework_ci_conclusion": "success",
+    "bounded_admission_test": true,
+    "full_localhost_fake_hardware_graph_test": true,
+    "architecture_contract_test": true,
+    "historical_p6_p4e_p5_regressions": true
   },
   "safety": {
     "host_fake_modem_only": true,
