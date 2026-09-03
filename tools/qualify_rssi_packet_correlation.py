@@ -4,17 +4,21 @@
 The exact AX25R4 firmware must already be installed. This tool uses one base
 ModemOwner to drain live slicer data, decode FCS-valid AX.25 with the already
 qualified streaming Bell-202 receiver, and poll the read-only ADF7021 RSSI
-telemetry. It then asks one narrow physical question: do real decoded packet
-intervals land on the lower raw-RSSI population?
+telemetry. It then asks one narrow physical question: are RSSI values measured
+inside real decoded packet intervals materially lower than the independent
+outside-frame RSSI population?
 
-No carrier threshold or hysteresis is selected here. No TX-capable owner,
-broker, KISS server, GPIO, or firmware writer is imported or reachable.
+Only after that direct polarity proof does the tool describe a well-separated
+guard gap above the packet signal reference. No carrier threshold or hysteresis
+is selected here. No TX-capable owner, broker, KISS server, GPIO, or firmware
+writer is imported or reachable.
 """
 
 from __future__ import annotations
 
 import math
 from pathlib import Path
+import statistics
 import sys
 import time
 
@@ -24,7 +28,11 @@ sys.path.insert(0, str(ROOT / "src"))
 from ywd1278.modem._serial import posix_serial_transport_factory  # noqa: E402
 from ywd1278.modem.owner import ModemOwner  # noqa: E402
 from ywd1278.phy.bell202_rx import SAMPLE_RATE, StreamingBell202Decoder  # noqa: E402
-from ywd1278.tx.rssi_analysis import correlate_rssi_window, guard_gap_above_signal  # noqa: E402
+from ywd1278.tx.rssi_analysis import (  # noqa: E402
+    correlate_rssi_window,
+    guard_gap_above_signal,
+    rssi_values_outside_windows,
+)
 
 DEVICE = "/dev/ttyAMA0"
 FREQUENCY_HZ = 145_050_000
@@ -38,7 +46,10 @@ TARGET_VALID_FRAMES = 2
 RSSI_POLL_SECONDS = 0.05
 STATUS_SECONDS = 0.50
 READ_BYTES = 100
-FRAME_PADDING_SAMPLES = int(round(0.15 * SAMPLE_RATE))
+FRAME_CORRELATION_PADDING_SAMPLES = 0
+OUTSIDE_FRAME_GUARD_SAMPLES = int(round(0.20 * SAMPLE_RATE))
+MIN_OUTSIDE_SAMPLES = 20
+MIN_POLARITY_MARGIN = 12
 MIN_SEPARATING_GAP = 12
 
 ACTIVE_RX_FLAGS = 0x0D
@@ -55,7 +66,8 @@ def main() -> int:
     print(f"Target valid AX.25 frames : {TARGET_VALID_FRAMES}")
     print(f"RSSI poll interval        : {RSSI_POLL_SECONDS:.3f} s")
     print("RSSI source               : ADF7021 register-7 raw magnitude")
-    print("Expected polarity         : NOT ASSUMED; must be proven by decoded frames")
+    print("Expected polarity         : NOT ASSUMED; frame/outside-frame data must prove it")
+    print(f"Required polarity margin  : {MIN_POLARITY_MARGIN} raw counts")
     print("Carrier threshold         : NOT SELECTED")
     print("Hysteresis                : NOT SELECTED")
     print("KISS/product TX           : DISCONNECTED")
@@ -237,7 +249,7 @@ def main() -> int:
                     rssi_samples,
                     sample_start=item.sample_start,
                     sample_end=item.sample_end,
-                    padding_samples=FRAME_PADDING_SAMPLES,
+                    padding_samples=FRAME_CORRELATION_PADDING_SAMPLES,
                 )
             except ValueError:
                 continue
@@ -250,11 +262,35 @@ def main() -> int:
         if not correlations:
             raise RuntimeError("decoded frames had no overlapping RSSI telemetry samples")
 
-        # The decoded packet windows establish the signal reference. Only after
-        # that do we choose the highest large observed guard gap above the
-        # packet-correlated signal population. This keeps transition values on
-        # the signal side instead of blindly choosing the numerically largest gap.
-        signal_reference_max = math.ceil(max(corr.raw_median for corr in correlations))
+        frame_windows = [(corr.sample_start, corr.sample_end) for corr in correlations]
+        outside_raws = rssi_values_outside_windows(
+            rssi_samples,
+            frame_windows,
+            padding_samples=OUTSIDE_FRAME_GUARD_SAMPLES,
+        )
+        if len(outside_raws) < MIN_OUTSIDE_SAMPLES:
+            raise RuntimeError(
+                f"only {len(outside_raws)} RSSI samples remain outside decoded-frame windows; "
+                f"need at least {MIN_OUTSIDE_SAMPLES}"
+            )
+
+        packet_worst_median = max(corr.raw_median for corr in correlations)
+        outside_median = statistics.median(outside_raws)
+        polarity_margin = outside_median - packet_worst_median
+        print(f"Outside-frame samples     : {len(outside_raws)}")
+        print(f"Packet worst median RSSI  : {packet_worst_median}")
+        print(f"Outside-frame median RSSI : {outside_median}")
+        print(f"Observed polarity margin  : {polarity_margin}")
+        if polarity_margin < MIN_POLARITY_MARGIN:
+            raise RuntimeError(
+                "decoded packet RSSI is not independently lower than the outside-frame "
+                f"population by the required {MIN_POLARITY_MARGIN} raw counts"
+            )
+
+        # Polarity is now established independently. Only after that proof do
+        # we describe the highest large guard gap above the packet signal
+        # reference. The midpoint remains evidence, not an enabled threshold.
+        signal_reference_max = math.ceil(packet_worst_median)
         raws = [raw for _, raw in rssi_samples]
         separation = guard_gap_above_signal(
             raws,
@@ -263,11 +299,6 @@ def main() -> int:
             min_low_count=5,
             min_high_count=20,
         )
-        low_correlations = [corr for corr in correlations if corr.raw_median < separation.midpoint]
-        if not low_correlations:
-            raise RuntimeError(
-                "decoded AX.25 frame intervals did not correlate with the lower RSSI population"
-            )
 
         snap = owner.snapshot
         if snap.owner_thread_id is None:
@@ -276,10 +307,9 @@ def main() -> int:
         print(f"RSSI samples              : {len(rssi_samples)}")
         print(f"Valid AX.25 frames        : {len(frames)}")
         print(f"Correlated frame windows  : {len(correlations)}")
-        print(f"Lower-cluster frame wins  : {len(low_correlations)}")
         print(f"Packet signal reference   : <= {signal_reference_max}")
         print(f"Observed signal/guard side: {separation.low_min}..{separation.low_max} median={separation.low_median}")
-        print(f"Observed clear side       : {separation.high_min}..{separation.high_max} median={separation.high_median}")
+        print(f"Observed upper population : {separation.high_min}..{separation.high_max} median={separation.high_median}")
         print(f"Observed guard gap        : {separation.low_max}..{separation.high_min} width={separation.gap}")
         print(f"Descriptive midpoint      : {separation.midpoint}")
         print(f"Packed bytes drained      : {packed_bytes}")
@@ -306,15 +336,19 @@ def main() -> int:
     print(f"VALID_AX25_FRAMES={len(frames)}")
     print(f"CORRELATED_FRAME_WINDOWS={len(correlations)}")
     print("RSSI_POLARITY=LOWER_RAW_IS_STRONGER_RF")
+    print(f"PACKET_WORST_MEDIAN={packet_worst_median}")
+    print(f"OUTSIDE_FRAME_MEDIAN={outside_median}")
+    print(f"POLARITY_MARGIN={polarity_margin}")
     print(f"PACKET_SIGNAL_REFERENCE_MAX={signal_reference_max}")
     print(f"OBSERVED_BUSY_SIDE_MAX={separation.low_max}")
-    print(f"OBSERVED_CLEAR_SIDE_MIN={separation.high_min}")
+    print(f"OBSERVED_UPPER_SIDE_MIN={separation.high_min}")
     print(f"OBSERVED_GUARD_GAP={separation.gap}")
     print(f"DESCRIPTIVE_MIDPOINT={separation.midpoint}")
     print(f"FIFO_DROPPED_BYTES={dropped}")
     print(f"RF_KEYUPS={before_keyups}->{after_keyups}")
     print(f"RF_TX_GENERATED_SAMPLES={before_generated}->{after_generated}")
     print("SINGLE_MODEM_OWNER=PASS")
+    print("POLARITY_PROOF_INDEPENDENT_OF_GUARD_GAP=PASS")
     print("CARRIER_THRESHOLD_SELECTED=NO")
     print("HYSTERESIS_SELECTED=NO")
     print("BUSY_CLEAR_DECISION=NO")
