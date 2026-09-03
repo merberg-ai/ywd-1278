@@ -25,8 +25,8 @@ kiss = KISS_SERVER.read_text(encoding="utf-8")
 daemon = DAEMON.read_text(encoding="utf-8")
 
 # The original one-shot remains a frozen historical vector even after P13b was
-# ultimately qualified by the corrected R2 external-decode sequence.
-assert target["status"] == "0b-p13b-known-packet-tx-qualified"
+# ultimately qualified by R2 and the current target later advanced through P2.
+assert target["status"] == "0c-p2-channel-busy-detector-qualified"
 assert target["flash_enabled"] is False
 assert target["option_bytes_permitted"] is False
 assert target["packet_live_rx_qualification"]["packet_firmware_left_installed"] is True
@@ -36,6 +36,8 @@ assert p12b["status"] == "qualified"
 assert p12b["receive_frequency_hz"] == 145050000
 assert p12b["rf_transmitted"] is False
 assert target["packet_live_tx_qualification"]["status"] == "qualified"
+assert target["channel_busy_qualification"]["status"] == "host-qualified"
+assert target["channel_busy_qualification"]["kiss_tx_connected"] is False
 
 assert stage == {
     "schema": 1,
@@ -154,6 +156,7 @@ assert 'print("YWD1278_0B_P13B_INTERNAL_SINGLE_TX=PASS")' in tool
 print("P13B_SINGLE_TX_CONTRACT=PASS")
 print("ORIGINAL_P13B_ONE_SHOT_PRESERVED=PASS")
 print("P12B_HISTORICAL_EVIDENCE_FROZEN=PASS")
+print("P2_CURRENT_TARGET_BOUNDARY=QUALIFIED")
 print("P13B_FREQUENCY_HZ=145050000")
 print("P13B_FRAME_VECTOR=PASS")
 print("P13B_SELECTOR_COUNT=753")
