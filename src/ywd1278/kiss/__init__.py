@@ -1,10 +1,52 @@
-"""YWD-1278 KISS framing and RX-only TCP service primitives."""
+"""YWD-1278 KISS framing, RX service, and host-only control-plane primitives."""
 
-from .framing import DATA, FEND, FESC, TFEND, TFESC, KISSMessage, KISSStreamDecoder, decode, encode
-from .server import BackendSnapshot, PacketEvent, RXOnlyBackend, ThreadingKISSServer, start_server_thread, stop_server_thread
+from .framing import (
+    DATA,
+    FEND,
+    FESC,
+    FULLDUPLEX,
+    PERSIST,
+    RETURN,
+    SETHARDWARE,
+    SLOTTIME,
+    TFEND,
+    TFESC,
+    TXDELAY,
+    TXTAIL,
+    KISSMessage,
+    KISSStreamDecoder,
+    decode,
+    encode,
+)
+from .server import (
+    BackendSnapshot,
+    PacketEvent,
+    RXOnlyBackend,
+    ThreadingKISSServer,
+    start_server_thread,
+    stop_server_thread,
+)
+from .control import (
+    ControlDisposition,
+    KISS_PORT,
+    TNCControlBackend,
+    TNCControlCounters,
+    TNCControlResult,
+    TNCParameterSnapshot,
+    TNCQueueAccounting,
+    TNCSessionState,
+    TNCTransmitContext,
+)
 
 __all__ = [
     "DATA",
+    "TXDELAY",
+    "PERSIST",
+    "SLOTTIME",
+    "TXTAIL",
+    "FULLDUPLEX",
+    "SETHARDWARE",
+    "RETURN",
     "FEND",
     "FESC",
     "TFEND",
@@ -19,4 +61,13 @@ __all__ = [
     "ThreadingKISSServer",
     "start_server_thread",
     "stop_server_thread",
+    "ControlDisposition",
+    "KISS_PORT",
+    "TNCControlBackend",
+    "TNCControlCounters",
+    "TNCControlResult",
+    "TNCParameterSnapshot",
+    "TNCQueueAccounting",
+    "TNCSessionState",
+    "TNCTransmitContext",
 ]
