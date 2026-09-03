@@ -1,0 +1,40 @@
+{
+  "schema": 1,
+  "phase": "0D-P1-P2-target-pi-sanity",
+  "status": "supplementary-target-host-pass",
+  "date": "2026-09-03",
+  "deployed_checkout_sha": "fc70386a3857e69437641d1be6f9f8cd0a6e7a13",
+  "isolated_worktree_sha": "d34db7292750b67384667d99eef897b9306d0113",
+  "python_version": "3.13.5",
+  "p1": {
+    "monitor_stream_tests": "pass",
+    "monitor_contract": "pass",
+    "host_qualification_contract": "pass",
+    "monitor_tx_capability": false,
+    "uart_activity": false,
+    "rf_activity": false
+  },
+  "p2": {
+    "monitor_policy_tests": "pass",
+    "monitor_policy_contract": "pass",
+    "host_qualification_contract": "pass",
+    "defaults": {
+      "mcom": false,
+      "mcon": false,
+      "mrpt": true
+    },
+    "monitor_tx_capability": false,
+    "uart_activity": false,
+    "rf_activity": false
+  },
+  "frozen_p8_preservation": {
+    "physical_evidence_contract": "pass",
+    "post_qualification_safety": "pass",
+    "continuous_rx_fifo_regression": "pass",
+    "sustained_kiss_host_integration": "pass",
+    "posix_serial_transport_used": false,
+    "uart_opened": false,
+    "rf_transmitted": false
+  },
+  "scope": "supplementary target-Pi sanity only; does not replace or rewrite frozen P1/P2 host qualification evidence"
+}

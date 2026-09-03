@@ -22,12 +22,16 @@ jobs:
           python -m py_compile src/ywd1278/monitor/sqlite_log.py
           python -m py_compile tests/sqlite_frame_log_test.py
           python -m py_compile tests/sqlite_frame_log_contract_test.py
+          python -m py_compile tests/sqlite_frame_log_qualification_contract_test.py
 
       - name: SQLite frame-log regression
         run: python tests/sqlite_frame_log_test.py
 
       - name: SQLite frame-log architecture and safety contract
         run: python tests/sqlite_frame_log_contract_test.py
+
+      - name: Frozen 0D-P3 host qualification evidence
+        run: python tests/sqlite_frame_log_qualification_contract_test.py
 
       - name: Preserve frozen 0D-P1/P2 qualification
         run: |
@@ -44,3 +48,20 @@ jobs:
           python tests/live_p8_r3_sustained_kiss_tnc_contract_test.py
           python tests/sustained_live_fifo_drain_regression_test.py
           python tests/sustained_kiss_tnc_integration_test.py
+
+      - name: Parse P3 host evidence
+        run: |
+          python - <<'PY'
+          import json
+          d=json.load(open('firmware/qualification/0d-p3-sqlite-frame-log-host.json', encoding='utf-8'))
+          assert d['status'] == 'host-qualified'
+          assert d['qualification_complete'] is True
+          assert d['schema_version'] == 1
+          assert d['journal_mode'] == 'WAL'
+          assert d['additional_in_memory_queue'] is False
+          assert d['backend_history_replayed_to_sqlite'] is False
+          assert d['monitor_tx_capability'] is False
+          assert d['uart_access'] is False
+          assert d['rf_access'] is False
+          print('0D_P3_HOST_MANIFEST_PARSE=PASS')
+          PY
