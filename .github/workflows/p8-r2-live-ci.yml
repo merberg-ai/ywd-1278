@@ -1,0 +1,37 @@
+name: p8-r2-live-ci
+
+on:
+  pull_request:
+    branches: [dev]
+
+jobs:
+  p8-r2-historical-safety:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Compile historical R2 boundaries
+        run: |
+          python -m py_compile tools/qualify_live_p8_r2_sustained_kiss_tnc.py
+          python -m py_compile tests/live_p8_r2_sustained_kiss_tnc_contract_test.py
+          python -m py_compile tests/live_p8_r2_physical_evidence_contract_test.py
+
+      - name: R2 must remain invalidated and fail closed
+        run: python tests/live_p8_r2_sustained_kiss_tnc_contract_test.py
+
+      - name: Preserve exact R2 physical evidence
+        run: python tests/live_p8_r2_physical_evidence_contract_test.py
+
+      - name: Preserve host R1 continuously-producing FIFO regression
+        run: python tests/sustained_live_fifo_drain_regression_test.py
+
+      - name: Preserve host-qualified P8 sustained graph
+        run: |
+          python tests/sustained_kiss_queue_concurrency_test.py
+          python tests/sustained_kiss_tnc_integration_test.py
+          python tests/sustained_kiss_tnc_contract_test.py

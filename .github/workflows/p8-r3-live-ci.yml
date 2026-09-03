@@ -1,0 +1,87 @@
+name: p8-r3-live-ci
+
+on:
+  push:
+    branches: [dev-0c-p8-live-sustained-kiss-tnc-r3]
+  pull_request:
+    branches: [dev]
+
+jobs:
+  p8-r3-physical-qualified:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Compile P8 R3 qualification boundary
+        run: |
+          python -m py_compile tools/qualify_live_p8_r3_sustained_kiss_tnc.py
+          python -m py_compile tests/live_p8_r3_semantic_echo_filter_test.py
+          python -m py_compile tests/live_p8_r3_sustained_kiss_tnc_contract_test.py
+          python -m py_compile tests/live_p8_r3_physical_evidence_contract_test.py
+          python -m py_compile tests/live_p8_r2_physical_evidence_contract_test.py
+          python -m py_compile src/ywd1278/service/tnc_runtime.py
+
+      - name: P8 R3 physical evidence contract
+        run: python tests/live_p8_r3_physical_evidence_contract_test.py
+
+      - name: P8 R3 post-qualification fail-closed safety
+        run: python tests/live_p8_r3_sustained_kiss_tnc_contract_test.py
+
+      - name: Preserve semantic self-echo regression
+        run: python tests/live_p8_r3_semantic_echo_filter_test.py
+
+      - name: Preserve invalidated R2 physical evidence and no-rerun rule
+        run: |
+          python tests/live_p8_r2_physical_evidence_contract_test.py
+          python tests/live_p8_r2_sustained_kiss_tnc_contract_test.py
+
+      - name: Preserve host R1 continuously-producing FIFO regression
+        run: python tests/sustained_live_fifo_drain_regression_test.py
+
+      - name: Preserve host-qualified P8 sustained graph
+        run: |
+          python tests/sustained_kiss_queue_concurrency_test.py
+          python tests/sustained_kiss_tnc_integration_test.py
+          python tests/sustained_kiss_tnc_contract_test.py
+
+      - name: Preserve P7 ingress, P6 controls and P4e/P5 lifecycle
+        run: |
+          python tests/kiss_data_admission_test.py
+          python tests/kiss_data_full_graph_integration_test.py
+          python tests/kiss_data_admission_contract_test.py
+          python tests/kiss_control_plane_test.py
+          python tests/kiss_control_plane_server_test.py
+          python tests/half_duplex_test.py
+          python tests/half_duplex_tx_owner_integration_test.py
+          python tests/txdelay_test.py
+          python tests/txdelay_contract_test.py
+
+      - name: Parse qualified R3 and historical R2 manifests
+        run: |
+          python - <<'PY'
+          import json
+          r2 = json.load(open('firmware/qualification/0c-p8-r2-live-sustained-kiss-tnc.json', encoding='utf-8'))
+          r3 = json.load(open('firmware/qualification/0c-p8-r3-live-sustained-kiss-tnc.json', encoding='utf-8'))
+          r3e = json.load(open('firmware/qualification/0c-p8-r3-live-physical-evidence.json', encoding='utf-8'))
+          assert r2['status'] == 'invalidated-self-echo-gate'
+          assert r2['runnable'] is False
+          assert r2['r2_accepted_tx'] == 3
+          assert r2['r2_rerun_permitted'] is False
+          assert r3['status'] == 'physically-qualified'
+          assert r3['runnable'] is False
+          assert r3['qualification_complete'] is True
+          assert r3['execution_head_sha'] == 'b301e9098aedf64e4eb9adf746b93a8f7a7482ac'
+          assert r3['r3_accepted_tx'] == 3
+          assert r3['r3_external_direct_decodes'] == 3
+          assert r3['r3_rerun_permitted'] is False
+          assert r3e['qualification_complete'] is True
+          assert r3e['external_direct_decode_observed'] == 3
+          assert r3e['inbound_non_p8_fcs_valid_frames'] == 4
+          assert r3e['fifo_dropped_bytes'] == 0
+          print('P8_R3_PHYSICAL_MANIFEST_PARSE=PASS')
+          PY
