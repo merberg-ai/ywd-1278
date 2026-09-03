@@ -1,0 +1,74 @@
+{
+  "schema": 1,
+  "phase": "0C-P3",
+  "status": "staged",
+  "date": "2026-09-02",
+  "target_id": "mmdvm-hs-hat-stm32f103-simplex-14.7456-adf7021",
+  "physical_base": {
+    "status": "0c-p2-channel-busy-detector-qualified",
+    "checkpoint": "checkpoint/0c-p2-channel-busy-detector-qualified",
+    "checkpoint_sha": "ddd881b868f851cf955703e1e7d277d1537b76d9",
+    "firmware_identity": "MMDVM_HS_Hat-YWD-1278-AX25R4-v0.1.0-alpha1 14.7456MHz ADF7021 FW based on CA6JAU GitID #7ff74ed",
+    "firmware_artifact_size_bytes": 59892,
+    "firmware_sha256": "b06fcbf0baa36e865198091cee27c66e1624ef08117ee685253a7a5613c7c616",
+    "firmware_left_installed": true
+  },
+  "observation": {
+    "device": "/dev/ttyAMA0",
+    "receive_frequency_hz": 145050000,
+    "maximum_duration_seconds": 20.0,
+    "rssi_poll_interval_seconds": 0.05,
+    "minimum_valid_ax25_frames": 1,
+    "requires_live_busy_observation": true,
+    "requires_zero_fifo_drops": true,
+    "requires_zero_rf_keyup_delta": true,
+    "requires_zero_rf_generated_sample_delta": true
+  },
+  "detector": {
+    "busy_assert_raw_max": 83,
+    "clear_release_raw_min": 90,
+    "hysteresis_raw_min": 84,
+    "hysteresis_raw_max": 89,
+    "recent_rx_hold_seconds": 0.25,
+    "only_clear_maps_channel_busy_false": true
+  },
+  "csma": {
+    "persist": 63,
+    "persistence_probability": 0.25,
+    "slot_time_10ms": 10,
+    "slot_seconds": 0.1,
+    "maximum_wait_seconds": 30.0,
+    "initial_state": "wait-clear",
+    "busy_cancels_clear_slot": true,
+    "explicit_clear_starts_new_full_slot": true
+  },
+  "qualification_randomness": {
+    "hidden_rng": false,
+    "before_first_live_busy": 255,
+    "first_post_busy_trial": 255,
+    "second_post_busy_trial": 0,
+    "purpose": "keep shadow access non-terminal until a real busy event, then prove one PERSIST deferral followed by READY"
+  },
+  "required_state_evidence": {
+    "detector_busy_seen": true,
+    "busy_forces_csma_wait_clear": true,
+    "recent_rx_remains_busy_for_access": true,
+    "detector_clear_seen_after_busy": true,
+    "post_busy_full_slot_seen": true,
+    "post_busy_persist_defer_seen": true,
+    "shadow_ready_seen": true
+  },
+  "safety": {
+    "normal_product_flash_enabled": false,
+    "firmware_flash_permitted": false,
+    "gpio_reset_permitted": false,
+    "option_bytes_permitted": false,
+    "base_modem_owner_only": true,
+    "tx_modem_owner_permitted": false,
+    "tx_broker_permitted": false,
+    "kiss_tx_connected": false,
+    "product_tx_enabled": false,
+    "rf_transmit_permitted": false,
+    "automatic_tx_retry": false
+  }
+}
