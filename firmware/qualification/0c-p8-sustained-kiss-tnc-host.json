@@ -9,6 +9,8 @@
   "architecture": {
     "preserve_p7_queue_source": true,
     "thread_safe_queue_by_composition": true,
+    "serialized_queue_clock_sampling": true,
+    "rx_fifo_backlog_priority_before_tx_access": true,
     "single_scheduler_worker": true,
     "single_modem_owner": true,
     "real_localhost_kiss_tcp": true,
@@ -25,6 +27,7 @@
     "concurrency_expected_admitted": 4,
     "concurrency_expected_full_drops": 4,
     "integration_queue_capacity": 3,
+    "integration_request_timeout_seconds": 30.0,
     "integration_kiss_clients": 2,
     "client_reconnect_required": true,
     "data_messages_received": 5,
@@ -37,6 +40,7 @@
     "post_tx_fcs_valid_rx_required": true,
     "rx_history_delivered_after_reconnect": true,
     "queue_drains_to_zero": true,
+    "access_timeouts_expected": 0,
     "automatic_retry": false
   },
   "operator_accounting": {
@@ -51,8 +55,12 @@
   "qualification_evidence": {
     "initial_dedicated_p8_run": 1,
     "repeat_dedicated_p8_run": 2,
-    "full_framework_pr_run": 439,
-    "all_green_before_promotion": true
+    "initial_full_framework_pr_run": 439,
+    "post_promotion_regression_discovered": true,
+    "rx_fifo_backlog_priority_fix": true,
+    "serialized_queue_clock_sampling_fix": true,
+    "final_exact_head_ci": "pending",
+    "all_green_before_checkpoint": false
   },
   "safety": {
     "host_fake_modem_only": true,
