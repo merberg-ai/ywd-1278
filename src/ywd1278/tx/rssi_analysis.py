@@ -37,17 +37,13 @@ class RSSIFrameCorrelation:
     raw_max: int
 
 
-def largest_cluster_gap(
+def cluster_gaps(
     values: Iterable[int],
     *,
     min_low_count: int = 5,
     min_high_count: int = 20,
-) -> RSSIClusterSeparation:
-    """Return the largest observed integer gap that leaves useful data on both sides.
-
-    ``midpoint`` is descriptive evidence only. Calling this function does not
-    select or enable a carrier threshold.
-    """
+) -> tuple[RSSIClusterSeparation, ...]:
+    """Return every observed positive gap with useful samples on both sides."""
 
     samples = sorted(int(value) for value in values)
     if len(samples) < min_low_count + min_high_count:
@@ -55,40 +51,67 @@ def largest_cluster_gap(
     if min_low_count < 1 or min_high_count < 1:
         raise ValueError("minimum cluster sizes must be positive")
 
-    best: tuple[int, int, int] | None = None
-    # i is the first index of the upper cluster. Equal adjacent values do not
-    # form a gap and therefore cannot be selected.
-    for i in range(min_low_count, len(samples) - min_high_count + 1):
-        lower = samples[i - 1]
-        upper = samples[i]
-        gap = upper - lower
+    out: list[RSSIClusterSeparation] = []
+    for split in range(min_low_count, len(samples) - min_high_count + 1):
+        low_max = samples[split - 1]
+        high_min = samples[split]
+        gap = high_min - low_max
         if gap <= 0:
             continue
-        candidate = (gap, -lower, i)
-        if best is None or candidate > best:
-            best = candidate
-
-    if best is None:
+        low = samples[:split]
+        high = samples[split:]
+        out.append(
+            RSSIClusterSeparation(
+                low_count=len(low),
+                low_min=low[0],
+                low_median=statistics.median(low),
+                low_max=low_max,
+                high_count=len(high),
+                high_min=high_min,
+                high_median=statistics.median(high),
+                high_max=high[-1],
+                gap=gap,
+                midpoint=(low_max + high_min) // 2,
+            )
+        )
+    if not out:
         raise ValueError("no separating RSSI gap was observed")
+    return tuple(out)
 
-    _, _, split = best
-    low = samples[:split]
-    high = samples[split:]
-    low_max = low[-1]
-    high_min = high[0]
-    gap = high_min - low_max
-    return RSSIClusterSeparation(
-        low_count=len(low),
-        low_min=low[0],
-        low_median=statistics.median(low),
-        low_max=low_max,
-        high_count=len(high),
-        high_min=high_min,
-        high_median=statistics.median(high),
-        high_max=high[-1],
-        gap=gap,
-        midpoint=(low_max + high_min) // 2,
-    )
+
+def guard_gap_above_signal(
+    values: Iterable[int],
+    *,
+    signal_reference_max: int,
+    min_gap: int,
+    min_low_count: int = 5,
+    min_high_count: int = 20,
+) -> RSSIClusterSeparation:
+    """Choose the highest well-separated gap that still contains signal evidence below it.
+
+    Packet-correlated RSSI provides ``signal_reference_max``. Choosing the
+    highest qualifying gap above that reference deliberately keeps any
+    intermediate transition values on the signal/busy side rather than
+    prematurely treating them as clear-channel evidence.
+
+    The returned midpoint is descriptive only; this function does not select or
+    enable a production carrier threshold.
+    """
+
+    if min_gap < 1:
+        raise ValueError("min_gap must be positive")
+    candidates = [
+        item
+        for item in cluster_gaps(
+            values,
+            min_low_count=min_low_count,
+            min_high_count=min_high_count,
+        )
+        if item.low_max >= int(signal_reference_max) and item.gap >= min_gap
+    ]
+    if not candidates:
+        raise ValueError("no qualifying guard gap exists above packet-correlated signal evidence")
+    return max(candidates, key=lambda item: (item.low_max, item.gap))
 
 
 def correlate_rssi_window(
