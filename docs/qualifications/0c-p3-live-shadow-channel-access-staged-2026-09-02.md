@@ -2,7 +2,9 @@
 
 ## Status
 
-**STAGED / CI-PENDING — physical receive-only qualification not yet run.**
+**STAGED / CI-GREEN — physical receive-only qualification not yet run.**
+
+Host staging head `28b6ab0307ff5066e02f67cb71c5ee253b972e9f` passed framework-ci #336, run `33704192283`. The P3 detector-to-CSMA integration regression, live sampler regression, shadow channel-access architecture contract, physical-staging contract, all frozen P1/P2/P12/P13 prerequisites, package install, and framework self-test passed. No hardware was accessed by CI.
 
 0C-P3 composes the already-qualified 0C-P2 RSSI busy detector with the already-qualified 0C-P1 p-persistent CSMA policy while deliberately keeping all transmit paths disconnected. The physical qualification will run against the exact AX25R4 firmware already installed on the first supported HAT; no firmware write or reset is part of this phase.
 
@@ -68,4 +70,4 @@ The physical run must prove all of the following in the same bounded receive-onl
 
 0C-P3 does **not** connect READY to anything capable of transmitting. `TXModemOwner`, `TXBroker`, ordinary KISS TX, daemon TX, and persistent product TX remain disconnected. The physical tool performs no flash, GPIO/reset, option-byte operation, or RF transmit command. The AX25R4 firmware already installed by 0C-P2 remains untouched.
 
-The next promotion gate is host CI followed by the bounded live receive-only shadow qualification above. Only after that proof can a later phase consider connecting a queued TX request to this channel-access result, and that later work still must preserve the bounded broker and KISS safety gates.
+The next promotion gate is the bounded live receive-only shadow qualification above. Only after that proof can a later phase consider connecting a queued TX request to this channel-access result, and that later work still must preserve the bounded broker and KISS safety gates.
