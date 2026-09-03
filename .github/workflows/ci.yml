@@ -185,6 +185,18 @@ jobs:
         run: |
           python tests/kiss_control_plane_contract_test.py
 
+      - name: P7 bounded KISS DATA admission regression
+        run: |
+          python tests/kiss_data_admission_test.py
+
+      - name: P7 localhost KISS full fake-hardware graph
+        run: |
+          python tests/kiss_data_full_graph_integration_test.py
+
+      - name: P7 KISS DATA architecture contract
+        run: |
+          python tests/kiss_data_admission_contract_test.py
+
       - name: P13b one-shot TX qualification contract
         run: |
           python tests/single_tx_qualification_contract_test.py
@@ -279,6 +291,11 @@ jobs:
           p6 = json.load(open('firmware/qualification/0c-p6-kiss-control-plane.json', encoding='utf-8'))
           assert p6['status'] == 'host-qualified'
           assert p6['safety']['kiss_data_tx_connected'] is False
+          p7 = json.load(open('firmware/qualification/0c-p7-kiss-data-admission.json', encoding='utf-8'))
+          assert p7['status'] == 'host-qualified'
+          assert p7['safety']['host_fake_modem_only'] is True
+          assert p7['safety']['rf_transmitted'] is False
+          assert p7['physical_follow_on']['authorized'] is False
           with open('config/ywd-1278.example.toml', 'rb') as f:
               tomllib.load(f)
           print('MANIFEST_CONFIG_PARSE=PASS')
