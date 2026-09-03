@@ -22,9 +22,10 @@ LIVE = ROOT / "tools" / "qualify_live_rx_owner.py"
 data = json.loads(TARGETS.read_text(encoding="utf-8"))
 t = data["targets"][0]
 
-# The target has advanced through P13b, but this contract deliberately locks
-# the complete P12a activation and physical evidence objects below unchanged.
-assert t["status"] == "0b-p13b-known-packet-tx-qualified"
+# The target has advanced through P13b and now 0C-P2, but this contract
+# deliberately locks the complete P12a activation and physical evidence objects
+# below unchanged.
+assert t["status"] == "0c-p2-channel-busy-detector-qualified"
 assert t["flash_enabled"] is False
 assert t["option_bytes_permitted"] is False
 assert t["qualification_write"]["phase"] == "0B-P3"
@@ -32,6 +33,8 @@ assert t["qualification_write"]["enabled"] is False
 assert t["packet_qualification_write"]["phase"] == "0B-P11"
 assert t["packet_qualification_write"]["enabled"] is False
 assert t["packet_live_tx_qualification"]["status"] == "qualified"
+assert t["channel_busy_qualification"]["status"] == "host-qualified"
+assert t["channel_busy_qualification"]["modem_integration"] is False
 
 q = t["packet_live_rx_activation"]
 assert q == {
@@ -170,7 +173,8 @@ for text in (s, live):
         assert forbidden not in text
 
 print("PACKET_LIVE_RX_ACTIVATION_CONTRACT=PASS")
-print("TARGET_ADVANCED_TO_P13B=PASS")
+print("TARGET_ADVANCED_TO_0C_P2=PASS")
+print("P12A_PHYSICAL_EVIDENCE_FROZEN=PASS")
 print("NORMAL_FLASH_GATE=CLOSED")
 print("P3_WRITE_GATE=CLOSED")
 print("P11_WRITE_GATE=CLOSED")
