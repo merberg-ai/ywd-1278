@@ -1,0 +1,81 @@
+{
+  "schema": 1,
+  "phase": "0C-P2",
+  "qualification": "ax25r4-live-raw-rssi-telemetry",
+  "status": "physically-qualified-telemetry-only",
+  "date": "2026-09-02",
+  "target_id": "mmdvm-hs-hat-stm32f103-simplex-14.7456-adf7021",
+  "physical_base_before_activation": "0b-p13b-known-packet-tx-qualified",
+  "firmware": {
+    "identity": "MMDVM_HS_Hat-YWD-1278-AX25R4-v0.1.0-alpha1 14.7456MHz ADF7021 FW based on CA6JAU GitID #7ff74ed",
+    "artifact_size_bytes": 59892,
+    "artifact_sha256": "b06fcbf0baa36e865198091cee27c66e1624ef08117ee685253a7a5613c7c616",
+    "programmed_readback_sha256": "b06fcbf0baa36e865198091cee27c66e1624ef08117ee685253a7a5613c7c616",
+    "runtime_identity_verified": true,
+    "left_installed": true
+  },
+  "preflight": {
+    "ax25r3_readback_sha256": "a069d9a9f1c3d5014984e5d73a5b57155ffa50f8908c9d80c5da221b8ea07310",
+    "exact_p13b_base_verified": true,
+    "activation_attempt": "R2",
+    "attempt_1_false_negative_preserved": true
+  },
+  "receive_observation": {
+    "frequency_hz": 145050000,
+    "duration_seconds": 20.0,
+    "rssi_poll_interval_seconds": 0.05,
+    "rssi_source": "ADF7021-register-7-raw-magnitude",
+    "rssi_sample_count": 401,
+    "rssi_raw_min": 47,
+    "rssi_raw_p05": 48,
+    "rssi_raw_median": 105,
+    "rssi_raw_p95": 116,
+    "rssi_raw_max": 122,
+    "rssi_raw_distinct_values": 32,
+    "packed_bytes_drained": 48021,
+    "read_transactions": 2444,
+    "rssi_transactions": 401,
+    "status_checks": 42,
+    "firmware_samples_initial": 20,
+    "firmware_samples_final": 384173,
+    "peak_fifo_available_bytes": 10,
+    "fifo_dropped_bytes": 0,
+    "owner_transactions": 2896,
+    "single_modem_owner": true,
+    "uart_released": true
+  },
+  "observed_bimodality": {
+    "status": "observed-not-yet-used-for-carrier-decision",
+    "low_value_event_count": 3,
+    "analysis_cut_only": 90,
+    "low_cluster_count": 47,
+    "low_cluster_min": 47,
+    "low_cluster_median": 48,
+    "low_cluster_max": 73,
+    "normal_cluster_count": 354,
+    "normal_cluster_min": 95,
+    "normal_cluster_median": 106,
+    "normal_cluster_max": 122,
+    "empty_gap_low_exclusive": 73,
+    "empty_gap_high_exclusive": 95,
+    "event_windows_seconds": [
+      [3.301, 4.052],
+      [6.152, 6.850],
+      [10.400, 11.152]
+    ],
+    "interpretation": "Lower raw values are strongly consistent with stronger received RF, but the three events were not independently labeled during this run. No production carrier threshold or hysteresis is selected from this evidence alone."
+  },
+  "safety": {
+    "rf_keyups_before": 0,
+    "rf_keyups_after": 0,
+    "rf_tx_generated_samples_before": 0,
+    "rf_tx_generated_samples_after": 0,
+    "tx_command_path_present_in_probe": false,
+    "kiss_tx_connected": false,
+    "product_tx_enabled": false,
+    "rf_transmitted": false,
+    "option_bytes_written": false,
+    "carrier_threshold_selected": false,
+    "hysteresis_selected": false
+  }
+}
