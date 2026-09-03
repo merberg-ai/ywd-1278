@@ -52,12 +52,15 @@ assert (
     "MMDVM_HS_Hat-YWD-1278-AX25R4-v0.1.0-alpha1 14.7456MHz "
     "ADF7021 FW based on CA6JAU GitID #7ff74ed"
 ) in target["accepted_running_identities"]
-assert target["channel_busy_policy"]["busy_assert_raw_max"] == 83
-assert target["channel_busy_policy"]["clear_release_raw_min"] == 90
-assert target["channel_busy_policy"]["recent_rx_hold_seconds"] == 0.25
-assert target["channel_busy_policy"]["csma_integrated"] is False
-assert target["channel_busy_policy"]["kiss_tx_connected"] is False
-assert target["channel_busy_policy"]["product_tx_enabled"] is False
+channel = target["channel_busy_qualification"]
+assert channel["busy_assert_raw_max"] == 83
+assert channel["clear_release_raw_min"] == 90
+assert channel["recent_rx_hold_seconds"] == 0.25
+assert channel["modem_integration"] is False
+assert channel["csma_integration"] is False
+assert channel["tx_broker_integration"] is False
+assert channel["kiss_tx_connected"] is False
+assert channel["product_tx_enabled"] is False
 
 # Pure bridge: explicit time + caller randomness, no I/O and no TX capability.
 for required in (
