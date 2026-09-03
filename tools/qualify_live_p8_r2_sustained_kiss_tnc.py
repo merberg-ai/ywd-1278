@@ -203,7 +203,7 @@ def health_aware_verify_cycle(
                 f"packed_rx={counters.packed_rx_bytes} "
                 f"decoded_rx={counters.decoded_rx_frames} "
                 f"rssi={counters.rssi_samples} "
-                f"queue_depth={accounting.queue.queue_depth} "
+                f"queue_depth={accounting.queue.tx_queue_depth} "
                 f"seen_busy={int(snap.seen_busy)} "
                 f"fresh_non_p8={int(snap.fresh_non_qualification_decode)} "
                 f"post_trials={snap.post_trigger_trials}",
