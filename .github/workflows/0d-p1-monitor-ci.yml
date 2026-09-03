@@ -1,0 +1,48 @@
+name: 0d-p1-monitor-ci
+
+on:
+  push:
+    branches: [dev-0d-p1-monitor-stream]
+  pull_request:
+    branches: [dev]
+
+jobs:
+  monitor-host:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Compile 0D-P1 boundary
+        run: |
+          python -m py_compile src/ywd1278/monitor/__init__.py
+          python -m py_compile src/ywd1278/monitor/stream.py
+          python -m py_compile tests/monitor_stream_test.py
+          python -m py_compile tests/monitor_stream_contract_test.py
+
+      - name: Decoded monitor stream regression
+        run: python tests/monitor_stream_test.py
+
+      - name: Decoded monitor architecture and safety contract
+        run: python tests/monitor_stream_contract_test.py
+
+      - name: Preserve AX.25 parser and bounded KISS event source
+        run: |
+          python tests/ax25_codec_test.py
+          python tests/kiss_server_test.py
+          python tests/rx_product_runtime_test.py
+
+      - name: Preserve P8 sustained runtime and continuous RX repair
+        run: |
+          python tests/sustained_live_fifo_drain_regression_test.py
+          python tests/sustained_kiss_tnc_integration_test.py
+          python tests/sustained_kiss_tnc_contract_test.py
+
+      - name: Preserve frozen P8 physical evidence and closed RF gate
+        run: |
+          python tests/live_p8_r3_physical_evidence_contract_test.py
+          python tests/live_p8_r3_sustained_kiss_tnc_contract_test.py
