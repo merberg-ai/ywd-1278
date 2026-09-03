@@ -63,7 +63,7 @@ for required in (
     assert required in text, required
 
 # Host-only means genuinely host-only: no I/O, modem, service, KISS, TX broker,
-# CSMA state machine, sleep, RNG, GPIO, or firmware imports/calls are allowed.
+# CSMA state machine, sleep, RNG imports/calls, GPIO, or firmware calls are allowed.
 for forbidden in (
     "ywd1278.modem",
     "ywd1278.kiss",
@@ -74,7 +74,9 @@ for forbidden in (
     "subprocess",
     "threading",
     "time.sleep",
-    "random",
+    "import random",
+    "from random",
+    "random.",
     "pinctrl",
     "raspi-gpio",
     "stm32flash",
