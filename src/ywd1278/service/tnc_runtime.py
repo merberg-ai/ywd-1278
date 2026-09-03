@@ -7,8 +7,10 @@ thread-safe P8 admission queue used by the KISS backend.
 
 One worker serially drains packet RX, checks FIFO health, polls RSSI only while
 DATA is queued, advances the captured P2/P1 policy, and lets the unchanged P7
-contextual submitter perform RX_STOP -> TX -> RF-idle -> RX_START.  Bell-202 RX
-state is reset after every completed half-duplex TX discontinuity.
+contextual submitter perform RX_STOP -> TX -> RF-idle -> RX_START.  Before any
+queued request may advance channel access, all packed RX bytes already waiting
+in the modem FIFO are drained through the Bell-202 decoder.  Bell-202 RX state
+is reset after every completed half-duplex TX discontinuity.
 
 Time and persistence randomness are explicit caller dependencies.  There is no
 hidden RNG, POSIX serial, GPIO, flash, raw modem transaction, or direct TX call.
@@ -208,11 +210,13 @@ class SustainedTNCRuntime:
         next_status = float(self._monotonic()) + self._status_interval_seconds
         try:
             while not self._stop.is_set():
-                chunk = self._owner.rx_read(self._read_maximum)
-                with self._lock:
-                    self._rx_reads += 1
-                if chunk:
-                    self._consume(chunk)
+                # Drain every packed byte already queued by the modem before
+                # allowing a TX request to advance.  A single 200-byte read can
+                # be smaller than one Bell-202 frame; letting CSMA dispatch in
+                # the middle of that backlog would reset the streaming decoder
+                # at the following half-duplex gap and lose an already-captured
+                # receive frame.
+                self._drain_rx_fifo()
 
                 now = float(self._monotonic())
                 if now >= next_status:
@@ -260,6 +264,17 @@ class SustainedTNCRuntime:
             with self._lock:
                 self._failure = exc
             self._stop.set()
+
+    def _drain_rx_fifo(self) -> None:
+        """Consume the currently queued RX FIFO completely before TX access."""
+
+        while not self._stop.is_set():
+            chunk = self._owner.rx_read(self._read_maximum)
+            with self._lock:
+                self._rx_reads += 1
+            if not chunk:
+                return
+            self._consume(chunk)
 
     def _consume(self, packed: bytes) -> None:
         fresh = self._decoder.feed(packed)
