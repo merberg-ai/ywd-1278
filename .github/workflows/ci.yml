@@ -165,6 +165,14 @@ jobs:
         run: |
           python tests/half_duplex_contract_test.py
 
+      - name: P5 TXDELAY policy and broker regression
+        run: |
+          python tests/txdelay_test.py
+
+      - name: P5 TXDELAY architecture contract
+        run: |
+          python tests/txdelay_contract_test.py
+
       - name: P13b one-shot TX qualification contract
         run: |
           python tests/single_tx_qualification_contract_test.py
@@ -254,6 +262,8 @@ jobs:
           json.load(open('firmware/qualification/0c-p4c-real-owner-fake-transport.json', encoding='utf-8'))
           p4e = json.load(open('firmware/qualification/0c-p4e-persistent-half-duplex-host.json', encoding='utf-8'))
           assert p4e['status'] == 'host-qualified'
+          p5 = json.load(open('firmware/qualification/0c-p5-txdelay-host.json', encoding='utf-8'))
+          assert p5['status'] == 'host-qualified'
           with open('config/ywd-1278.example.toml', 'rb') as f:
               tomllib.load(f)
           print('MANIFEST_CONFIG_PARSE=PASS')
