@@ -37,10 +37,14 @@ for required in (
     "owner.rx_status",
     "owner.rf_status",
     "owner.rf_diagnostics",
-    "largest_cluster_gap",
+    "guard_gap_above_signal",
     "correlate_rssi_window",
+    "signal_reference_max",
     "MIN_SEPARATING_GAP = 12",
     "RSSI_POLARITY=LOWER_RAW_IS_STRONGER_RF",
+    "PACKET_SIGNAL_REFERENCE_MAX=",
+    "OBSERVED_BUSY_SIDE_MAX=",
+    "OBSERVED_CLEAR_SIDE_MIN=",
     "CARRIER_THRESHOLD_SELECTED=NO",
     "HYSTERESIS_SELECTED=NO",
     "CSMA_INTEGRATION=NO",
@@ -73,6 +77,7 @@ for forbidden in (
 print("P2_PACKET_CORRELATED_RSSI_CONTRACT=PASS")
 print("EXACT_AX25R4_INSTALLED_BOUNDARY=YES")
 print("FCS_VALID_PACKET_CORRELATION_REQUIRED=YES")
+print("PACKET_REFERENCED_GUARD_GAP_REQUIRED=YES")
 print("MIN_SEPARATING_GAP=12")
 print("CARRIER_THRESHOLD_SELECTED=NO")
 print("HYSTERESIS_SELECTED=NO")
