@@ -15,6 +15,10 @@ from ywd1278.tx.channel_busy import ChannelBusyState  # noqa: E402
 from ywd1278.tx.csma import CSMAState  # noqa: E402
 
 
+def close(actual: float | None, expected: float) -> bool:
+    return actual is not None and abs(actual - expected) < 1e-9
+
+
 class Bytes:
     def __init__(self, values: list[int]) -> None:
         self.values = list(values)
@@ -44,7 +48,7 @@ obs = attempt.observe_rssi(now=0.26, raw_magnitude=106, random_byte_source=sourc
 assert obs.detector.state is ChannelBusyState.CLEAR
 assert obs.detector.channel_busy is False
 assert obs.csma.state is CSMAState.WAIT_SLOT
-assert obs.csma.next_slot_at == 0.36
+assert close(obs.csma.next_slot_at, 0.36)
 assert obs.random_byte is None
 assert source.calls == 0
 
@@ -60,7 +64,7 @@ assert obs.detector.state is ChannelBusyState.CLEAR
 assert obs.csma.state is CSMAState.WAIT_SLOT
 assert obs.csma.persistence_trials == 1
 assert obs.random_byte == 255
-assert obs.csma.next_slot_at == 0.46
+assert close(obs.csma.next_slot_at, 0.46)
 assert source.calls == 1
 
 # A real busy-side sample cancels that in-progress slot immediately. No random
@@ -88,7 +92,7 @@ assert source.calls == 1
 obs = attempt.observe_rssi(now=0.71, raw_magnitude=106, random_byte_source=source)
 assert obs.detector.state is ChannelBusyState.CLEAR
 assert obs.csma.state is CSMAState.WAIT_SLOT
-assert obs.csma.next_slot_at == 0.81
+assert close(obs.csma.next_slot_at, 0.81)
 assert obs.random_byte is None
 
 # First post-busy trial defers, proving PERSIST semantics remain unchanged.
@@ -96,7 +100,7 @@ obs = attempt.observe_rssi(now=0.82, raw_magnitude=106, random_byte_source=sourc
 assert obs.csma.state is CSMAState.WAIT_SLOT
 assert obs.csma.persistence_trials == 2
 assert obs.random_byte == 255
-assert obs.csma.next_slot_at == 0.92
+assert close(obs.csma.next_slot_at, 0.92)
 assert source.calls == 2
 
 # Second post-busy trial passes on byte zero. READY is shadow-only; no TX exists.
