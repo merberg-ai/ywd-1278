@@ -26,7 +26,7 @@ jobs:
           python -m py_compile tests/sustained_kiss_tnc_integration_test.py
           python -m py_compile tests/sustained_kiss_tnc_contract_test.py
 
-      - name: P8 concurrent bounded admission
+      - name: P8 concurrent bounded admission and serialized clock ordering
         run: python tests/sustained_kiss_queue_concurrency_test.py
 
       - name: P8 sustained localhost KISS TNC graph
@@ -61,12 +61,19 @@ jobs:
           assert d['status'] == 'host-qualified'
           assert d['base_checkpoint_sha'] == '80249ab34da4c64d40d23d98d639db78d1691f5d'
           assert d['architecture']['thread_safe_queue_by_composition'] is True
+          assert d['architecture']['serialized_queue_clock_sampling'] is True
+          assert d['architecture']['rx_fifo_backlog_priority_before_tx_access'] is True
           assert d['qualification']['concurrent_kiss_producers'] == 8
+          assert d['qualification']['integration_request_timeout_seconds'] == 30.0
           assert d['qualification']['sustained_tx_cycles'] == 4
           assert d['qualification']['client_reconnect_required'] is True
           assert d['qualification']['post_tx_fcs_valid_rx_required'] is True
+          assert d['qualification']['access_timeouts_expected'] == 0
           assert d['qualification']['automatic_retry'] is False
-          assert d['qualification_evidence']['full_framework_pr_run'] == 439
+          assert d['qualification_evidence']['post_promotion_regression_discovered'] is True
+          assert d['qualification_evidence']['rx_fifo_backlog_priority_fix'] is True
+          assert d['qualification_evidence']['serialized_queue_clock_sampling_fix'] is True
+          assert d['qualification_evidence']['final_exact_head_ci'] in {'pending', 'success'}
           assert d['safety']['host_fake_modem_only'] is True
           assert d['safety']['posix_serial'] is False
           assert d['safety']['uart_access'] is False
