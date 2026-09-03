@@ -31,7 +31,7 @@ def ui_record(*, path: bool = False):
             path=(
                 [Address.parse("KRDG", flag=True), Address.parse("KBANN")]
                 if path
-                else None
+                else []
             ),
             info=b"hello",
             include_fcs=False,
