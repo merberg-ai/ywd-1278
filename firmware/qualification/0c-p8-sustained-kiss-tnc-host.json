@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "phase": "0C-P8-host",
-  "status": "staged",
+  "status": "host-qualified",
   "date": "2026-09-03",
   "base_checkpoint": "checkpoint/0c-p7-live-kiss-one-shot-qualified",
   "base_checkpoint_sha": "80249ab34da4c64d40d23d98d639db78d1691f5d",
@@ -47,6 +47,12 @@
     "normalized_queue_counters": true,
     "connection_counters": true,
     "subscriber_drop_counter": true
+  },
+  "qualification_evidence": {
+    "initial_dedicated_p8_run": 1,
+    "repeat_dedicated_p8_run": 2,
+    "full_framework_pr_run": 439,
+    "all_green_before_promotion": true
   },
   "safety": {
     "host_fake_modem_only": true,
