@@ -7,7 +7,7 @@ on:
     branches: [dev]
 
 jobs:
-  p8-r3-live-staging:
+  p8-r3-physical-qualified:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -17,19 +17,23 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Compile R3 boundary
+      - name: Compile P8 R3 qualification boundary
         run: |
           python -m py_compile tools/qualify_live_p8_r3_sustained_kiss_tnc.py
           python -m py_compile tests/live_p8_r3_semantic_echo_filter_test.py
           python -m py_compile tests/live_p8_r3_sustained_kiss_tnc_contract_test.py
+          python -m py_compile tests/live_p8_r3_physical_evidence_contract_test.py
           python -m py_compile tests/live_p8_r2_physical_evidence_contract_test.py
           python -m py_compile src/ywd1278/service/tnc_runtime.py
 
-      - name: P8 R3 semantic self-echo regression
-        run: python tests/live_p8_r3_semantic_echo_filter_test.py
+      - name: P8 R3 physical evidence contract
+        run: python tests/live_p8_r3_physical_evidence_contract_test.py
 
-      - name: P8 R3 physical staging contract and inert dry run
+      - name: P8 R3 post-qualification fail-closed safety
         run: python tests/live_p8_r3_sustained_kiss_tnc_contract_test.py
+
+      - name: Preserve semantic self-echo regression
+        run: python tests/live_p8_r3_semantic_echo_filter_test.py
 
       - name: Preserve invalidated R2 physical evidence and no-rerun rule
         run: |
@@ -57,24 +61,27 @@ jobs:
           python tests/txdelay_test.py
           python tests/txdelay_contract_test.py
 
-      - name: Parse R3 and historical R2 manifests
+      - name: Parse qualified R3 and historical R2 manifests
         run: |
           python - <<'PY'
           import json
           r2 = json.load(open('firmware/qualification/0c-p8-r2-live-sustained-kiss-tnc.json', encoding='utf-8'))
           r3 = json.load(open('firmware/qualification/0c-p8-r3-live-sustained-kiss-tnc.json', encoding='utf-8'))
+          r3e = json.load(open('firmware/qualification/0c-p8-r3-live-physical-evidence.json', encoding='utf-8'))
           assert r2['status'] == 'invalidated-self-echo-gate'
           assert r2['runnable'] is False
           assert r2['r2_accepted_tx'] == 3
           assert r2['r2_rerun_permitted'] is False
-          assert r3['status'] == 'staged'
-          assert r3['semantic_self_echo_filter_required'] is True
-          assert r3['semantic_echo_ignores_address_ch_flags'] is True
-          assert r3['r2_rerun_permitted'] is False
-          assert r3['frequency_hz'] == 145050000
-          assert r3['rf_power'] == 200
-          assert r3['packet_count'] == 3
-          assert r3['automatic_tx_retry'] is False
-          assert r3['maximum_transmit_submissions'] == 3
-          print('P8_R3_MANIFEST_PARSE=PASS')
+          assert r3['status'] == 'physically-qualified'
+          assert r3['runnable'] is False
+          assert r3['qualification_complete'] is True
+          assert r3['execution_head_sha'] == 'b301e9098aedf64e4eb9adf746b93a8f7a7482ac'
+          assert r3['r3_accepted_tx'] == 3
+          assert r3['r3_external_direct_decodes'] == 3
+          assert r3['r3_rerun_permitted'] is False
+          assert r3e['qualification_complete'] is True
+          assert r3e['external_direct_decode_observed'] == 3
+          assert r3e['inbound_non_p8_fcs_valid_frames'] == 4
+          assert r3e['fifo_dropped_bytes'] == 0
+          print('P8_R3_PHYSICAL_MANIFEST_PARSE=PASS')
           PY
