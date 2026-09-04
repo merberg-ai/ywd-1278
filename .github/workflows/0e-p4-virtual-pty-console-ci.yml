@@ -47,6 +47,45 @@ jobs:
           PYTHONPATH=src python -m ywd1278.console.pty_serial --help >/dev/null
           PYTHONPATH=src python tools/qualify_0e_p4_pty.py
 
+      - name: SIGTERM stable-link lifecycle smoke
+        run: |
+          set -euo pipefail
+          LINK=/tmp/ywd1278-p4-ci-tnc
+          LOG=/tmp/ywd1278-p4-ci.log
+          test ! -e "$LINK"
+          test ! -L "$LINK"
+          PYTHONPATH=src python -u -m ywd1278.console.pty_serial --link "$LINK" >"$LOG" 2>&1 &
+          PID=$!
+          cleanup() {
+            if kill -0 "$PID" 2>/dev/null; then
+              kill -TERM "$PID" 2>/dev/null || true
+              wait "$PID" 2>/dev/null || true
+            fi
+            rm -f "$LINK" "$LOG"
+          }
+          trap cleanup EXIT
+          for _ in $(seq 1 100); do
+            test -L "$LINK" && break
+            sleep 0.05
+          done
+          test -L "$LINK"
+          TARGET=$(readlink "$LINK")
+          case "$TARGET" in
+            /dev/pts/*) ;;
+            *) echo "unexpected PTY target: $TARGET"; exit 1 ;;
+          esac
+          test "$(stat -Lc '%a' "$LINK")" = "600"
+          stty -F "$LINK" -a >/dev/null
+          kill -TERM "$PID"
+          wait "$PID"
+          test ! -e "$LINK"
+          test ! -L "$LINK"
+          grep -F 'YWD1278_0E_P4_SLAVE_PTY=/dev/pts/' "$LOG"
+          grep -F "YWD1278_0E_P4_STABLE_LINK=$LINK" "$LOG"
+          echo 'SIGTERM_STABLE_LINK_CLEANUP=PASS'
+          trap - EXIT
+          rm -f "$LOG"
+
       - name: Preserve frozen 0E-P3 qualification
         run: |
           PYTHONPATH=src python tests/auth_lan_console_test.py
