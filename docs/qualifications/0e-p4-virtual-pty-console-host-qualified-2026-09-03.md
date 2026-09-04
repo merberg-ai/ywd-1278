@@ -4,7 +4,7 @@ Date: 2026-09-03 (America/Los_Angeles)
 
 ## Result
 
-0E-P4 is host-qualified at implementation head `2f8bf6aff6cc95c7553a6344ac0d7313c1d21ba4` by dedicated GitHub Actions run `33834614216` (`success`). The phase is **not complete** until the same virtual PTY boundary passes a target-Raspberry-Pi smoke test.
+0E-P4 is host-qualified at implementation head `aba04bc61810c8038ce6890e6bc9c634088690db` by dedicated GitHub Actions run `33834928723` (`success`). The phase is **not complete** until the same virtual PTY boundary passes a target-Raspberry-Pi smoke test.
 
 ## What P4 adds
 
@@ -14,6 +14,7 @@ P4 adds one local kernel pseudo-terminal personality over the frozen 0E-P1 `Loca
 - slave appears as `/dev/pts/N`
 - slave is put into raw terminal mode and chmod `0600`
 - optional stable symlink is explicit, absolute-path-only, refuses to replace any existing object, and is removed on clean close only if it still points to the P4-owned PTY
+- `SIGINT` and `SIGTERM` request graceful server shutdown so service-style termination also removes the owned stable link
 - bounded printable-ASCII command stream with CR/LF, backspace and TAB handling
 - 256-character command-line cap inherited from P1
 - default 1024-command logical-session cap, hard cap 10000
@@ -41,13 +42,15 @@ The optional MHEARD/status database remains the same read-only P1 composition.
 
 P4 host qualification preserves these exact Git blobs:
 
+- `src/ywd1278/console/pty_serial.py` — `c0ba2a3278ac1e790bf383fc12a220ae327255ba`
+- `tests/pty_serial_tnc_console_test.py` — `8acba59b456b2224dbb0e64b76b7f7ef0bfc4b94`
+- `tests/pty_serial_tnc_console_contract_test.py` — `cff343aa56a6c20f9cb539bb95d4765ebdeb1da7`
+- `tools/qualify_0e_p4_pty.py` — `1740249933aa0ab8f8201f0bf5b136f86e3c8cbe`
 - `src/ywd1278/console/local.py` — `9fed5416ca9123811413f4ef284abff0006a48dd`
 - `src/ywd1278/console/telnet.py` — `d15669eb61f2afdf4d0d177191124ef8f13713e0`
 - `src/ywd1278/console/auth.py` — `0bdacaca9807012954c3362a8c0d92c4c1e21d40`
 - `src/ywd1278/console/lan_telnet.py` — `a53bad81aa3ffa167375517bb48a19e8ac9143f3`
 - `pyproject.toml` — `9331c09b7f1e3c7111e437f3007e1e2c14716eb3`
-
-The P4 implementation/test/helper blobs are frozen in `firmware/qualification/0e-p4-virtual-pty-console-host.json`.
 
 ## Host proof
 
@@ -55,8 +58,9 @@ On Ubuntu 24.04.4 / CPython 3.11.16:
 
 - 11/11 P4 regressions passed using real kernel PTYs
 - architecture/safety contract passed
-- deterministic qualification helper opened `/dev/pts/0` through normal POSIX TTY APIs
+- deterministic qualification helper opened a `/dev/pts/N` slave through normal POSIX TTY APIs
 - mode `0600` and stable-link create/resolve/cleanup passed
+- an actual CLI process received `SIGTERM`, exited normally, and removed its stable link
 - detach/reopen monitor-state reset passed
 - `QUIT` logical-session reset passed
 - future `CONNECT` and `TX` commands stayed rejected
@@ -64,6 +68,6 @@ On Ubuntu 24.04.4 / CPython 3.11.16:
 
 ## Remaining gate
 
-Run the deterministic P4 qualification helper on the actual target Pi from a clean checkout of the evidence-bearing P4 branch. This test is local-only and requires **no HAT, UART, modem, packet traffic, RF, or TX activity**.
+Run the deterministic P4 qualification helper and process-level SIGTERM lifecycle smoke on the actual target Pi from a clean checkout of the evidence-bearing P4 branch. This test is local-only and requires **no HAT, UART, modem, packet traffic, RF, or TX activity**.
 
 Do not mark the roadmap item complete, create the final P4 checkpoint, or merge P4 into `dev` until the target-Pi PTY smoke is recorded separately from this host evidence.
