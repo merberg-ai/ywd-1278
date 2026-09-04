@@ -1,5 +1,6 @@
 """Read-only decoded packet monitor primitives for YWD-1278."""
 
+from .diagnostics import DiagnosticsSnapshot, DiagnosticsStatus
 from .policy import (
     MonitorPolicySnapshot,
     MonitorPolicyState,
@@ -23,6 +24,8 @@ from .stream import (
 
 __all__ = [
     "DecodedMonitorStream",
+    "DiagnosticsSnapshot",
+    "DiagnosticsStatus",
     "MonitorPolicySnapshot",
     "MonitorPolicyState",
     "MonitorRecord",
