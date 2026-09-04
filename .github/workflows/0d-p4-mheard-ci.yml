@@ -1,0 +1,56 @@
+name: 0d-p4-mheard-ci
+
+on:
+  push:
+    branches: [dev-0d-p4-mheard, dev]
+  pull_request:
+    branches: [dev]
+
+jobs:
+  mheard-host:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Compile 0D-P4 boundary
+        run: |
+          python -m py_compile src/ywd1278/monitor/mheard.py
+          python -m py_compile tests/mheard_test.py
+          python -m py_compile tests/mheard_contract_test.py
+          python -m py_compile tests/sqlite_frame_log_target_pi_evidence_contract_test.py
+
+      - name: MHEARD regression
+        run: python tests/mheard_test.py
+
+      - name: MHEARD architecture and safety contract
+        run: python tests/mheard_contract_test.py
+
+      - name: Preserve merged P3 target-Pi evidence
+        run: python tests/sqlite_frame_log_target_pi_evidence_contract_test.py
+
+      - name: Preserve frozen P3 SQLite qualification
+        run: |
+          python tests/sqlite_frame_log_test.py
+          python tests/sqlite_frame_log_contract_test.py
+          python tests/sqlite_frame_log_qualification_contract_test.py
+
+      - name: Preserve frozen P1/P2 monitor qualification
+        run: |
+          python tests/monitor_stream_test.py
+          python tests/monitor_stream_contract_test.py
+          python tests/monitor_stream_qualification_contract_test.py
+          python tests/monitor_policy_test.py
+          python tests/monitor_policy_contract_test.py
+          python tests/monitor_policy_qualification_contract_test.py
+
+      - name: Preserve frozen P8 physical qualification and sustained graph
+        run: |
+          python tests/live_p8_r3_physical_evidence_contract_test.py
+          python tests/live_p8_r3_sustained_kiss_tnc_contract_test.py
+          python tests/sustained_live_fifo_drain_regression_test.py
+          python tests/sustained_kiss_tnc_integration_test.py
