@@ -8,6 +8,7 @@ on:
     paths:
       - 'src/ywd1278/console/pty_serial.py'
       - 'tests/pty_serial_tnc_console*_test.py'
+      - 'tools/qualify_0e_p4_pty.py'
       - '.github/workflows/0e-p4-virtual-pty-console-ci.yml'
       - 'firmware/qualification/0e-p4-*'
       - 'docs/qualifications/0e-p4-*'
@@ -29,6 +30,7 @@ jobs:
           python -m py_compile src/ywd1278/console/pty_serial.py
           python -m py_compile tests/pty_serial_tnc_console_test.py
           python -m py_compile tests/pty_serial_tnc_console_contract_test.py
+          python -m py_compile tools/qualify_0e_p4_pty.py
 
       - name: Virtual PTY console regression
         run: PYTHONPATH=src python tests/pty_serial_tnc_console_test.py
@@ -36,8 +38,10 @@ jobs:
       - name: Virtual PTY console architecture and safety contract
         run: PYTHONPATH=src python tests/pty_serial_tnc_console_contract_test.py
 
-      - name: PTY CLI surface smoke
-        run: PYTHONPATH=src python -m ywd1278.console.pty_serial --help >/dev/null
+      - name: PTY CLI and deterministic qualification helper smoke
+        run: |
+          PYTHONPATH=src python -m ywd1278.console.pty_serial --help >/dev/null
+          PYTHONPATH=src python tools/qualify_0e_p4_pty.py
 
       - name: Preserve frozen 0E-P3 qualification
         run: |
