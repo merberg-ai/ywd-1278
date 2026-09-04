@@ -17,10 +17,13 @@ on:
       - 'tests/existing_pi_stage_g_target_evidence_contract_test.py'
       - 'tests/existing_pi_stage_g_reboot_live_rx_test.py'
       - 'tests/existing_pi_stage_g_reboot_contract_test.py'
+      - 'tests/existing_pi_stage_g_reboot_evidence_contract_test.py'
       - 'firmware/qualification/0b-product-existing-pi-stage-g.json'
       - 'firmware/qualification/0b-product-existing-pi-stage-g-target-pi.json'
+      - 'firmware/qualification/0b-product-existing-pi-stage-g-reboot-target-pi.json'
       - 'docs/qualifications/fresh-install-stage-g-existing-pi-staged-2026-09-04.md'
       - 'docs/qualifications/fresh-install-stage-g-existing-pi-rx-qualified-2026-09-04.md'
+      - 'docs/qualifications/fresh-install-stage-g-existing-pi-reboot-qualified-2026-09-04.md'
       - '.github/workflows/fresh-install-stage-g-existing-pi-ci.yml'
 
 jobs:
@@ -45,6 +48,7 @@ jobs:
           python -m py_compile tests/existing_pi_stage_g_target_evidence_contract_test.py
           python -m py_compile tests/existing_pi_stage_g_reboot_live_rx_test.py
           python -m py_compile tests/existing_pi_stage_g_reboot_contract_test.py
+          python -m py_compile tests/existing_pi_stage_g_reboot_evidence_contract_test.py
 
       - name: Parse Stage G shell gates
         run: |
@@ -70,7 +74,10 @@ jobs:
       - name: Stage G reboot architecture and safety contract
         run: python tests/existing_pi_stage_g_reboot_contract_test.py
 
-      - name: Parse Stage G staging manifest
+      - name: Stage G target-Pi reboot evidence contract
+        run: python tests/existing_pi_stage_g_reboot_evidence_contract_test.py
+
+      - name: Parse Stage G historical staging manifest
         run: |
           python - <<'PY'
           import json
@@ -98,6 +105,24 @@ jobs:
           assert d['qualified_claims']['reboot_survival'] is False
           assert d['reboot_qualification_complete'] is False
           print('STAGE_G_TARGET_PI_RX_MANIFEST=PASS')
+          PY
+
+      - name: Parse Stage G target-Pi reboot evidence
+        run: |
+          python - <<'PY'
+          import json
+          p='firmware/qualification/0b-product-existing-pi-stage-g-reboot-target-pi.json'
+          d=json.load(open(p,encoding='utf-8'))
+          assert d['schema'] == 1
+          assert d['stage'] == 'G'
+          assert d['status'] == 'target-pi-reboot-qualified'
+          assert d['reboot_proof']['boot_id_changed'] is True
+          assert d['fresh_post_reboot_rx']['kiss_data_received'] is True
+          assert d['fresh_post_reboot_rx']['telnet_mheard_fresh_advance'] is True
+          assert d['fresh_post_reboot_rx']['pty_mheard_fresh_advance'] is True
+          assert d['stage_g_complete'] is True
+          assert d['physical_tx_permitted'] is False
+          print('STAGE_G_TARGET_PI_REBOOT_MANIFEST=PASS')
           PY
 
       - name: Preserve Stage F firmware trust regression
