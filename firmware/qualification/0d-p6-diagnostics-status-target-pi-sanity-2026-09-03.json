@@ -1,0 +1,75 @@
+{
+  "schema": 1,
+  "phase": "0D-P6",
+  "stage": "diagnostics-status-target-pi-sanity",
+  "status": "supplementary-target-host-pass",
+  "checkpoint": "checkpoint/0d-p6-diagnostics-status-host-qualified",
+  "checkpoint_sha": "1c20585af6a782af83817beeaa3df6f42f378de5",
+  "qualified_implementation_head": "0c83530d2565cff22eef9b61dc05b6fa77890d34",
+  "python_version": "3.13.5",
+  "tests": {
+    "diagnostics_status_test": "pass",
+    "diagnostics_status_contract_test": "pass",
+    "diagnostics_status_qualification_contract_test": "pass",
+    "p5_target_pi_evidence_contract_test": "pass",
+    "p5_retention_qualification_contract_test": "pass",
+    "p4_target_pi_evidence_contract_test": "pass",
+    "p3_target_pi_evidence_contract_test": "pass"
+  },
+  "diagnostics": {
+    "source": "existing-snapshots-only",
+    "mode": "one-shot-read-only",
+    "runtime_accounting": "pass",
+    "kiss_control_ingress_queue_connections": "pass",
+    "backend_subscriber_drops": "pass",
+    "sqlite_mheard_retention": "pass",
+    "database_mutation": false,
+    "sampling_thread": false,
+    "packet_subscriber": false,
+    "worker_thread": false,
+    "additional_in_memory_queue": false,
+    "database_write_capability": false,
+    "retention_apply_capability": false,
+    "tx_capability": false
+  },
+  "smoke_database": {
+    "path": "/tmp/ywd1278-p3-smoke.sqlite3",
+    "unattached_sources": [
+      "runtime",
+      "backend",
+      "parameters",
+      "control",
+      "ingress",
+      "queue",
+      "connections",
+      "sqlite_log"
+    ],
+    "mheard": {
+      "station_count": 2,
+      "frame_count": 2,
+      "latest_heard_ns": 1788480434979489748
+    },
+    "retention_plan": {
+      "enabled": false,
+      "total_rows": 2,
+      "eligible_rows": 0,
+      "next_batch_rows": 0,
+      "cutoff_ns": null,
+      "max_rows": null,
+      "max_delete_per_run": 1000
+    },
+    "healthy": true,
+    "problems": [],
+    "row_count_before": 2,
+    "row_count_after": 2,
+    "database_mutated": false
+  },
+  "prior_evidence": {
+    "p5_target_pi": "pass",
+    "p4_target_pi": "pass",
+    "p3_target_pi": "pass"
+  },
+  "uart_activity": false,
+  "rf_activity": false,
+  "qualification_complete": true
+}
