@@ -22,6 +22,7 @@ jobs:
           python -m py_compile src/ywd1278/monitor/diagnostics.py
           python -m py_compile tests/diagnostics_status_test.py
           python -m py_compile tests/diagnostics_status_contract_test.py
+          python -m py_compile tests/diagnostics_status_qualification_contract_test.py
           python -m py_compile tests/retention_target_pi_evidence_contract_test.py
 
       - name: Diagnostics/status regression
@@ -29,6 +30,9 @@ jobs:
 
       - name: Diagnostics architecture and safety contract
         run: python tests/diagnostics_status_contract_test.py
+
+      - name: Frozen 0D-P6 host qualification evidence
+        run: python tests/diagnostics_status_qualification_contract_test.py
 
       - name: Preserve P5 target-Pi evidence
         run: python tests/retention_target_pi_evidence_contract_test.py
@@ -54,3 +58,6 @@ jobs:
           python tests/live_p8_r3_sustained_kiss_tnc_contract_test.py
           python tests/sustained_live_fifo_drain_regression_test.py
           python tests/sustained_kiss_tnc_integration_test.py
+
+      - name: Parse P6 host evidence
+        run: python -m json.tool firmware/qualification/0d-p6-diagnostics-status-host.json >/dev/null
