@@ -1,0 +1,130 @@
+{
+  "schema": 1,
+  "phase": "0B-product-packet-engine-stage-a",
+  "stage": "first-product-packet-engine-component-freeze",
+  "status": "staged",
+  "date": "2026-09-03",
+  "timezone": "America/Los_Angeles",
+  "base_checkpoint": {
+    "branch": "checkpoint/pre-fresh-install-flash-run",
+    "sha": "383de08ede7b452fc773bc5cb6803e4a5acd39cf"
+  },
+  "preparation_branch": "dev-fresh-install-flash-run",
+  "scope": "Freeze the exact already-qualified packet-engine component graph that Stage B may compose into the production ywd1278d appliance runtime. No source component is modified by Stage A.",
+  "component_count": 29,
+  "components": {
+    "src/ywd1278/ax25/__init__.py": "c35b8a99d9689a182752dbeb63c7ed70ed206912",
+    "src/ywd1278/ax25/codec.py": "866a500d9f3a5d3fc80f6918d07ff83a6672ad64",
+    "src/ywd1278/phy/__init__.py": "020bb229e1cdd4a8a61cec90e85b60a537572ddb",
+    "src/ywd1278/phy/bell202_rx.py": "18fae685a0accdeb2eb425793632cf123f45bbda",
+    "src/ywd1278/phy/bell202_tx.py": "39677faa3302a74da9fbae6fa858899e54f1874f",
+    "src/ywd1278/modem/__init__.py": "8e5d7f645a6b0df410f48e4083babeef977a316a",
+    "src/ywd1278/modem/_serial.py": "c671633a9c0934cbc8206957eafc1d5736537fc7",
+    "src/ywd1278/modem/owner.py": "012a34d3ff65c14f2f29e3954ae304d3ee281f9a",
+    "src/ywd1278/modem/protocol.py": "1a923c81a90f4a9f782c3b21c321ace67cc8cd27",
+    "src/ywd1278/modem/rx_config.py": "a671c07ddca83d4c0b061568bc48fb29e386c632",
+    "src/ywd1278/modem/tx_config.py": "895ecc609c5490736f3c267d613c7bd3fa536a41",
+    "src/ywd1278/modem/tx_owner.py": "d32763473a1eba89566ed512e9ab5fc7de575480",
+    "src/ywd1278/kiss/__init__.py": "dd235f04835543fe16eb4d9f29c6ecb8b9a2e79e",
+    "src/ywd1278/kiss/framing.py": "7227e68b6829099580f72f2a49fe0e68fbce1363",
+    "src/ywd1278/kiss/server.py": "d586fe9cbef9f42c5ec4d2e18880dfad32548b33",
+    "src/ywd1278/kiss/control.py": "b6c23879027c15ef944a9e411429694a312d606e",
+    "src/ywd1278/kiss/tx_path.py": "44f4b6c0bddd6ac0977646ac417e448c9a1398ea",
+    "src/ywd1278/kiss/tx_backend.py": "e06c1a619a02ecb4cf2073a3f270be1b2d54ea0e",
+    "src/ywd1278/kiss/sustained.py": "63cf33f4b6d4cedd091af0349a8037669d45e84d",
+    "src/ywd1278/tx/__init__.py": "3902944d12d3d8eb2b9ebfc5c52ef0549288c71d",
+    "src/ywd1278/tx/broker.py": "1e3307dccea4f2805d32cb9be5b34f3537e29c4f",
+    "src/ywd1278/tx/channel_access.py": "398af9158875c6ac063d0264c150086df009e555",
+    "src/ywd1278/tx/channel_busy.py": "46c655a6d9143ac9ea21cbccb36caf77c4a14cd8",
+    "src/ywd1278/tx/contextual.py": "c9de1ed7e751d6d96eadc4f6ac7b027cfe859012",
+    "src/ywd1278/tx/csma.py": "b21925be0799d6d6ee887ba6dbb494014d50c710",
+    "src/ywd1278/tx/half_duplex.py": "d826fd4a53d52ba359eb0b45642370db0f0cb7cc",
+    "src/ywd1278/tx/txdelay.py": "b8035a58c4b48765c580dab06bcdb054a9801c8c",
+    "src/ywd1278/service/__init__.py": "7336134297675de834ed53395e62d641b0020f1d",
+    "src/ywd1278/service/tnc_runtime.py": "f1a74ae44824bafc2b89c09e77fa416ac26bb4f1"
+  },
+  "product_graph": [
+    "POSIX serial transport -> single TXModemOwner",
+    "TXModemOwner -> active AX25R4 YWD_RX FIFO + typed RSSI/RF diagnostics",
+    "YWD_RX packed samples -> StreamingBell202Decoder -> AX.25 parser -> KISS PacketEvent",
+    "KISS TCP/control -> immutable parameter capture -> bounded thread-safe P7 DATA admission queue",
+    "queued DATA -> raw RSSI detector + p-persistent CSMA -> exactly-once READY dispatch",
+    "READY -> contextual P4e RX_STOP -> TX -> RF-idle proof -> RX_START lifecycle",
+    "captured TXDELAY -> contextual TXDelayBroker -> Bell-202 selector burst -> TXModemOwner",
+    "P8 sustained scheduler resets Bell-202 decoder after each qualified half-duplex TX discontinuity"
+  ],
+  "excluded_from_product_graph": [
+    "src/ywd1278/tx/access_queue.py",
+    "src/ywd1278/tx/rssi_analysis.py",
+    "src/ywd1278/service/live_channel_access.py",
+    "src/ywd1278/service/rx_runtime.py"
+  ],
+  "firmware_anchor": {
+    "target_id": "mmdvm-hs-hat-stm32f103-simplex-14.7456-adf7021",
+    "identity": "MMDVM_HS_Hat-YWD-1278-AX25R4-v0.1.0-alpha1 14.7456MHz ADF7021 FW based on CA6JAU GitID #7ff74ed",
+    "artifact_size_bytes": 59892,
+    "artifact_sha256": "b06fcbf0baa36e865198091cee27c66e1624ef08117ee685253a7a5613c7c616",
+    "programmed_readback_sha256": "b06fcbf0baa36e865198091cee27c66e1624ef08117ee685253a7a5613c7c616",
+    "qualified_frequency_hz": 145050000,
+    "qualified_tx_power": 200
+  },
+  "proof_anchors": {
+    "firmware_ax25r4_physical": {
+      "path": "firmware/qualification/0c-p2-rssi-live-physical-evidence.json",
+      "blob": "8b293ff07afc235718003d32ebcae32bd09fbff2"
+    },
+    "p7_kiss_tx_physical": {
+      "path": "firmware/qualification/0c-p7-live-kiss-one-shot-physical-evidence.json",
+      "blob": "027478487155e41c44885d37ee93efbd284dd129"
+    },
+    "p8_sustained_host": {
+      "path": "firmware/qualification/0c-p8-sustained-kiss-tnc-host.json",
+      "blob": "f5c2828ca10491deaac81526eb6ef1e281068564"
+    },
+    "p8_sustained_r3_physical": {
+      "path": "firmware/qualification/0c-p8-r3-live-physical-evidence.json",
+      "blob": "0c694c2fe8e4e1d21776117b662d30fdc9929fea"
+    }
+  },
+  "qualification_contracts": {
+    "p8_host_architecture": {
+      "path": "tests/sustained_kiss_tnc_contract_test.py",
+      "blob": "fa49c652cb2ca86c01a1e9c4c2244d30c4c6b83e"
+    },
+    "p8_host_integration": {
+      "path": "tests/sustained_kiss_tnc_integration_test.py",
+      "blob": "83002be87a71913c3f145fc988fd883665a9764a"
+    },
+    "p8_concurrency": {
+      "path": "tests/sustained_kiss_queue_concurrency_test.py",
+      "blob": "ae8967afb30b7922e877874bf466a5ee0b40c55c"
+    },
+    "p8_r3_physical_evidence": {
+      "path": "tests/live_p8_r3_physical_evidence_contract_test.py",
+      "blob": "fd34003a77cee3a4a2dff4dca3f7dbb6cdf53130"
+    },
+    "p7_physical_evidence": {
+      "path": "tests/live_p7_kiss_one_shot_evidence_contract_test.py",
+      "blob": "13df20c1430b1a5054b63f40227ad6aaf4ff7051"
+    }
+  },
+  "safety": {
+    "stage_a_component_changes": false,
+    "stage_a_uart_access": false,
+    "stage_a_rf_activity": false,
+    "stage_a_flash_activity": false,
+    "stage_a_gpio_activity": false,
+    "stage_a_enables_daemon": false,
+    "stage_a_enables_product_tx": false,
+    "automatic_tx_retry": false,
+    "product_tx_authority_remains_construction_time_fail_closed": true
+  },
+  "integration_status": {
+    "packet_engine_component_boundary_frozen": false,
+    "production_daemon_assembled": false,
+    "installer_flash_path_integrated": false,
+    "installed_appliance_rehearsed": false,
+    "fresh_install_flash_run_qualified": false,
+    "next_stage": "Stage B - assemble the production ywd1278d graph from these frozen components"
+  }
+}
