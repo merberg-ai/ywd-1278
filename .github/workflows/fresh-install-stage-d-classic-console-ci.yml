@@ -10,6 +10,7 @@ on:
       - 'src/ywd1278/daemon.py'
       - 'config/ywd-1278.example.toml'
       - 'tests/product_classic_console_stage_d_test.py'
+      - 'tests/product_full_daemon_stage_d_test.py'
       - 'tests/product_classic_console_stage_d_contract_test.py'
       - 'firmware/qualification/0b-product-classic-console-stage-d.json'
       - 'docs/qualifications/fresh-install-stage-d-classic-console-host-qualified-2026-09-04.md'
@@ -33,10 +34,14 @@ jobs:
           python -m py_compile src/ywd1278/service/classic_console.py
           python -m py_compile src/ywd1278/daemon.py
           python -m py_compile tests/product_classic_console_stage_d_test.py
+          python -m py_compile tests/product_full_daemon_stage_d_test.py
           python -m py_compile tests/product_classic_console_stage_d_contract_test.py
 
       - name: Stage D real socket and kernel PTY integration regression
         run: python tests/product_classic_console_stage_d_test.py
+
+      - name: Stage D simultaneous full daemon graph regression
+        run: python tests/product_full_daemon_stage_d_test.py
 
       - name: Stage D architecture and safety contract
         run: python tests/product_classic_console_stage_d_contract_test.py
