@@ -67,7 +67,14 @@
     "actual_listener_pid_observed": 100607,
     "listener_remained_available_for_remote_test_after_stale_pid_cleanup_attempt": true,
     "qualification_behavior_affected": false,
-    "residual_listener_cleanup_followup_required": true
+    "residual_listener_cleanup_followup_required": false,
+    "followup_cleanup_tool": "tools/cleanup_0e_p3_lan.py",
+    "followup_listener_pid_terminated": 100607,
+    "followup_state_removed": "/tmp/ywd1278-0e-p3-lan-state.json",
+    "followup_listener_process_absent": true,
+    "followup_tcp_8023_not_listening": true,
+    "followup_temp_auth_state_removed": true,
+    "followup_result": "pass"
   },
   "implementation_blobs": {
     "src/ywd1278/console/auth.py": "0bdacaca9807012954c3362a8c0d92c4c1e21d40",
@@ -93,5 +100,6 @@
     "rf_activity": false
   },
   "target_pi_private_lan_qualification_complete": true,
-  "phase_complete_pending_cleanup_confirmation": true
+  "cleanup_followup_complete": true,
+  "phase_complete": true
 }
