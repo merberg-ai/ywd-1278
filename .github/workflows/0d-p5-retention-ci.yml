@@ -23,12 +23,16 @@ jobs:
           python -m py_compile tests/retention_test.py
           python -m py_compile tests/retention_contract_test.py
           python -m py_compile tests/mheard_target_pi_evidence_contract_test.py
+          python -m py_compile tests/retention_target_pi_evidence_contract_test.py
 
       - name: Retention regression
         run: python tests/retention_test.py
 
       - name: Retention architecture and safety contract
         run: python tests/retention_contract_test.py
+
+      - name: Preserve P5 target-Pi evidence
+        run: python tests/retention_target_pi_evidence_contract_test.py
 
       - name: Preserve P4 target-Pi evidence
         run: python tests/mheard_target_pi_evidence_contract_test.py
