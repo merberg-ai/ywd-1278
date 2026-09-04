@@ -1,0 +1,90 @@
+{
+  "schema": 1,
+  "phase": "0E-P5",
+  "stage": "classic-tnc2-mfj-command-vocabulary",
+  "status": "target-pi-qualified",
+  "qualification_date": "2026-09-03",
+  "timezone": "America/Los_Angeles",
+  "host_evidence": "firmware/qualification/0e-p5-classic-vocabulary-host.json",
+  "qualified_implementation": {
+    "branch": "dev-0e-p5-classic-vocabulary",
+    "head_sha": "ab9e922b31bfb57b9a8be11c70a812dc1b0c0da3",
+    "dedicated_ci_run": 33836726120,
+    "dedicated_ci_conclusion": "success"
+  },
+  "target_tested_tree": {
+    "branch": "dev-0e-p5-classic-vocabulary",
+    "head_sha": "a0d102778c9da3be180dcdae7c1f455f66e72e91",
+    "branch_pull_result": "already up to date",
+    "working_tree_clean_before_test": true,
+    "working_tree_clean_after_test": true
+  },
+  "p5_blobs": {
+    "src/ywd1278/console/classic.py": "4d6dfd5d439fb5dfd6ff586c2a47c37724381b2e",
+    "tests/classic_tnc_vocabulary_test.py": "d8e10890759d9d48ef8891be3cc4c74d58d3acc3",
+    "tests/classic_tnc_vocabulary_contract_test.py": "620b8900c15044130d7da954c85bc39847c54dae",
+    "tools/qualify_0e_p5_classic.py": "648b0b2165ac9a10aa0a0041da50e63aafeb17e1"
+  },
+  "frozen_boundaries": {
+    "src/ywd1278/console/local.py": "9fed5416ca9123811413f4ef284abff0006a48dd",
+    "src/ywd1278/console/telnet.py": "d15669eb61f2afdf4d0d177191124ef8f13713e0",
+    "src/ywd1278/console/auth.py": "0bdacaca9807012954c3362a8c0d92c4c1e21d40",
+    "src/ywd1278/console/lan_telnet.py": "a53bad81aa3ffa167375517bb48a19e8ac9143f3",
+    "src/ywd1278/console/pty_serial.py": "c0ba2a3278ac1e790bf383fc12a220ae327255ba",
+    "pyproject.toml": "9331c09b7f1e3c7111e437f3007e1e2c14716eb3"
+  },
+  "target_environment": {
+    "platform": "Raspberry Pi 5 target",
+    "python": "3.13.5",
+    "kernel": "Linux pi5-norm 6.18.34+rpt-rpi-v8 #1 SMP PREEMPT Debian 1:6.18.34-1+rpt1 (2026-06-09) aarch64 GNU/Linux",
+    "kernel_pty_slave": "/dev/pts/1",
+    "pty_slave_mode_octal": "0600"
+  },
+  "target_results": {
+    "regression_tests_passed": 10,
+    "regression_tests_total": 10,
+    "architecture_contract": "pass",
+    "host_evidence_contract": "pass",
+    "safe_aliases": "pass",
+    "display_monitor": "pass",
+    "frozen_p2_real_telnet_composition": "pass",
+    "frozen_p4_real_kernel_pty_composition": "pass",
+    "pty_termios_api": "pass",
+    "stable_link_cleanup": "pass",
+    "detach_reopen_state_reset": "pass",
+    "ambiguous_abbreviations_fail_closed": "pass",
+    "connect_converse_unproto_beacon_deferred": "pass",
+    "tx_xmitok_kiss_deferred": "pass",
+    "mhclear_disabled_read_only": "pass",
+    "hardware_serial_opened": false,
+    "modem_kiss_tx_path": "absent",
+    "tx_rf_hardware_test_required": false,
+    "safe_child_wrapper_exit_code": 0,
+    "safe_child_wrapper": "pass",
+    "putty_session_remained_open": true
+  },
+  "vocabulary_policy": {
+    "safe_aliases": ["DISP", "MH", "VER", "STAT", "HEAL"],
+    "display_scope": "MONITOR only",
+    "generic_abbreviation_engine": false,
+    "ambiguous_abbreviations_fail_closed": true,
+    "tx_and_link_commands_operational": false,
+    "destructive_mhclear_operational": false
+  },
+  "safety": {
+    "hat_access": false,
+    "hardware_uart_access": false,
+    "network_listener_added_by_p5_adapter": false,
+    "hardware_serial_open_added": false,
+    "database_write_added": false,
+    "retention_apply_added": false,
+    "modem_owner_added": false,
+    "kiss_session_added": false,
+    "tx_broker_added": false,
+    "rf_activity": false,
+    "gpio_activity": false,
+    "flash_activity": false
+  },
+  "target_pi_classic_vocabulary_smoke_complete": true,
+  "phase_complete": true
+}
