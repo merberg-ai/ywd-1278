@@ -1,0 +1,80 @@
+{
+  "schema": 1,
+  "phase": "fresh-install-stage-b-product-daemon",
+  "stage": "assemble-production-ywd1278d-packet-engine",
+  "status": "staged",
+  "date": "2026-09-03",
+  "timezone": "America/Los_Angeles",
+  "base_checkpoint": {
+    "branch": "checkpoint/product-packet-engine-stage-a-qualified",
+    "sha": "704814a7c68099ca6bc7aef041d531014cb47d78"
+  },
+  "branch": "dev-fresh-install-flash-run",
+  "scope": "Compose the frozen Stage-A packet engine into the production ywd1278d lifecycle without modifying any Stage-A engine blob. Host qualification uses only a thread-bound in-memory fake modem transport.",
+  "stage_a_component_count": 29,
+  "stage_a_components_modified": false,
+  "implementation": {
+    "appliance_path": "src/ywd1278/service/appliance.py",
+    "appliance_blob": "6d8c232c8927e9c76306c34779c1ce0da92ec010",
+    "daemon_path": "src/ywd1278/daemon.py",
+    "daemon_blob": "0030d650a1909a0c0cdae0b57a2a371e8811c73b",
+    "regression_path": "tests/product_daemon_stage_b_test.py",
+    "regression_blob": "e2fbb352fa98c6c0c3545dca0ecfd11348069ecc",
+    "contract_path": "tests/product_daemon_stage_b_contract_test.py",
+    "contract_blob": "97c8bd079062ef30d90a3b7b00c10fa33a1f62b8"
+  },
+  "composition": {
+    "single_modem_owner": true,
+    "exact_ax25r4_identity_required": true,
+    "rx_configured_before_runtime": true,
+    "sustained_runtime_started_before_kiss_listener": true,
+    "thread_safe_bounded_data_admission": true,
+    "contextual_csma_and_txdelay": true,
+    "persistent_half_duplex_rx_stop_tx_rx_start": true,
+    "reverse_order_shutdown": true,
+    "sigint_sigterm_stop_event": true,
+    "daemon_framework_self_test_preserved": true
+  },
+  "product_policy": {
+    "safe_default_tx_disabled": true,
+    "tx_disabled_data_rejected_at_ingress": true,
+    "tx_disabled_queue_admission": false,
+    "tx_enabled_profile": {
+      "frequency_hz": 145050000,
+      "power": 200,
+      "arbitrary_profile_permitted": false
+    },
+    "automatic_flash_permitted": false,
+    "beacon_permitted": false,
+    "kiss_bind_scope": "127.0.0.1-only",
+    "generic_raw_modem_transaction_exposed": false,
+    "automatic_tx_retry": false
+  },
+  "host_qualification": {
+    "transport": "thread-bound in-memory AX25R4 fake",
+    "real_posix_serial": false,
+    "rx_only_kiss_data_rejection_required": true,
+    "rx_only_bell202_ax25_kiss_delivery_required": true,
+    "tx_enabled_full_fake_graph_required": true,
+    "tx_enabled_rx_restart_required": true,
+    "daemon_lifecycle_release_required": true,
+    "exact_head_ci_run_id": null,
+    "exact_head_ci_conclusion": "pending"
+  },
+  "hardware_activity": {
+    "uart": false,
+    "rf": false,
+    "flash": false,
+    "gpio": false,
+    "option_bytes": false
+  },
+  "not_in_stage_b": {
+    "monitor_logging_mheard_diagnostics_composition": true,
+    "classic_console_composition": true,
+    "installer_runtime_update": true,
+    "firmware_flash_path": true,
+    "installed_pi_rehearsal": true,
+    "fresh_os_qualification": true
+  },
+  "next_stage": "Compose monitor/logging/MHEARD/diagnostics into the product daemon while preserving this Stage-B engine lifecycle"
+}
