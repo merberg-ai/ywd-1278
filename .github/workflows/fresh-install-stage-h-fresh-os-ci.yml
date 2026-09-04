@@ -9,8 +9,10 @@ on:
       - 'tools/stage_h_fresh_os_preflight.sh'
       - 'tests/fresh_os_stage_h_contract_test.py'
       - 'tests/fresh_os_stage_h_preinstall_evidence_contract_test.py'
+      - 'tests/fresh_os_stage_h_resume_evidence_contract_test.py'
       - 'firmware/qualification/0b-product-fresh-os-stage-h.json'
       - 'firmware/qualification/0b-product-fresh-os-stage-h-preinstall-target-pi.json'
+      - 'firmware/qualification/0b-product-fresh-os-stage-h-resume-target-pi.json'
       - 'docs/qualifications/fresh-install-stage-h-fresh-os-staged-2026-09-04.md'
       - '.github/workflows/fresh-install-stage-h-fresh-os-ci.yml'
 
@@ -30,6 +32,8 @@ jobs:
         run: python tests/fresh_os_stage_h_contract_test.py
       - name: Stage H target-Pi preinstall evidence contract
         run: python tests/fresh_os_stage_h_preinstall_evidence_contract_test.py
+      - name: Stage H installer resume target-Pi evidence contract
+        run: python tests/fresh_os_stage_h_resume_evidence_contract_test.py
       - name: Preserve Stage G final reboot evidence
         run: python tests/existing_pi_stage_g_reboot_evidence_contract_test.py
       - name: Preserve Stage G target RX evidence
@@ -75,4 +79,20 @@ jobs:
           assert d['qualified_claims']['installer_uart_repair_path_required'] is True
           assert d['qualified_claims']['physical_tx'] is False
           print('STAGE_H_TARGET_PI_PREINSTALL_MANIFEST=PASS')
+          PY
+      - name: Parse Stage H installer resume target-Pi evidence
+        run: |
+          python - <<'PY'
+          import json
+          d=json.load(open('firmware/qualification/0b-product-fresh-os-stage-h-resume-target-pi.json',encoding='utf-8'))
+          assert d['schema']==1 and d['stage']=='H'
+          assert d['status']=='target-pi-installer-resume-qualified'
+          assert d['post_reboot']['boot_id_changed_from_preinstall'] is True
+          assert d['post_reboot']['runtime_uart_ready'] is True
+          assert d['post_reboot']['serial_console_present'] is False
+          assert d['hat_detection']['firmware_class']=='STOCK'
+          assert d['qualified_claims']['packet_service_remained_disabled'] is True
+          assert d['qualified_claims']['physical_tx'] is False
+          assert d['qualified_claims']['flash_write'] is False
+          print('STAGE_H_INSTALLER_RESUME_TARGET_PI_MANIFEST=PASS')
           PY
