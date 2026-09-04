@@ -31,12 +31,16 @@ jobs:
           python -m py_compile src/ywd1278/console/lan_telnet.py
           python -m py_compile tests/auth_lan_console_test.py
           python -m py_compile tests/auth_lan_console_contract_test.py
+          python -m py_compile tests/auth_lan_console_qualification_contract_test.py
 
       - name: Authenticated LAN console regression
         run: PYTHONPATH=src python tests/auth_lan_console_test.py
 
       - name: Authenticated LAN console architecture and safety contract
         run: PYTHONPATH=src python tests/auth_lan_console_contract_test.py
+
+      - name: Frozen 0E-P3 host qualification evidence
+        run: PYTHONPATH=src python tests/auth_lan_console_qualification_contract_test.py
 
       - name: Credential and unsafe-bind smoke
         run: |
@@ -99,3 +103,6 @@ jobs:
           PYTHONPATH=src python tests/live_p8_r3_physical_evidence_contract_test.py
           PYTHONPATH=src python tests/sustained_live_fifo_drain_regression_test.py
           PYTHONPATH=src python tests/sustained_kiss_tnc_integration_test.py
+
+      - name: Parse 0E-P3 host qualification evidence
+        run: python -m json.tool firmware/qualification/0e-p3-auth-lan-console-host.json >/dev/null
