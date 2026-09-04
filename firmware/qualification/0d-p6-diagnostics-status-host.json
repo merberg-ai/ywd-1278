@@ -1,0 +1,75 @@
+{
+  "schema": 1,
+  "phase": "0D-P6",
+  "stage": "diagnostics-status-host",
+  "status": "host-qualified",
+  "base_checkpoint": "checkpoint/0d-p5-retention-host-qualified",
+  "base_sha": "b330e52bdf5eb902135138e32d91ff6538d5cf3c",
+  "qualified_implementation_head": "0c83530d2565cff22eef9b61dc05b6fa77890d34",
+  "implementation": {
+    "path": "src/ywd1278/monitor/diagnostics.py",
+    "git_blob_sha1": "0f23c1232b51e2f5fbd1a3d4c179e0c94ce4116a"
+  },
+  "behavior": {
+    "snapshot_mode": "one-shot-read-only",
+    "sources": [
+      "sustained-runtime-accounting",
+      "runtime-counters",
+      "packet-backend-snapshot",
+      "kiss-parameter-snapshot",
+      "kiss-control-counters",
+      "kiss-ingress-counters",
+      "bounded-tx-queue-snapshot",
+      "kiss-connection-counters",
+      "sqlite-frame-log-snapshot",
+      "mheard-summary",
+      "retention-read-only-plan"
+    ],
+    "health_problem_markers": [
+      "runtime-failure",
+      "subscriber-drops",
+      "tx-access-timeouts",
+      "tx-downstream-failures",
+      "sqlite-write-failures",
+      "sqlite-fatal-error"
+    ],
+    "database_mutation": false,
+    "retention_apply": false,
+    "sampling_thread": false,
+    "worker_thread": false,
+    "packet_subscriber": false,
+    "additional_in_memory_queue": false,
+    "modem_dependency": false,
+    "uart_access": false,
+    "rf_access": false,
+    "tx_capability": false
+  },
+  "tests": {
+    "diagnostics_status_test": "pass",
+    "diagnostics_status_contract_test": "pass",
+    "p5_target_pi_evidence_contract": "pass",
+    "p5_retention_qualification": "pass",
+    "p4_mheard_qualification": "pass",
+    "p3_sqlite_qualification": "pass",
+    "p2_monitor_policy_qualification": "pass",
+    "p1_monitor_stream_qualification": "pass",
+    "p8_physical_and_sustained_preservation": "pass"
+  },
+  "ci": {
+    "dedicated_workflow": "0d-p6-diagnostics-ci",
+    "dedicated_run_id": 33825023698,
+    "dedicated_run_result": "success",
+    "exact_head_workflow_count": 14,
+    "exact_head_matrix_result": "14_of_14_success",
+    "p3_preservation_flake": {
+      "run_id": 33825023633,
+      "attempt_1": "timing_failure_in_frozen_sustained_live_fifo_drain_regression",
+      "same_frozen_test_passed_in_dedicated_p6_run": true,
+      "attempt_2": "success",
+      "frozen_p8_source_changed": false
+    }
+  },
+  "p5_target_pi_evidence_preserved": true,
+  "uart_rf_activity": "none",
+  "qualification_complete": true
+}
