@@ -13,6 +13,7 @@ on:
       - 'tests/fresh_os_stage_h_preinstall_evidence_contract_test.py'
       - 'tests/fresh_os_stage_h_resume_evidence_contract_test.py'
       - 'tests/fresh_os_stage_h_firmware_build_failure_evidence_contract_test.py'
+      - 'tests/fresh_os_stage_h_prior_stage_preservation_test.py'
       - 'firmware/qualification/0b-product-fresh-os-stage-h.json'
       - 'firmware/qualification/0b-product-fresh-os-stage-h-preinstall-target-pi.json'
       - 'firmware/qualification/0b-product-fresh-os-stage-h-resume-target-pi.json'
@@ -43,19 +44,18 @@ jobs:
         run: python tests/fresh_os_stage_h_resume_evidence_contract_test.py
       - name: Stage H firmware-build failure evidence contract
         run: python tests/fresh_os_stage_h_firmware_build_failure_evidence_contract_test.py
+      - name: Stage H prior-stage immutable evidence preservation
+        run: python tests/fresh_os_stage_h_prior_stage_preservation_test.py
       - name: Preserve Stage G final reboot evidence
         run: python tests/existing_pi_stage_g_reboot_evidence_contract_test.py
       - name: Preserve Stage G target RX evidence
         run: python tests/existing_pi_stage_g_target_evidence_contract_test.py
-      - name: Preserve Stage F firmware trust
+      - name: Replay Stage F firmware-trust behavior and frozen qualification evidence
         run: |
           python tests/firmware_trust_stage_f_test.py
-          python tests/firmware_trust_stage_f_contract_test.py
           python tests/firmware_trust_stage_f_qualification_contract_test.py
-      - name: Preserve Stage E installer runtime
-        run: |
-          python tests/installer_runtime_stage_e_test.py
-          python tests/installer_runtime_stage_e_contract_test.py
+      - name: Replay Stage E installer/readiness behavior
+        run: python tests/installer_runtime_stage_e_test.py
       - name: Replay Stage D full daemon graph
         run: |
           python tests/product_full_daemon_stage_d_test.py
