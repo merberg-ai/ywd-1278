@@ -85,3 +85,35 @@ jobs:
           grep -q '^YWD1278_FRAMEWORK_SELF_TEST=PASS$' /tmp/ywd-stage-d-self-test.txt
           grep -q '^MODEM_UART_OPENED=NO$' /tmp/ywd-stage-d-self-test.txt
           grep -q '^RF_TRANSMITTED=NO$' /tmp/ywd-stage-d-self-test.txt
+
+      - name: Parse Stage D qualification manifest
+        run: |
+          python -m json.tool firmware/qualification/0b-product-classic-console-stage-d.json >/dev/null
+          python - <<'PY'
+          import json
+          p = 'firmware/qualification/0b-product-classic-console-stage-d.json'
+          d = json.load(open(p, encoding='utf-8'))
+          assert d['phase'] == 'fresh-install-stage-d-product-classic-console'
+          assert d['status'] == 'host-qualified'
+          assert d['base_checkpoint']['sha'] == '6651480fb7c4872fa2349ef0ad82f9d9920b7253'
+          assert d['cleanup']['accidental_hidden_marker_files_removed_on_stage_d_branch'] is True
+          assert d['cleanup']['removed_marker_count'] == 7
+          assert d['frozen_stage_c']['modified'] is False
+          assert d['frozen_0e']['modified'] is False
+          assert d['host_qualification']['ci_run_id'] == 33873695993
+          assert d['host_qualification']['ci_conclusion'] == 'success'
+          assert d['host_qualification']['same_rx_visible_to_kiss_and_classic_console'] == 'pass'
+          assert d['host_qualification']['full_daemon_graph_host_qualified'] is True
+          assert d['host_qualification']['fake_transport_tx_accept_count'] == 0
+          assert d['host_qualification']['real_rfc1918_listener_bind_exercised'] is False
+          assert d['product_policy']['rfc1918_requires_auth_file'] is True
+          assert d['product_policy']['console_tx_authority'] is False
+          assert d['hardware_activity'] == {
+              'uart': False,
+              'rf': False,
+              'flash': False,
+              'gpio': False,
+              'option_bytes': False,
+          }
+          print('STAGE_D_MANIFEST_PARSE=PASS')
+          PY
