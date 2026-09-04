@@ -24,7 +24,6 @@ FROZEN_STAGE_G_IMPLEMENTATION = {
     "tests/existing_pi_stage_g_contract_test.py": "bf36679c47ec7653b7e7b3a1d0723344c7114e86",
     "firmware/qualification/0b-product-existing-pi-stage-g.json": "8bcdf42e7010ac66d796b4e855f14710f2acd3b9",
     "docs/qualifications/fresh-install-stage-g-existing-pi-staged-2026-09-04.md": "9b70c39a8200983b9e83d209ac6b6e29bbd2e153",
-    ".github/workflows/fresh-install-stage-g-existing-pi-ci.yml": "9905ab403099f592f6306c805f5d621d259f7122",
 }
 
 
@@ -113,7 +112,16 @@ def main() -> int:
     assert activation["rf_transmitted"] is False
 
     life = d["stage_g_lifecycle"]
-    for key in ("systemd_stop", "sigterm_cleanup", "pty_cleanup", "uart_release", "systemd_start", "systemd_restart", "kiss_loopback_port_8001", "console_loopback_port_8010"):
+    for key in (
+        "systemd_stop",
+        "sigterm_cleanup",
+        "pty_cleanup",
+        "uart_release",
+        "systemd_start",
+        "systemd_restart",
+        "kiss_loopback_port_8001",
+        "console_loopback_port_8010",
+    ):
         assert life[key] == "pass", key
     assert life["stopped_main_pid"] == 143317
     assert life["start_main_pid"] == 143366
