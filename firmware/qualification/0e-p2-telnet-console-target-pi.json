@@ -1,0 +1,78 @@
+{
+  "schema": 1,
+  "phase": "0E-P2",
+  "stage": "target-pi-loopback-telnet-command-console",
+  "status": "target-pi-qualified",
+  "qualification_date": "2026-09-03",
+  "timezone": "America/Los_Angeles",
+  "tested_branch": "dev-0e-p2-telnet-console",
+  "tested_sha": "9f1e08a8c9aa5c3ffe7e96612a34cf7384fd6771",
+  "source_tree_clean": true,
+  "host_qualification": {
+    "evidence": "firmware/qualification/0e-p2-telnet-console-host.json",
+    "qualified_implementation_head": "37bcc6808e5287bfd49ba37d56b1a7d5185f8b1c",
+    "dedicated_ci_run": 33829902701,
+    "result": "success"
+  },
+  "tested_head_ci": {
+    "workflow": "0e-p2-telnet-console-ci",
+    "run_id": 33830066688,
+    "result": "success"
+  },
+  "target_contracts": {
+    "telnet_regression_tests_run": 14,
+    "telnet_regression_tests_passed": 14,
+    "architecture_contract": "pass",
+    "host_qualification_contract": "pass"
+  },
+  "listener": {
+    "bind": "127.0.0.1",
+    "port": 8023,
+    "banner": "YWD-1278 0.1.0-alpha0 TELNET TNC CONSOLE",
+    "mode": "0E-P2 loopback-only command mode",
+    "wildcard_bind_tested": "0.0.0.0",
+    "wildcard_bind_rejected": true,
+    "wildcard_bind_error": "0E-P2 listener is restricted to IPv4 loopback addresses"
+  },
+  "session_1": {
+    "version": "YWD-1278 0.1.0-alpha0",
+    "status": "STATUS UNAVAILABLE",
+    "health": "HEALTH UNAVAILABLE",
+    "mheard": "MHEARD UNAVAILABLE",
+    "mcom_default": "OFF",
+    "mcon_default": "OFF",
+    "mrpt_default": "ON",
+    "mcom_set_on": true,
+    "monitor_generation_after_mcom_on": 1,
+    "connect_command_rejected": true,
+    "tx_command_rejected": true,
+    "quit_returned_bye": true
+  },
+  "session_2": {
+    "reconnect_succeeded": true,
+    "mcom_reset_to_default_off": true,
+    "quit_returned_bye": true
+  },
+  "proofs": {
+    "p1_command_parser_reused": true,
+    "session_reconnect_policy_reset": true,
+    "future_tx_commands_rejected": true,
+    "telnet_loopback_only": true,
+    "wildcard_bind_rejected": true,
+    "tx_rf_hardware_test_required": false
+  },
+  "safety": {
+    "non_loopback_listener": false,
+    "authentication": false,
+    "pty": false,
+    "serial_personality": false,
+    "database_write_capability": false,
+    "retention_apply_capability": false,
+    "modem_dependency": false,
+    "kiss_session": false,
+    "tx_capability": false,
+    "uart_activity": false,
+    "rf_activity": false
+  },
+  "qualification_complete": true
+}
