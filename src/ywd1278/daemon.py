@@ -10,7 +10,6 @@ from . import __version__
 from .service.appliance import (
     ProductConfigurationError,
     ProductPacketEngine,
-    ProductPacketEngineError,
     load_product_packet_engine_config,
 )
 
@@ -87,7 +86,7 @@ def main() -> int:
     signal.signal(signal.SIGTERM, request_stop)
     try:
         return run_daemon(config, stop_event=stop_event)
-    except (ProductConfigurationError, ProductPacketEngineError, OSError) as exc:
+    except (ProductConfigurationError, RuntimeError, OSError) as exc:
         print(f"YWD-1278 {__version__}: packet-engine startup/runtime failure: {exc}", file=sys.stderr)
         return 78
     finally:
