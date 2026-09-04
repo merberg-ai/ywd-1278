@@ -148,6 +148,7 @@ step "UART: $device"
 step "Frequency: $frequency MHz"
 step "KISS: 127.0.0.1:$kiss_port"
 step "Console: 127.0.0.1:$console_port"
+step "Pseudo-serial TNC: /run/ywd-1278/tnc"
 warn "RF transmit remains DISABLED after setup."
 
 confirm_exact "SAVE" "Write this configuration?" || die "Setup cancelled"
@@ -190,6 +191,8 @@ port = $kiss_port
 enabled = true
 listen = "127.0.0.1"
 port = $console_port
+pty_enabled = true
+pty_link = "/run/ywd-1278/tnc"
 
 [monitor]
 enabled = true
