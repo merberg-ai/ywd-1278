@@ -1,0 +1,42 @@
+{
+  "schema": 1,
+  "stage": "H",
+  "status": "target-pi-firmware-build-blocked-toolchain-headers-missing",
+  "target": {
+    "model": "Raspberry Pi 5 Model B Rev 1.0",
+    "os": "Debian GNU/Linux 13 (trixie)",
+    "arch": "aarch64"
+  },
+  "installed_candidate": "3ab12069fc6080f41f3c511c8525ba6ccd92175b",
+  "fresh_os_installer_resume_qualified": true,
+  "hat_identity_before_build": "MMDVM_HS_Hat-v1.6.1 20230526 14.7456MHz ADF7021 FW by CA6JAU GitID #7ff74ed",
+  "hat_firmware_class_before_build": "STOCK",
+  "build_attempt": {
+    "script": "firmware/prepare-product-ax25r4.sh",
+    "exit_code": 1,
+    "compiler_frontends_present": true,
+    "missing_c_header": "string.h",
+    "missing_cpp_header": "cstdint",
+    "make_failed": true,
+    "artifact_produced": false
+  },
+  "root_cause": {
+    "class": "installer-package-dependency-gap",
+    "detail": "gcc-arm-none-eabi/binutils were installed with --no-install-recommends, but the explicit ARM newlib C headers and ARM libstdc++ development headers required by the frozen firmware build were not installed"
+  },
+  "safety": {
+    "modem_uart_opened_by_build": false,
+    "hat_gpio_accessed_by_build": false,
+    "flash_written": false,
+    "option_bytes_written": false,
+    "rf_transmitted": false,
+    "packet_service_enabled": false,
+    "tx_enabled": false
+  },
+  "qualification_effect": {
+    "fresh_os_installer_resume_remains_qualified": true,
+    "fresh_os_firmware_build": "not-qualified",
+    "fresh_os_firmware_write": "not-attempted",
+    "stage_h_complete": false
+  }
+}
