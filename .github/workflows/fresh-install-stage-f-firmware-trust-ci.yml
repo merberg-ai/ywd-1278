@@ -1,0 +1,106 @@
+name: fresh-install-stage-f-firmware-trust-ci
+
+on:
+  push:
+    branches: [dev-fresh-install-stage-f-firmware-trust]
+  pull_request:
+    branches: [dev]
+    paths:
+      - 'firmware/product-ax25r4.json'
+      - 'firmware/prepare-product-ax25r4.sh'
+      - 'installer/deploy-product-firmware.sh'
+      - 'src/ywd1278/install/firmware_trust.py'
+      - 'tests/firmware_trust_stage_f_test.py'
+      - 'tests/firmware_trust_stage_f_contract_test.py'
+      - 'tests/firmware_trust_stage_f_qualification_contract_test.py'
+      - 'firmware/qualification/0b-product-firmware-trust-stage-f.json'
+      - 'docs/qualifications/fresh-install-stage-f-firmware-trust-host-qualified-2026-09-04.md'
+      - '.github/workflows/fresh-install-stage-f-firmware-trust-ci.yml'
+
+jobs:
+  product-firmware-trust-stage-f:
+    runs-on: ubuntu-latest
+    env:
+      PYTHONPATH: src:tests
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Compile Stage F trust boundary
+        run: |
+          python -m py_compile src/ywd1278/install/firmware_trust.py
+          python -m py_compile tests/firmware_trust_stage_f_test.py
+          python -m py_compile tests/firmware_trust_stage_f_contract_test.py
+          if test -f tests/firmware_trust_stage_f_qualification_contract_test.py; then
+            python -m py_compile tests/firmware_trust_stage_f_qualification_contract_test.py
+          fi
+
+      - name: Parse Stage F shell entrypoints
+        run: |
+          bash -n firmware/prepare-product-ax25r4.sh
+          bash -n installer/deploy-product-firmware.sh
+
+      - name: Stage F firmware trust regression
+        run: python tests/firmware_trust_stage_f_test.py
+
+      - name: Stage F architecture and safety contract
+        run: python tests/firmware_trust_stage_f_contract_test.py
+
+      - name: Stage F packaged trust module smoke
+        env:
+          PYTHONPATH: ''
+        run: |
+          python -m venv /tmp/ywd-stage-f-venv
+          /tmp/ywd-stage-f-venv/bin/python -m pip install --disable-pip-version-check --no-deps .
+          /tmp/ywd-stage-f-venv/bin/python - <<'PY'
+          from ywd1278.install.firmware_trust import load_product_firmware_profile
+          p=load_product_firmware_profile('firmware/product-ax25r4.json')
+          assert p.artifact_sha256 == 'b06fcbf0baa36e865198091cee27c66e1624ef08117ee685253a7a5613c7c616'
+          assert p.artifact_size_bytes == 59892
+          assert p.expected_identity.startswith('MMDVM_HS_Hat-YWD-1278-AX25R4-v0.1.0-alpha1 ')
+          print('STAGE_F_PACKAGED_TRUST_MODULE=PASS')
+          PY
+
+      - name: Stage F qualification evidence contract
+        run: |
+          if test -f tests/firmware_trust_stage_f_qualification_contract_test.py; then
+            python tests/firmware_trust_stage_f_qualification_contract_test.py
+          else
+            echo STAGE_F_QUALIFICATION_EVIDENCE=PENDING
+          fi
+
+      - name: Preserve Stage E installer runtime regression
+        run: python tests/installer_runtime_stage_e_test.py
+
+      - name: Preserve Stage E installer architecture
+        run: python tests/installer_runtime_stage_e_contract_test.py
+
+      - name: Replay Stage D simultaneous full daemon graph
+        run: python tests/product_full_daemon_stage_d_test.py
+
+      - name: Replay Stage D architecture contract
+        run: python tests/product_classic_console_stage_d_contract_test.py
+
+      - name: Preserve Stage C product observability behavior
+        run: python tests/product_observability_stage_c_test.py
+
+      - name: Preserve Stage A exact packet-engine freeze
+        run: python tests/product_packet_engine_stage_a_contract_test.py
+
+      - name: Preserve sustained TNC and physical evidence contracts
+        run: |
+          python tests/sustained_kiss_tnc_integration_test.py
+          python tests/live_p7_kiss_one_shot_evidence_contract_test.py
+          python tests/live_p8_r3_physical_evidence_contract_test.py
+
+      - name: Preserve zero-I/O daemon framework self-test
+        run: |
+          tmp="$(mktemp)"
+          python -m ywd1278.daemon --config "$tmp" --framework-self-test | tee /tmp/ywd-stage-f-self-test.txt
+          grep -q '^YWD1278_FRAMEWORK_SELF_TEST=PASS$' /tmp/ywd-stage-f-self-test.txt
+          grep -q '^MODEM_UART_OPENED=NO$' /tmp/ywd-stage-f-self-test.txt
+          grep -q '^RF_TRANSMITTED=NO$' /tmp/ywd-stage-f-self-test.txt
