@@ -4,7 +4,7 @@ Date: 2026-09-03 (America/Los_Angeles)
 
 ## Result
 
-0E-P3 authenticated private-LAN console behavior is target-Pi qualified.
+0E-P3 authenticated private-LAN console behavior is target-Pi qualified and the cleanup follow-up is complete.
 
 The qualified implementation remains the host-qualified 0E-P3 implementation at:
 
@@ -55,13 +55,15 @@ The target Pi listener was bound specifically to `192.168.1.11:8023`; there was 
 
 Explicit attempts to bind to both `0.0.0.0` and `8.8.8.8` failed with the 0E-P3 private-address restriction.
 
-## Cleanup-harness observation
+## Cleanup-harness observation and completed follow-up
 
 The historical/manual final-Pi block reported stale saved PID `100200` while `ss` showed the actual live listener at PID `100607`.
 
-This did not invalidate the qualification because the subsequent separate-host remote test successfully exercised the live `192.168.1.11:8023` listener and proved the authentication/session boundary end-to-end. However, the stale PID means the historical cleanup block could not prove that the live listener itself was terminated. The qualification evidence therefore records a cleanup follow-up requirement rather than hiding the anomaly.
+This did not invalidate the qualification because the subsequent separate-host remote test successfully exercised the live `192.168.1.11:8023` listener and proved the authentication/session boundary end-to-end. The mismatch was retained in the evidence rather than hidden.
 
-This is a qualification-harness cleanup issue only; it does not alter the frozen 0E-P3 implementation or the observed authentication/bind behavior.
+A process-aware cleanup follow-up then ran `tools/cleanup_0e_p3_lan.py --host 192.168.1.11`. It matched the actual command line for PID `100607`, terminated that listener, removed `/tmp/ywd1278-0e-p3-lan-state.json`, verified no matching P3 listener process remained, verified TCP port 8023 was no longer listening, and removed temporary authentication/state material. The helper reported `YWD1278_0E_P3_CLEANUP=PASS`.
+
+The stale PID was therefore a qualification-harness cleanup issue only; it did not alter the frozen 0E-P3 implementation or observed authentication/bind behavior, and its required follow-up is complete.
 
 ## Safety boundary retained
 
@@ -87,3 +89,7 @@ Machine-readable target evidence:
 Immutable evidence contract:
 
 `tests/auth_lan_console_target_pi_evidence_contract_test.py`
+
+Cleanup helper:
+
+`tools/cleanup_0e_p3_lan.py`
