@@ -2,7 +2,7 @@
   "schema": 1,
   "phase": "0B-product-packet-engine-stage-a",
   "stage": "first-product-packet-engine-component-freeze",
-  "status": "staged",
+  "status": "qualified",
   "date": "2026-09-03",
   "timezone": "America/Los_Angeles",
   "base_checkpoint": {
@@ -108,6 +108,20 @@
       "blob": "13df20c1430b1a5054b63f40227ad6aaf4ff7051"
     }
   },
+  "stage_a_qualification": {
+    "qualified_head_sha": "f1d7584be28fc96eee956be20fcc3b7a32e02b44",
+    "dedicated_ci_run_id": 33838613305,
+    "dedicated_ci_conclusion": "success",
+    "contract_path": "tests/product_packet_engine_stage_a_contract_test.py",
+    "contract_blob": "e107c2dd4b00f2954dd1d568ae280041e8cc182e",
+    "workflow_path": ".github/workflows/fresh-install-stage-a-packet-engine-ci.yml",
+    "workflow_blob": "a60c10f9af0c2dd95385d49d557df1ec0e0a85ab",
+    "p8_concurrency_replayed": true,
+    "p8_full_host_graph_replayed": true,
+    "p7_ingress_replayed": true,
+    "p6_p4e_p5_preserved": true,
+    "physical_evidence_contracts_replayed": true
+  },
   "safety": {
     "stage_a_component_changes": false,
     "stage_a_uart_access": false,
@@ -120,7 +134,7 @@
     "product_tx_authority_remains_construction_time_fail_closed": true
   },
   "integration_status": {
-    "packet_engine_component_boundary_frozen": false,
+    "packet_engine_component_boundary_frozen": true,
     "production_daemon_assembled": false,
     "installer_flash_path_integrated": false,
     "installed_appliance_rehearsed": false,
