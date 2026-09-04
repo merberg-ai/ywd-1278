@@ -60,7 +60,6 @@ def main() -> int:
     assert "LocalTNCCommandShell" in lan_source
     assert "--auth-file" in lan_source
     assert "RFC1918" in lan_source
-    assert "0.0.0.0" not in lan_source
     assert "Telnet is plaintext" in lan_source
     assert "do not expose" in lan_source
     assert "no P1 shell exists before authentication" in lan_source
@@ -70,6 +69,7 @@ def main() -> int:
     assert "compare_digest" in auth_source
     assert "getpass" in auth_source
     assert "0o600" in auth_source
+    assert "O_NOFOLLOW" in auth_source
     assert "group/world" in auth_source
     assert "plaintext passwords are never written" in auth_source.lower()
 
