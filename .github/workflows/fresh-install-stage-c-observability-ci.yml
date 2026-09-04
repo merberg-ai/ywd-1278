@@ -1,10 +1,11 @@
 name: fresh-install-stage-c-observability-ci
 
+# Historical Stage-C qualification gate. Stage D intentionally supersedes the
+# Stage-B daemon blob pinned by the Stage-C architecture contract, so this exact
+# historical workflow must not auto-run on later integration heads. Current
+# stages replay the Stage-C behavioral/frozen boundaries in their own gates.
 on:
-  push:
-    branches: [dev-fresh-install-flash-run]
-  pull_request:
-    branches: [dev]
+  workflow_dispatch:
 
 jobs:
   product-observability-stage-c:
