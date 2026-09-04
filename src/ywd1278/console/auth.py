@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import argparse
 import base64
+import binascii
 from dataclasses import dataclass
 import getpass
 import hashlib
@@ -48,7 +49,7 @@ def _urlsafe_b64decode(text: str) -> bytes:
     padding = "=" * (-len(text) % 4)
     try:
         return base64.b64decode(text + padding, altchars=b"-_", validate=True)
-    except (ValueError, base64.binascii.Error) as exc:
+    except (ValueError, binascii.Error) as exc:
         raise ValueError("invalid base64 field") from exc
 
 
@@ -195,7 +196,12 @@ def write_credential_file(
 ) -> None:
     destination = Path(path)
     payload = encode_credential(record).encode("ascii")
-    flags = os.O_WRONLY | os.O_CREAT | getattr(os, "O_CLOEXEC", 0)
+    flags = (
+        os.O_WRONLY
+        | os.O_CREAT
+        | getattr(os, "O_CLOEXEC", 0)
+        | getattr(os, "O_NOFOLLOW", 0)
+    )
     flags |= os.O_TRUNC if overwrite else os.O_EXCL
     fd = os.open(destination, flags, 0o600)
     try:
