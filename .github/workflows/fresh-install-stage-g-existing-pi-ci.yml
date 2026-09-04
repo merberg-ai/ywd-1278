@@ -9,10 +9,18 @@ on:
       - 'installer/enable-product-service.sh'
       - 'tools/qualify_stage_g_live_rx.py'
       - 'tools/qualify_stage_g_systemd_rx.sh'
+      - 'tools/qualify_stage_g_reboot_live_rx.py'
+      - 'tools/stage_g_reboot_prepare.sh'
+      - 'tools/qualify_stage_g_reboot_rx.sh'
       - 'tests/existing_pi_stage_g_test.py'
       - 'tests/existing_pi_stage_g_contract_test.py'
+      - 'tests/existing_pi_stage_g_target_evidence_contract_test.py'
+      - 'tests/existing_pi_stage_g_reboot_live_rx_test.py'
+      - 'tests/existing_pi_stage_g_reboot_contract_test.py'
       - 'firmware/qualification/0b-product-existing-pi-stage-g.json'
+      - 'firmware/qualification/0b-product-existing-pi-stage-g-target-pi.json'
       - 'docs/qualifications/fresh-install-stage-g-existing-pi-staged-2026-09-04.md'
+      - 'docs/qualifications/fresh-install-stage-g-existing-pi-rx-qualified-2026-09-04.md'
       - '.github/workflows/fresh-install-stage-g-existing-pi-ci.yml'
 
 jobs:
@@ -31,13 +39,19 @@ jobs:
       - name: Compile Stage G helpers
         run: |
           python -m py_compile tools/qualify_stage_g_live_rx.py
+          python -m py_compile tools/qualify_stage_g_reboot_live_rx.py
           python -m py_compile tests/existing_pi_stage_g_test.py
           python -m py_compile tests/existing_pi_stage_g_contract_test.py
+          python -m py_compile tests/existing_pi_stage_g_target_evidence_contract_test.py
+          python -m py_compile tests/existing_pi_stage_g_reboot_live_rx_test.py
+          python -m py_compile tests/existing_pi_stage_g_reboot_contract_test.py
 
       - name: Parse Stage G shell gates
         run: |
           bash -n installer/enable-product-service.sh
           bash -n tools/qualify_stage_g_systemd_rx.sh
+          bash -n tools/stage_g_reboot_prepare.sh
+          bash -n tools/qualify_stage_g_reboot_rx.sh
 
       - name: Stage G host regression
         run: python tests/existing_pi_stage_g_test.py
@@ -45,22 +59,46 @@ jobs:
       - name: Stage G architecture and safety contract
         run: python tests/existing_pi_stage_g_contract_test.py
 
-      - name: Parse Stage G staging manifest when present
+      - name: Stage G target-Pi RX evidence contract
+        run: python tests/existing_pi_stage_g_target_evidence_contract_test.py
+
+      - name: Stage G reboot MHEARD freshness regression
+        env:
+          PYTHONPATH: src:tests:tools
+        run: python tests/existing_pi_stage_g_reboot_live_rx_test.py
+
+      - name: Stage G reboot architecture and safety contract
+        run: python tests/existing_pi_stage_g_reboot_contract_test.py
+
+      - name: Parse Stage G staging manifest
         run: |
-          if test -f firmware/qualification/0b-product-existing-pi-stage-g.json; then
-            python - <<'PY'
+          python - <<'PY'
           import json
           p='firmware/qualification/0b-product-existing-pi-stage-g.json'
           d=json.load(open(p,encoding='utf-8'))
           assert d['schema'] == 1
           assert d['stage'] == 'G'
+          assert d['status'] == 'host-staged-physical-rehearsal-pending'
           assert d['physical_existing_pi_rehearsal_complete'] is False
           assert d['physical_tx_permitted'] is False
-          print('STAGE_G_STAGING_MANIFEST=PASS')
+          print('STAGE_G_HISTORICAL_STAGING_MANIFEST=PASS')
           PY
-          else
-            echo STAGE_G_STAGING_MANIFEST=PENDING
-          fi
+
+      - name: Parse Stage G target-Pi RX evidence
+        run: |
+          python - <<'PY'
+          import json
+          p='firmware/qualification/0b-product-existing-pi-stage-g-target-pi.json'
+          d=json.load(open(p,encoding='utf-8'))
+          assert d['schema'] == 1
+          assert d['stage'] == 'G'
+          assert d['status'] == 'target-pi-rx-qualified-reboot-pending'
+          assert d['qualified_claims']['existing_pi_installed_appliance_rx_rehearsal'] is True
+          assert d['qualified_claims']['physical_tx'] is False
+          assert d['qualified_claims']['reboot_survival'] is False
+          assert d['reboot_qualification_complete'] is False
+          print('STAGE_G_TARGET_PI_RX_MANIFEST=PASS')
+          PY
 
       - name: Preserve Stage F firmware trust regression
         run: python tests/firmware_trust_stage_f_test.py
