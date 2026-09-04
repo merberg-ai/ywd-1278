@@ -1,0 +1,122 @@
+{
+  "schema": 1,
+  "phase": "fresh-install-stage-f-firmware-trust",
+  "stage": "guarded-product-firmware-backup-flash-readback-identity-eligibility",
+  "status": "host-qualified-physical-rehearsal-pending",
+  "date": "2026-09-04",
+  "timezone": "America/Los_Angeles",
+  "base_checkpoint": {
+    "branch": "checkpoint/product-installer-runtime-stage-e-host-qualified",
+    "sha": "73891a37c2d7de19aebb1f55bdd0324b121bbf02"
+  },
+  "branch": "dev-fresh-install-stage-f-firmware-trust",
+  "scope": "Host-qualify the product firmware trust/deployment boundary that prepares the exact deterministic AX25R4 artifact, requires a protected verified stock rollback backup, allows an explicitly authorized main-flash write only when necessary, requires independent programmed readback and exact AX25R4 runtime identity, and writes a service-eligibility record without enabling the service or RF TX.",
+  "product_firmware": {
+    "target_id": "mmdvm-hs-hat-stm32f103-simplex-14.7456-adf7021",
+    "series": "AX25R4",
+    "artifact_size_bytes": 59892,
+    "artifact_sha256": "b06fcbf0baa36e865198091cee27c66e1624ef08117ee685253a7a5613c7c616",
+    "programmed_readback_bytes": 59892,
+    "programmed_readback_sha256": "b06fcbf0baa36e865198091cee27c66e1624ef08117ee685253a7a5613c7c616",
+    "expected_identity": "MMDVM_HS_Hat-YWD-1278-AX25R4-v0.1.0-alpha1 14.7456MHz ADF7021 FW based on CA6JAU GitID #7ff74ed",
+    "physical_anchor_phase": "0C-P2",
+    "physical_anchor_frequency_hz": 145050000
+  },
+  "stock_rollback": {
+    "required": true,
+    "flash_size_bytes": 131072,
+    "sha256": "4981b35b2d50ada0b09322d9de19dd58a0cbd49eb005693499d1acae92f9d684",
+    "read_passes_required": 2,
+    "byte_identical_required": true,
+    "option_bytes_read_or_written": false
+  },
+  "frozen_stage_e": {
+    "readiness_blob": "02f6115fb8ace1b1628b5c28f7560fe94ef663ac",
+    "install_blob": "58928db5368df0c0952cd8119617d754e8ed5d25",
+    "setup_blob": "305d71d06fd90f68cbb95f65ee94cb9fb12fe578",
+    "resume_blob": "7e2f0d7441b849d0165161208d2c52c9dbd3ae70",
+    "systemd_blob": "ab7dc6aa6af8237d20e41a1357083f0321fd7062",
+    "manifest_blob": "1d23b9dd0210ff65cc25bebc14040310da1d28e2",
+    "modified": false
+  },
+  "frozen_firmware_foundation": {
+    "legacy_flash_blob": "c4b618241442ba13439179870955e88eb288f19f",
+    "targets_blob": "846a293917c4ab35293e33dce2bf7b599a7cc122",
+    "hat_control_blob": "b83ffea0f93c30832435795e6da03d1e8292fe89",
+    "probe_hat_blob": "4210436ab950da4830ddea05020f642c40734c64",
+    "ax25r4_build_blob": "5abf2db22e462be844207eb776fed9bae242dcb3",
+    "ax25r4_build_manifest_blob": "c74f13fe0ae3ee786833f0f7a737111829027301",
+    "hardware_detect_blob": "9406e6c6f929244afadd2eca14ebeacbf364f2f4",
+    "modified": false
+  },
+  "implementation": {
+    "profile_path": "firmware/product-ax25r4.json",
+    "profile_blob": "b7263fbe7bde1ad547207b7cc0e4f22220b38f72",
+    "trust_path": "src/ywd1278/install/firmware_trust.py",
+    "trust_blob": "5f119de52a9363adcb10eab8e007a2cee8cab158",
+    "prepare_path": "firmware/prepare-product-ax25r4.sh",
+    "prepare_blob": "35abcbe4fed888dcd4f8e422e2954fc13e8f1ded",
+    "deploy_path": "installer/deploy-product-firmware.sh",
+    "deploy_blob": "94adb8ddd4dfebd90a1ea105203afc6a5049e828",
+    "regression_path": "tests/firmware_trust_stage_f_test.py",
+    "regression_blob": "e6a97a46f7c6aae9390ebfb638634f92c1a8d1bb",
+    "contract_path": "tests/firmware_trust_stage_f_contract_test.py",
+    "contract_blob": "6325ed29a828bd857d894a1d29e2cb87d25d04f2",
+    "workflow_path": ".github/workflows/fresh-install-stage-f-firmware-trust-ci.yml",
+    "workflow_blob": "b85f0ae57d33b022d81096a10909e627e81824bc"
+  },
+  "deployment_policy": {
+    "runtime_readiness_must_be_ready": true,
+    "tx_must_be_disabled": true,
+    "automatic_flash_must_be_disabled": true,
+    "exact_target_required": true,
+    "unknown_or_ambiguous_identity_fails_closed": true,
+    "artifact_exact_hash_required": true,
+    "explicit_authorization_token": "FLASH-QUALIFIED-AX25R4",
+    "final_write_confirmation": "WRITE-FIRMWARE-NOW",
+    "verified_stock_backup_required_before_write": true,
+    "bootloader_version_required": "0x22",
+    "device_id_required": "0x0410",
+    "programmed_readback_required": true,
+    "exact_runtime_identity_required": true,
+    "already_exact_ax25r4_is_readback_verified_without_rewrite": true,
+    "option_bytes_permitted": false,
+    "rf_tx_permitted": false,
+    "service_enable_permitted": false,
+    "service_eligibility_record": "/var/lib/ywd-1278/firmware-ready.json"
+  },
+  "host_qualification": {
+    "qualified_implementation_head": "3a976d6209752411b3a2823db6ffcc6ce341fd6a",
+    "ci_run_id": 33878913819,
+    "ci_conclusion": "success",
+    "firmware_trust_regression_tests": 6,
+    "firmware_trust_regression": "pass",
+    "architecture_contract": "pass",
+    "packaged_trust_module_smoke": "pass",
+    "stage_e_regression_preserved": "pass",
+    "stage_e_contract_preserved": "pass",
+    "stage_d_full_graph_preserved": "pass",
+    "stage_c_behavior_preserved": "pass",
+    "stage_a_freeze_preserved": "pass",
+    "sustained_tnc_physical_evidence_preserved": "pass",
+    "zero_io_daemon_self_test": "pass"
+  },
+  "hardware_activity": {
+    "uart": false,
+    "rf": false,
+    "flash": false,
+    "gpio": false,
+    "option_bytes": false,
+    "systemd_service_started": false
+  },
+  "physical_stage_f": {
+    "existing_pi_rehearsal_complete": false,
+    "stock_backup_verified_by_stage_f_tool": false,
+    "programmed_readback_verified_by_stage_f_tool": false,
+    "exact_runtime_identity_verified_by_stage_f_tool": false,
+    "service_eligibility_record_written_on_pi": false,
+    "flash_write_expected_on_current_pi": false,
+    "reason": "The current target is expected to already carry the physically qualified AX25R4 image; the next rehearsal should prefer readback/identity verification without rewriting flash when that exact identity is confirmed."
+  },
+  "next_stage": "Existing-Pi installed-appliance rehearsal with TX disabled: install this candidate, prepare exact AX25R4 artifact, verify existing programmed firmware/stock rollback evidence, establish service eligibility, then qualify systemd lifecycle and live RX/console before any TX subtest."
+}
