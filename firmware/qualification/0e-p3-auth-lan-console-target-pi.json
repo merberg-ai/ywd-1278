@@ -1,0 +1,97 @@
+{
+  "schema": 1,
+  "phase": "0E-P3",
+  "stage": "target-pi-private-lan-authenticated-telnet-console",
+  "status": "target-pi-qualified",
+  "qualification_date": "2026-09-03",
+  "timezone": "America/Los_Angeles",
+  "tested_branch": "dev-0e-p3-auth-lan-console",
+  "tested_staging_head": "1da631ca2c9dca8359c8d0655fb82259708355c8",
+  "qualified_implementation_head": "dd58fbd3f1eade8227c0514751046201d2fb1e07",
+  "host_qualification": {
+    "evidence": "firmware/qualification/0e-p3-auth-lan-console-host.json",
+    "dedicated_ci_run": 33832163068,
+    "result": "success"
+  },
+  "listener": {
+    "target_pi_address": "192.168.1.11",
+    "port": 8023,
+    "bind_scope": "rfc1918-private-ipv4",
+    "banner": "YWD-1278 0E-P3 AUTHENTICATED LAN TNC CONSOLE",
+    "plaintext_transport_warning_present": true,
+    "wildcard_active_listener_absent": true,
+    "wildcard_bind_rejected": true,
+    "public_bind_rejected": true
+  },
+  "remote_host": {
+    "source_address": "192.168.1.15",
+    "source_scope": "rfc1918-private-ipv4",
+    "separate_host_from_target": true
+  },
+  "authentication": {
+    "username": "ywd",
+    "auth_file_mode": "0600",
+    "password_storage": "pbkdf2-sha256-hash-only",
+    "bad_auth_attempt_observed": "AUTH FAIL 1/3",
+    "bad_auth_reached_command_mode": false,
+    "good_auth_observed": "AUTH OK",
+    "reconnect_required_authentication": true
+  },
+  "session_1": {
+    "version": "YWD-1278 0.1.0-alpha0",
+    "mcom_default": "OFF",
+    "mcon_default": "OFF",
+    "mrpt_default": "ON",
+    "mcom_set_on": true,
+    "monitor_generation_after_mcom_on": 1,
+    "connect_command_rejected": true,
+    "tx_command_rejected": true,
+    "quit_returned_bye": true
+  },
+  "session_2": {
+    "reconnect_authentication_succeeded": true,
+    "mcom_reset_to_default_off": true,
+    "quit_returned_bye": true
+  },
+  "final_pi_safety": {
+    "private_rfc1918_bind": "pass",
+    "wildcard_bind_rejected": "pass",
+    "public_bind_rejected": "pass",
+    "auth_file_protection": "pass",
+    "temporary_qualification_credential_removed": true,
+    "tx_rf_hardware_test_required": false
+  },
+  "cleanup_observation": {
+    "stale_saved_pid_observed": 100200,
+    "stale_saved_pid_running": false,
+    "actual_listener_pid_observed": 100607,
+    "listener_remained_available_for_remote_test_after_stale_pid_cleanup_attempt": true,
+    "qualification_behavior_affected": false,
+    "residual_listener_cleanup_followup_required": true
+  },
+  "implementation_blobs": {
+    "src/ywd1278/console/auth.py": "0bdacaca9807012954c3362a8c0d92c4c1e21d40",
+    "src/ywd1278/console/lan_telnet.py": "a53bad81aa3ffa167375517bb48a19e8ac9143f3",
+    "tests/auth_lan_console_test.py": "b25c7753cec4ec8c0f8136a230e59a35b6ae8a41",
+    "tests/auth_lan_console_contract_test.py": "49fd1c2c5774aaa4744335a98532e2f6aced3eff"
+  },
+  "frozen_lower_layers": {
+    "p2_telnet_blob": "d15669eb61f2afdf4d0d177191124ef8f13713e0",
+    "p1_parser_blob": "9fed5416ca9123811413f4ef284abff0006a48dd",
+    "package_manifest_blob": "9331c09b7f1e3c7111e437f3007e1e2c14716eb3",
+    "modified": false
+  },
+  "safety": {
+    "pty": false,
+    "serial_personality": false,
+    "database_write_capability": false,
+    "retention_apply_capability": false,
+    "modem_dependency": false,
+    "kiss_session": false,
+    "tx_capability": false,
+    "uart_activity": false,
+    "rf_activity": false
+  },
+  "target_pi_private_lan_qualification_complete": true,
+  "phase_complete_pending_cleanup_confirmation": true
+}
