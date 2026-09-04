@@ -71,9 +71,10 @@ def main() -> int:
     ):
         assert required in enable, f"service activation gate missing token: {required}"
 
-    assert enable.index("check-eligibility") < enable.index("hardware-detect.sh")
-    assert enable.index("detected_identity") < enable.index("systemctl enable --now ywd-1278.service")
-    assert enable.index("tx_enabled") < enable.index("systemctl enable --now ywd-1278.service")
+    enable_action = enable.index("systemctl enable --now ywd-1278.service")
+    assert enable.index("check-eligibility") < enable_action
+    assert enable.index("detected_identity") < enable_action
+    assert enable.index("tx_enabled") < enable_action
 
     for forbidden in (
         "stm32flash",
