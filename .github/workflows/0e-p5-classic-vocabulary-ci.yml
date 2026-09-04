@@ -28,6 +28,7 @@ jobs:
           python -m py_compile src/ywd1278/console/classic.py
           python -m py_compile tests/classic_tnc_vocabulary_test.py
           python -m py_compile tests/classic_tnc_vocabulary_contract_test.py
+          python -m py_compile tests/classic_tnc_vocabulary_qualification_contract_test.py
           python -m py_compile tools/qualify_0e_p5_classic.py
       - name: Classic vocabulary regression
         run: PYTHONPATH=src python tests/classic_tnc_vocabulary_test.py
@@ -37,6 +38,8 @@ jobs:
         run: |
           PYTHONPATH=src python -m ywd1278.console.classic --help >/dev/null
           PYTHONPATH=src python tools/qualify_0e_p5_classic.py
+      - name: Frozen 0E-P5 host qualification evidence
+        run: PYTHONPATH=src python tests/classic_tnc_vocabulary_qualification_contract_test.py
       - name: Preserve frozen 0E-P4 qualification
         run: |
           PYTHONPATH=src python tests/pty_serial_tnc_console_test.py
@@ -81,3 +84,5 @@ jobs:
           PYTHONPATH=src python tests/live_p8_r3_physical_evidence_contract_test.py
           PYTHONPATH=src python tests/sustained_live_fifo_drain_regression_test.py
           PYTHONPATH=src python tests/sustained_kiss_tnc_integration_test.py
+      - name: Parse 0E-P5 host qualification evidence
+        run: python -m json.tool firmware/qualification/0e-p5-classic-vocabulary-host.json >/dev/null
