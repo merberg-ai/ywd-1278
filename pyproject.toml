@@ -15,6 +15,7 @@ dependencies = []
 [project.scripts]
 ywd1278 = "ywd1278.cli:main"
 ywd1278d = "ywd1278.daemon:main"
+ywd1278-console = "ywd1278.console.local:main"
 
 [tool.setuptools]
 package-dir = {"" = "src"}
