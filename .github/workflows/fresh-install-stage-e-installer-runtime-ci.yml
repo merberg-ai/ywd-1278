@@ -1,0 +1,98 @@
+name: fresh-install-stage-e-installer-runtime-ci
+
+on:
+  push:
+    branches: [dev-fresh-install-stage-e-installer-runtime]
+  pull_request:
+    branches: [dev]
+    paths:
+      - 'src/ywd1278/install/**'
+      - 'installer/install.sh'
+      - 'installer/setup.sh'
+      - 'installer/resume.sh'
+      - 'tests/installer_runtime_stage_e_test.py'
+      - 'tests/installer_runtime_stage_e_contract_test.py'
+      - 'firmware/qualification/0b-product-installer-runtime-stage-e.json'
+      - 'docs/qualifications/fresh-install-stage-e-installer-runtime-host-qualified-2026-09-04.md'
+      - '.github/workflows/fresh-install-stage-e-installer-runtime-ci.yml'
+
+jobs:
+  installer-runtime-stage-e:
+    runs-on: ubuntu-latest
+    env:
+      PYTHONPATH: src:tests
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Compile Stage E readiness boundary
+        run: |
+          python -m py_compile src/ywd1278/install/__init__.py
+          python -m py_compile src/ywd1278/install/readiness.py
+          python -m py_compile tests/installer_runtime_stage_e_test.py
+          python -m py_compile tests/installer_runtime_stage_e_contract_test.py
+
+      - name: Parse installer shell entrypoints
+        run: |
+          bash -n installer/install.sh
+          bash -n installer/setup.sh
+          bash -n installer/resume.sh
+
+      - name: Stage E zero-I/O runtime readiness regression
+        run: python tests/installer_runtime_stage_e_test.py
+
+      - name: Stage E installer architecture and safety contract
+        run: python tests/installer_runtime_stage_e_contract_test.py
+
+      - name: Replay Stage D classic console integration
+        run: python tests/product_classic_console_stage_d_test.py
+
+      - name: Replay Stage D simultaneous full daemon graph
+        run: python tests/product_full_daemon_stage_d_test.py
+
+      - name: Replay Stage D architecture contract
+        run: python tests/product_classic_console_stage_d_contract_test.py
+
+      - name: Preserve Stage C product observability behavior
+        run: python tests/product_observability_stage_c_test.py
+
+      - name: Preserve Stage A exact packet-engine freeze
+        run: python tests/product_packet_engine_stage_a_contract_test.py
+
+      - name: Replay frozen 0E-P5 classic vocabulary and evidence
+        run: |
+          python tests/classic_tnc_vocabulary_test.py
+          python tests/classic_tnc_vocabulary_contract_test.py
+          python tests/classic_tnc_vocabulary_qualification_contract_test.py
+          python tests/classic_tnc_vocabulary_target_pi_evidence_contract_test.py
+
+      - name: Preserve frozen P3/P4 transport evidence
+        run: |
+          python tests/auth_lan_console_contract_test.py
+          python tests/pty_serial_tnc_console_contract_test.py
+          python tests/pty_serial_tnc_console_target_pi_evidence_contract_test.py
+
+      - name: Preserve frozen 0D logging MHEARD diagnostics boundaries
+        run: |
+          python tests/sqlite_frame_log_qualification_contract_test.py
+          python tests/mheard_qualification_contract_test.py
+          python tests/diagnostics_status_qualification_contract_test.py
+          python tests/retention_qualification_contract_test.py
+
+      - name: Preserve sustained TNC and physical evidence contracts
+        run: |
+          python tests/sustained_kiss_tnc_integration_test.py
+          python tests/live_p7_kiss_one_shot_evidence_contract_test.py
+          python tests/live_p8_r3_physical_evidence_contract_test.py
+
+      - name: Preserve zero-I/O daemon framework self-test
+        run: |
+          tmp="$(mktemp)"
+          python -m ywd1278.daemon --config "$tmp" --framework-self-test | tee /tmp/ywd-stage-e-self-test.txt
+          grep -q '^YWD1278_FRAMEWORK_SELF_TEST=PASS$' /tmp/ywd-stage-e-self-test.txt
+          grep -q '^MODEM_UART_OPENED=NO$' /tmp/ywd-stage-e-self-test.txt
+          grep -q '^RF_TRANSMITTED=NO$' /tmp/ywd-stage-e-self-test.txt
