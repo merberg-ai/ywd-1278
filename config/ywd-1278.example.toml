@@ -35,8 +35,16 @@ port = 8001
 
 [console]
 enabled = true
+# Loopback is the safe default and uses the frozen 0E-P2 Telnet boundary.
+# An RFC1918 address requires an absolute auth_file path and automatically
+# selects the frozen authenticated 0E-P3 private-LAN boundary. Never expose
+# plaintext Telnet through WAN forwarding or on a public/untrusted interface.
 listen = "127.0.0.1"
 port = 8010
+# auth_file = "/etc/ywd-1278/console.auth"
+# Local pseudo-serial personality using the frozen 0E-P4 kernel PTY boundary.
+pty_enabled = true
+pty_link = "/run/ywd-1278/tnc"
 
 [monitor]
 enabled = true
