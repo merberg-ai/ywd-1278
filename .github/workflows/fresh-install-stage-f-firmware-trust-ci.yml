@@ -35,9 +35,7 @@ jobs:
           python -m py_compile src/ywd1278/install/firmware_trust.py
           python -m py_compile tests/firmware_trust_stage_f_test.py
           python -m py_compile tests/firmware_trust_stage_f_contract_test.py
-          if test -f tests/firmware_trust_stage_f_qualification_contract_test.py; then
-            python -m py_compile tests/firmware_trust_stage_f_qualification_contract_test.py
-          fi
+          python -m py_compile tests/firmware_trust_stage_f_qualification_contract_test.py
 
       - name: Parse Stage F shell entrypoints
         run: |
@@ -66,12 +64,21 @@ jobs:
           PY
 
       - name: Stage F qualification evidence contract
+        run: python tests/firmware_trust_stage_f_qualification_contract_test.py
+
+      - name: Parse Stage F qualification manifest
         run: |
-          if test -f tests/firmware_trust_stage_f_qualification_contract_test.py; then
-            python tests/firmware_trust_stage_f_qualification_contract_test.py
-          else
-            echo STAGE_F_QUALIFICATION_EVIDENCE=PENDING
-          fi
+          python - <<'PY'
+          import json
+          p='firmware/qualification/0b-product-firmware-trust-stage-f.json'
+          d=json.load(open(p,encoding='utf-8'))
+          assert d['phase'] == 'fresh-install-stage-f-firmware-trust'
+          assert d['status'] == 'host-qualified-physical-rehearsal-pending'
+          assert d['product_firmware']['artifact_sha256'] == 'b06fcbf0baa36e865198091cee27c66e1624ef08117ee685253a7a5613c7c616'
+          assert d['deployment_policy']['service_enable_permitted'] is False
+          assert d['physical_stage_f']['existing_pi_rehearsal_complete'] is False
+          print('STAGE_F_QUALIFICATION_MANIFEST=PASS')
+          PY
 
       - name: Preserve Stage E installer runtime regression
         run: python tests/installer_runtime_stage_e_test.py
