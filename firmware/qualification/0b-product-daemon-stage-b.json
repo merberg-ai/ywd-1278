@@ -2,7 +2,7 @@
   "schema": 1,
   "phase": "fresh-install-stage-b-product-daemon",
   "stage": "assemble-production-ywd1278d-packet-engine",
-  "status": "staged",
+  "status": "host-qualified",
   "date": "2026-09-03",
   "timezone": "America/Los_Angeles",
   "base_checkpoint": {
@@ -21,7 +21,7 @@
     "regression_path": "tests/product_daemon_stage_b_test.py",
     "regression_blob": "e2fbb352fa98c6c0c3545dca0ecfd11348069ecc",
     "contract_path": "tests/product_daemon_stage_b_contract_test.py",
-    "contract_blob": "97c8bd079062ef30d90a3b7b00c10fa33a1f62b8"
+    "contract_blob": "5c87804fe18e2b954392228003b66c25ba0179e8"
   },
   "composition": {
     "single_modem_owner": true,
@@ -59,8 +59,17 @@
     "tx_enabled_full_fake_graph_required": true,
     "tx_enabled_rx_restart_required": true,
     "daemon_lifecycle_release_required": true,
-    "exact_head_ci_run_id": null,
-    "exact_head_ci_conclusion": "pending"
+    "stage_b_regressions": "4_of_4_pass",
+    "stage_a_freeze_replayed": true,
+    "p8_behavior_replayed": true,
+    "historical_p8_contract_blob_preserved": true,
+    "historical_p8_daemon_stub_assertion_superseded": true,
+    "qualified_head_sha": "8cf916e1f44c201be5261d08f611ab8e8b638296",
+    "exact_head_ci_run_id": 33839528014,
+    "exact_head_ci_conclusion": "success",
+    "initial_ci_layering_run_id": 33839344279,
+    "initial_ci_layering_conclusion": "failure",
+    "initial_ci_layering_failure_scope": "historical P8 contract intentionally pinned the pre-Stage-B daemon stub blob; P8 behavior tests passed and the historical contract was preserved rather than rewritten"
   },
   "hardware_activity": {
     "uart": false,
