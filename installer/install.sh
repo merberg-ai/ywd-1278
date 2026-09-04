@@ -29,6 +29,7 @@ DETECTED_IDENTITY=""
 FIRMWARE_CLASS=""
 FIRMWARE_DESCRIPTION=""
 ALLOW_CANDIDATE_RELEASE=0
+RUNTIME_CONFIG_READY=0
 
 cleanup(){ [[ -z "$STAGING_ROOT" || ! -d "$STAGING_ROOT" ]] || rm -rf "$STAGING_ROOT"; }
 trap cleanup EXIT
@@ -160,6 +161,13 @@ try_detect(){
   return "$rc"
 }
 
+check_runtime_readiness(){
+  local out rc
+  if out="$("$VENV/bin/python" -m ywd1278.install.readiness --config "$CONFIG_FILE" 2>&1)"; then rc=0; else rc=$?; fi
+  printf '%s\n' "$out"
+  return "$rc"
+}
+
 if [[ $runtime_ready -eq 1 ]]; then
   section "Automatic HAT detection"
   if try_detect 0; then detect_rc=0; else detect_rc=$?; fi
@@ -186,6 +194,25 @@ if [[ $RUN_SETUP -eq 1 ]]; then
   YWD1278_FIRMWARE_CLASS="$FIRMWARE_CLASS" \
   YWD1278_FIRMWARE_DESCRIPTION="$FIRMWARE_DESCRIPTION" \
   bash "$SOURCE_ROOT/installer/setup.sh"
+fi
+
+section "Product runtime readiness"
+if check_runtime_readiness; then
+  RUNTIME_CONFIG_READY=1
+  ok "Product runtime configuration is coherent and remains no-TX/no-auto-flash"
+else
+  readiness_rc=$?
+  case "$readiness_rc" in
+    10)
+      warn "Product runtime configuration is safely incomplete; service will remain disabled"
+      ;;
+    20)
+      die "Product runtime configuration is unsafe or invalid; service remains disabled"
+      ;;
+    *)
+      die "Product runtime readiness check failed unexpectedly (rc=$readiness_rc); service remains disabled"
+      ;;
+  esac
 fi
 
 if [[ $reboot_needed -eq 1 ]]; then
@@ -222,15 +249,22 @@ EOF
 fi
 
 section "Install complete"
-ok "YWD-1278 host framework installed"
+ok "YWD-1278 product runtime installed"
 [[ -n "$DETECTED_TARGET" ]] && ok "Supported HAT: $DETECTED_TARGET" || warn "Supported HAT detection is still pending"
 if [[ -n "$DETECTED_IDENTITY" ]]; then
   info "HAT firmware: ${FIRMWARE_CLASS:-UNKNOWN}"
   step "$DETECTED_IDENTITY"
 fi
+if [[ $RUNTIME_CONFIG_READY -eq 1 ]]; then
+  ok "Runtime configuration: READY for the later guarded firmware/service-enable gate"
+else
+  warn "Runtime configuration: INCOMPLETE; service remains disabled"
+fi
 info "CLI: ywd1278 --version"
 info "Config: $CONFIG_FILE"
-info "Packet service remains disabled until the packet engine/firmware port is qualified."
+info "Packet service remains disabled pending guarded firmware verification and explicit service-enable qualification."
 echo "YWD1278_INSTALL=PASS"
+echo "YWD1278_RUNTIME_CONFIG_READY=$([[ $RUNTIME_CONFIG_READY -eq 1 ]] && echo YES || echo NO)"
+echo "SERVICE_ENABLED=NO"
 echo "RF_TRANSMITTED=NO"
 echo "FLASH_WRITTEN=NO"
