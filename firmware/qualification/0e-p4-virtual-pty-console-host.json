@@ -1,0 +1,95 @@
+{
+  "schema": 1,
+  "phase": "0E-P4",
+  "stage": "virtual-pty-serial-tnc-personality",
+  "status": "host-qualified",
+  "qualification_date": "2026-09-03",
+  "timezone": "America/Los_Angeles",
+  "base_checkpoint": {
+    "branch": "checkpoint/0e-p3-auth-lan-console-target-pi-qualified",
+    "sha": "3571031f65f65f410600b90b625e35440bc59778"
+  },
+  "qualified_implementation": {
+    "branch": "dev-0e-p4-virtual-pty-console",
+    "head_sha": "2f8bf6aff6cc95c7553a6344ac0d7313c1d21ba4",
+    "dedicated_ci_run": 33834614216,
+    "dedicated_ci_conclusion": "success"
+  },
+  "p4_blobs": {
+    "src/ywd1278/console/pty_serial.py": "701bfca3b01ded1d9c0a590e78272cfa6907301a",
+    "tests/pty_serial_tnc_console_test.py": "8acba59b456b2224dbb0e64b76b7f7ef0bfc4b94",
+    "tests/pty_serial_tnc_console_contract_test.py": "9582d141c38e2ea0395d7a836625ac8db9f0c133",
+    "tools/qualify_0e_p4_pty.py": "1740249933aa0ab8f8201f0bf5b136f86e3c8cbe"
+  },
+  "frozen_boundaries": {
+    "src/ywd1278/console/local.py": "9fed5416ca9123811413f4ef284abff0006a48dd",
+    "src/ywd1278/console/telnet.py": "d15669eb61f2afdf4d0d177191124ef8f13713e0",
+    "src/ywd1278/console/auth.py": "0bdacaca9807012954c3362a8c0d92c4c1e21d40",
+    "src/ywd1278/console/lan_telnet.py": "a53bad81aa3ffa167375517bb48a19e8ac9143f3",
+    "pyproject.toml": "9331c09b7f1e3c7111e437f3007e1e2c14716eb3"
+  },
+  "pty_policy": {
+    "implementation": "kernel os.openpty only",
+    "slave_path_prefix": "/dev/pts/",
+    "slave_mode_octal": "0600",
+    "slave_raw_mode": true,
+    "stable_link": "optional explicit absolute path",
+    "stable_link_existing_object_replaced": false,
+    "stable_link_removed_on_clean_close_when_still_owned": true,
+    "hardware_serial_path_opened": false
+  },
+  "serial_command_policy": {
+    "encoding": "bounded printable ASCII plus TAB, CR/LF and backspace handling",
+    "max_command_characters": 256,
+    "default_max_commands_per_logical_session": 1024,
+    "hard_max_commands_per_logical_session": 10000,
+    "parser": "frozen 0E-P1 LocalTNCCommandShell",
+    "detach_reopen_resets_monitor_policy": true,
+    "quit_resets_logical_session": true,
+    "future_commands_rejected": [
+      "CONNECT",
+      "CONVERSE",
+      "UNPROTO",
+      "BEACON",
+      "TX",
+      "SEND",
+      "TRANSMIT",
+      "KISS",
+      "SHELL"
+    ]
+  },
+  "host_results": {
+    "python": "3.11.16",
+    "ubuntu": "24.04.4",
+    "regression_tests_passed": 11,
+    "regression_tests_total": 11,
+    "architecture_contract": "pass",
+    "real_kernel_pty_helper": "pass",
+    "stable_link_create_resolve_cleanup": "pass",
+    "termios_tty_api": "pass",
+    "detach_reopen_state_reset": "pass",
+    "quit_logical_session_reset": "pass",
+    "future_connect_tx_rejected": "pass",
+    "frozen_p3_preservation": "pass",
+    "frozen_p2_preservation": "pass",
+    "frozen_p1_preservation": "pass",
+    "frozen_0d_preservation": "pass",
+    "frozen_sustained_0c_runtime_preservation": "pass"
+  },
+  "safety": {
+    "network_listener_added": false,
+    "hardware_serial_open_added": false,
+    "database_write_added": false,
+    "retention_apply_added": false,
+    "modem_owner_added": false,
+    "kiss_session_added": false,
+    "tx_broker_added": false,
+    "uart_activity": false,
+    "rf_activity": false,
+    "gpio_activity": false,
+    "flash_activity": false
+  },
+  "host_qualification_complete": true,
+  "target_pi_virtual_pty_smoke_pending": true,
+  "phase_complete": false
+}
