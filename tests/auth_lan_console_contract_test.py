@@ -7,10 +7,6 @@ import ast
 from pathlib import Path
 import subprocess
 
-from ywd1278.console.auth import (
-    DEFAULT_MAX_AUTH_ATTEMPTS if False else CredentialRecord,  # type: ignore[syntax]
-)
-
 ROOT = Path(__file__).resolve().parents[1]
 
 FROZEN_BLOBS = {
@@ -112,8 +108,6 @@ def main() -> int:
             pass
         else:
             raise AssertionError(f"unsafe bind accepted: {address}")
-
-    del CredentialRecord
 
     print("YWD1278_0E_P3_AUTH_LAN_CONSOLE_CONTRACT=PASS")
     print("FROZEN_0E_P1_P2_BLOBS=PASS")
