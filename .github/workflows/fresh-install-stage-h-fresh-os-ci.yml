@@ -8,7 +8,9 @@ on:
     paths:
       - 'tools/stage_h_fresh_os_preflight.sh'
       - 'tests/fresh_os_stage_h_contract_test.py'
+      - 'tests/fresh_os_stage_h_preinstall_evidence_contract_test.py'
       - 'firmware/qualification/0b-product-fresh-os-stage-h.json'
+      - 'firmware/qualification/0b-product-fresh-os-stage-h-preinstall-target-pi.json'
       - 'docs/qualifications/fresh-install-stage-h-fresh-os-staged-2026-09-04.md'
       - '.github/workflows/fresh-install-stage-h-fresh-os-ci.yml'
 
@@ -26,6 +28,8 @@ jobs:
         run: bash -n tools/stage_h_fresh_os_preflight.sh
       - name: Stage H architecture and safety contract
         run: python tests/fresh_os_stage_h_contract_test.py
+      - name: Stage H target-Pi preinstall evidence contract
+        run: python tests/fresh_os_stage_h_preinstall_evidence_contract_test.py
       - name: Preserve Stage G final reboot evidence
         run: python tests/existing_pi_stage_g_reboot_evidence_contract_test.py
       - name: Preserve Stage G target RX evidence
@@ -50,10 +54,9 @@ jobs:
           python tests/sustained_kiss_tnc_integration_test.py
           python tests/live_p7_kiss_one_shot_evidence_contract_test.py
           python tests/live_p8_r3_physical_evidence_contract_test.py
-      - name: Parse Stage H staging manifest when present
+      - name: Parse Stage H staging manifest
         run: |
-          if test -f firmware/qualification/0b-product-fresh-os-stage-h.json; then
-            python - <<'PY'
+          python - <<'PY'
           import json
           d=json.load(open('firmware/qualification/0b-product-fresh-os-stage-h.json',encoding='utf-8'))
           assert d['schema']==1 and d['stage']=='H'
@@ -61,6 +64,15 @@ jobs:
           assert d['physical_tx_permitted'] is False
           print('STAGE_H_STAGING_MANIFEST=PASS')
           PY
-          else
-            echo STAGE_H_STAGING_MANIFEST=PENDING
-          fi
+      - name: Parse Stage H target-Pi preinstall evidence
+        run: |
+          python - <<'PY'
+          import json
+          d=json.load(open('firmware/qualification/0b-product-fresh-os-stage-h-preinstall-target-pi.json',encoding='utf-8'))
+          assert d['schema']==1 and d['stage']=='H'
+          assert d['status']=='target-pi-preinstall-qualified-installer-pending'
+          assert d['uart_audit']['reboot_required'] is True
+          assert d['qualified_claims']['installer_uart_repair_path_required'] is True
+          assert d['qualified_claims']['physical_tx'] is False
+          print('STAGE_H_TARGET_PI_PREINSTALL_MANIFEST=PASS')
+          PY
