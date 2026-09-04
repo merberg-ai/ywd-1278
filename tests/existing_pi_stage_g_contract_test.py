@@ -15,7 +15,7 @@ FROZEN_STAGE_F = {
     "tests/firmware_trust_stage_f_test.py": "e6a97a46f7c6aae9390ebfb638634f92c1a8d1bb",
     "tests/firmware_trust_stage_f_contract_test.py": "6325ed29a828bd857d894a1d29e2cb87d25d04f2",
     "tests/firmware_trust_stage_f_qualification_contract_test.py": "436e3d5ac33f316d8194a9165e9d136b69659be5",
-    "firmware/qualification/0b-product-firmware-trust-stage-f.json": "f57b3ec82692f33d2a8aefa493e0143ff2121c64",
+    "firmware/qualification/0b-product-firmware-trust-stage-f.json": "702598db66d7ab92c384850c6dfed973e697fe5e",
     "docs/qualifications/fresh-install-stage-f-firmware-trust-host-qualified-2026-09-04.md": "9f244846ca28dcb8afd6db9521ddad753c5ccd98",
     ".github/workflows/fresh-install-stage-f-firmware-trust-ci.yml": "d500121c643a3987ae91736c0a58b66b93b8e606",
 }
