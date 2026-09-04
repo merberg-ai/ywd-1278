@@ -29,6 +29,7 @@ jobs:
           python -m py_compile tests/pty_serial_tnc_console_test.py
           python -m py_compile tests/pty_serial_tnc_console_contract_test.py
           python -m py_compile tests/pty_serial_tnc_console_qualification_contract_test.py
+          python -m py_compile tests/pty_serial_tnc_console_target_pi_evidence_contract_test.py
           python -m py_compile tools/qualify_0e_p4_pty.py
       - name: Virtual PTY console regression
         run: PYTHONPATH=src python tests/pty_serial_tnc_console_test.py
@@ -72,6 +73,8 @@ jobs:
           rm -f "$LOG"
       - name: Frozen 0E-P4 host qualification evidence
         run: PYTHONPATH=src python tests/pty_serial_tnc_console_qualification_contract_test.py
+      - name: Frozen 0E-P4 target-Pi qualification evidence
+        run: PYTHONPATH=src python tests/pty_serial_tnc_console_target_pi_evidence_contract_test.py
       - name: Preserve frozen 0E-P3 qualification
         run: |
           PYTHONPATH=src python tests/auth_lan_console_test.py
@@ -110,5 +113,7 @@ jobs:
           PYTHONPATH=src python tests/live_p8_r3_physical_evidence_contract_test.py
           PYTHONPATH=src python tests/sustained_live_fifo_drain_regression_test.py
           PYTHONPATH=src python tests/sustained_kiss_tnc_integration_test.py
-      - name: Parse 0E-P4 host qualification evidence
-        run: python -m json.tool firmware/qualification/0e-p4-virtual-pty-console-host.json >/dev/null
+      - name: Parse 0E-P4 qualification evidence
+        run: |
+          python -m json.tool firmware/qualification/0e-p4-virtual-pty-console-host.json >/dev/null
+          python -m json.tool firmware/qualification/0e-p4-virtual-pty-console-target-pi.json >/dev/null
