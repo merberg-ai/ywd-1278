@@ -1,0 +1,79 @@
+name: fresh-install-stage-a-packet-engine-ci
+
+on:
+  push:
+    branches: [dev-fresh-install-flash-run]
+  pull_request:
+    branches: [dev]
+    paths:
+      - 'src/ywd1278/ax25/**'
+      - 'src/ywd1278/phy/**'
+      - 'src/ywd1278/modem/**'
+      - 'src/ywd1278/kiss/**'
+      - 'src/ywd1278/tx/**'
+      - 'src/ywd1278/service/tnc_runtime.py'
+      - 'firmware/qualification/0b-product-packet-engine-stage-a.json'
+      - 'firmware/qualification/0c-p2-rssi-live-physical-evidence.json'
+      - 'firmware/qualification/0c-p7-live-kiss-one-shot-physical-evidence.json'
+      - 'firmware/qualification/0c-p8-sustained-kiss-tnc-host.json'
+      - 'firmware/qualification/0c-p8-r3-live-physical-evidence.json'
+      - 'tests/product_packet_engine_stage_a_contract_test.py'
+      - 'tests/sustained_kiss_*'
+      - 'tests/live_p7_kiss_one_shot_evidence_contract_test.py'
+      - 'tests/live_p8_r3_physical_evidence_contract_test.py'
+      - '.github/workflows/fresh-install-stage-a-packet-engine-ci.yml'
+
+jobs:
+  product-packet-engine-freeze:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Compile Stage A contract and P8 boundary
+        run: |
+          python -m py_compile tests/product_packet_engine_stage_a_contract_test.py
+          python -m py_compile src/ywd1278/kiss/sustained.py
+          python -m py_compile src/ywd1278/service/tnc_runtime.py
+          python -m py_compile tests/sustained_kiss_queue_concurrency_test.py
+          python -m py_compile tests/sustained_kiss_tnc_integration_test.py
+          python -m py_compile tests/sustained_kiss_tnc_contract_test.py
+
+      - name: Freeze exact product packet-engine component and proof blobs
+        run: python tests/product_packet_engine_stage_a_contract_test.py
+
+      - name: Replay P8 concurrent bounded admission
+        run: python tests/sustained_kiss_queue_concurrency_test.py
+
+      - name: Replay P8 sustained localhost KISS full graph
+        run: python tests/sustained_kiss_tnc_integration_test.py
+
+      - name: Replay P8 architecture and safety contract
+        run: python tests/sustained_kiss_tnc_contract_test.py
+
+      - name: Preserve P7 KISS DATA admission boundary
+        run: |
+          python tests/kiss_data_admission_test.py
+          python tests/kiss_data_full_graph_integration_test.py
+          python tests/kiss_data_admission_contract_test.py
+
+      - name: Preserve P6 controls and P4e/P5 lifecycle
+        run: |
+          python tests/kiss_control_plane_test.py
+          python tests/kiss_control_plane_server_test.py
+          python tests/half_duplex_test.py
+          python tests/half_duplex_tx_owner_integration_test.py
+          python tests/txdelay_test.py
+          python tests/txdelay_contract_test.py
+
+      - name: Preserve frozen physical qualification evidence
+        run: |
+          python tests/live_p7_kiss_one_shot_evidence_contract_test.py
+          python tests/live_p8_r3_physical_evidence_contract_test.py
+
+      - name: Parse Stage A manifest
+        run: python -m json.tool firmware/qualification/0b-product-packet-engine-stage-a.json >/dev/null
