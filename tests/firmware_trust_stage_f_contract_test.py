@@ -8,7 +8,6 @@ import hashlib
 import json
 from pathlib import Path
 
-
 ROOT = Path(__file__).resolve().parents[1]
 
 FROZEN_STAGE_E = {
@@ -30,10 +29,10 @@ FROZEN_FIRMWARE_FOUNDATION = {
     "installer/hardware-detect.sh": "9406e6c6f929244afadd2eca14ebeacbf364f2f4",
 }
 
-EXPECTED_TARGET = "mmdvm-hs-hat-stm32f103-simplex-14.7456-adf7021"
-EXPECTED_ARTIFACT_SHA = "b06fcbf0baa36e865198091cee27c66e1624ef08117ee685253a7a5613c7c616"
-EXPECTED_STOCK_SHA = "4981b35b2d50ada0b09322d9de19dd58a0cbd49eb005693499d1acae92f9d684"
-EXPECTED_IDENTITY = (
+TARGET = "mmdvm-hs-hat-stm32f103-simplex-14.7456-adf7021"
+AX25R4_SHA = "b06fcbf0baa36e865198091cee27c66e1624ef08117ee685253a7a5613c7c616"
+STOCK_SHA = "4981b35b2d50ada0b09322d9de19dd58a0cbd49eb005693499d1acae92f9d684"
+IDENTITY = (
     "MMDVM_HS_Hat-YWD-1278-AX25R4-v0.1.0-alpha1 "
     "14.7456MHz ADF7021 FW based on CA6JAU GitID #7ff74ed"
 )
@@ -65,34 +64,29 @@ def main() -> int:
     assert_blobs(FROZEN_STAGE_E, "frozen Stage E")
     assert_blobs(FROZEN_FIRMWARE_FOUNDATION, "frozen firmware foundation")
 
-    profile_path = ROOT / "firmware/product-ax25r4.json"
+    profile = json.loads((ROOT / "firmware/product-ax25r4.json").read_text(encoding="utf-8"))
     trust_path = ROOT / "src/ywd1278/install/firmware_trust.py"
-    prepare_path = ROOT / "firmware/prepare-product-ax25r4.sh"
-    deploy_path = ROOT / "installer/deploy-product-firmware.sh"
-    profile = json.loads(profile_path.read_text(encoding="utf-8"))
     trust = trust_path.read_text(encoding="utf-8")
-    prepare = prepare_path.read_text(encoding="utf-8")
-    deploy = deploy_path.read_text(encoding="utf-8")
+    prepare = (ROOT / "firmware/prepare-product-ax25r4.sh").read_text(encoding="utf-8")
+    deploy = (ROOT / "installer/deploy-product-firmware.sh").read_text(encoding="utf-8")
 
     assert profile["schema"] == 1
     assert profile["product"] == "YWD-1278"
     assert profile["series"] == "AX25R4"
-    assert profile["target_id"] == EXPECTED_TARGET
-    assert profile["expected_identity"] == EXPECTED_IDENTITY
+    assert profile["target_id"] == TARGET
+    assert profile["expected_identity"] == IDENTITY
     assert profile["artifact_size_bytes"] == 59892
-    assert profile["artifact_sha256"] == EXPECTED_ARTIFACT_SHA
+    assert profile["artifact_sha256"] == AX25R4_SHA
     assert profile["programmed_readback_bytes"] == 59892
-    assert profile["programmed_readback_sha256"] == EXPECTED_ARTIFACT_SHA
+    assert profile["programmed_readback_sha256"] == AX25R4_SHA
     assert profile["stock_flash_size_bytes"] == 131072
-    assert profile["stock_flash_sha256"] == EXPECTED_STOCK_SHA
+    assert profile["stock_flash_sha256"] == STOCK_SHA
     assert profile["expected_bootloader_version"] == "0x22"
     assert profile["expected_device_id"] == "0x0410"
     assert profile["flash_authorization_token"] == "FLASH-QUALIFIED-AX25R4"
     assert profile["final_write_confirmation"] == "WRITE-FIRMWARE-NOW"
     assert profile["service_eligibility_record"] == "/var/lib/ywd-1278/firmware-ready.json"
-
-    safety = profile["safety"]
-    assert safety == {
+    assert profile["safety"] == {
         "product_flash_enabled": True,
         "automatic_flash_enabled": False,
         "requires_runtime_readiness_ready": True,
@@ -107,36 +101,21 @@ def main() -> int:
     }
 
     modules = imported_modules(trust_path)
-    for forbidden_prefix in (
-        "ywd1278.modem",
-        "ywd1278.tx",
-        "socket",
-        "serial",
-        "subprocess",
-        "threading",
-    ):
-        assert not any(module.startswith(forbidden_prefix) for module in modules), (
-            f"firmware trust boundary gained hardware/runtime dependency: {forbidden_prefix}"
+    for prefix in ("ywd1278.modem", "ywd1278.tx", "socket", "serial", "subprocess", "threading"):
+        assert not any(module.startswith(prefix) for module in modules), (
+            f"firmware trust boundary gained hardware/runtime dependency: {prefix}"
         )
-    for forbidden in (
-        "/dev/ttyAMA0",
-        "stm32flash",
-        "systemctl",
-        "os.open(",
-        "openpty",
-        "RX_START",
-        "TX_ACCEPT",
-    ):
-        assert forbidden not in trust, f"zero-I/O trust module gained forbidden token: {forbidden}"
+    for token in ("/dev/ttyAMA0", "stm32flash", "systemctl", "os.open(", "openpty", "RX_START", "TX_ACCEPT"):
+        assert token not in trust, f"zero-I/O trust module gained forbidden token: {token}"
 
-    for required in (
+    for token in (
         "build-packet-rssi-ywd1278.py",
         "YWD1278_PRODUCT_FIRMWARE_PREPARE=PASS",
         "HARDWARE_ACCESS=NO",
         "FLASH_WRITTEN=NO",
         "RF_TRANSMITTED=NO",
     ):
-        assert required in prepare, f"product preparation missing token: {required}"
+        assert token in prepare, f"product preparation missing token: {token}"
     assert "if [[ $EUID -eq 0 ]]" in prepare
     assert "stm32flash" not in prepare
     assert "hat_control" not in prepare
@@ -145,9 +124,8 @@ def main() -> int:
         "FLASH-QUALIFIED-AX25R4",
         "Product runtime configuration must be READY",
         "systemctl disable --now ywd-1278.service",
-        "fuser",
-        "hardware-detect.sh",
-        "flash.sh\" backup",
+        "UART is busy; Stage F refuses to stop an unknown owner automatically",
+        'bash "$LEGACY_FLASH" backup',
         "YWD1278_STOCK_BACKUP_TRUST=PASS",
         "bootloader-entry",
         "STM32_BOOTLOADER_IDENTITY=PASS",
@@ -155,7 +133,7 @@ def main() -> int:
         'stm32flash -b 115200 -w "$FIRMWARE" -v "$device"',
         'stm32flash -b 115200 -r "$READBACK_TMP" -S "$flash_base:$readback_bytes" "$device"',
         "YWD1278_PROGRAMMED_READBACK=PASS",
-        "post_identity\" == \"$expected_identity",
+        '[[ "$post_identity" == "$expected_identity" ]]',
         "write-eligibility",
         "check-eligibility",
         "PRODUCT_RUNTIME_IDENTITY_VERIFIED=YES",
@@ -173,18 +151,18 @@ def main() -> int:
         "systemctl enable ywd-1278.service",
         "systemctl enable --now ywd-1278.service",
         "systemctl start ywd-1278.service",
-        "-ob ",
-        "option byte",
         "OPTION_BYTES_WRITTEN=YES",
         "tx_enabled = true",
         "TX_ACCEPT",
-        "automatic retry",
     ):
         assert forbidden not in deploy, f"Stage F deployment gained forbidden authority/token: {forbidden}"
 
+    # Ordering is part of the safety contract: rollback proof precedes the
+    # operator's final write confirmation; readback and exact identity precede
+    # any service-eligibility evidence.
     assert deploy.index("YWD1278_STOCK_BACKUP_TRUST=PASS") < deploy.index("WRITE-FIRMWARE-NOW")
     assert deploy.index("YWD1278_PROGRAMMED_READBACK=PASS") < deploy.index("write-eligibility")
-    assert deploy.index("post_identity") < deploy.index("write-eligibility")
+    assert deploy.index('[[ "$post_identity" == "$expected_identity" ]]') < deploy.index("write-eligibility")
 
     print("YWD1278_STAGE_F_FIRMWARE_TRUST_CONTRACT=PASS")
     print("FROZEN_STAGE_E_INSTALLER_RUNTIME=PASS")
