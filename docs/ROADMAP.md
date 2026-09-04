@@ -78,7 +78,7 @@
 - [ ] virtual PTY/serial personality
 - [ ] familiar TNC2/MFJ-style command vocabulary
 - [x] STATUS / VERSION / HEALTH modern commands — host-qualified as part of 0E-P1; standalone console reports unavailable rather than inventing absent runtime state, while injected frozen P6 snapshots render deterministic health/problems/source status
-- [ ] authentication/bind-address hardening for network console
+- [x] authentication/bind-address hardening for network console (0E-P3) — host-qualified and target-Pi-qualified authenticated private-LAN Telnet layer over the unchanged P2/P1 boundary. Default bind remains `127.0.0.1:8023`; non-loopback binds are restricted to literal RFC1918 IPv4 addresses, wildcard/public/hostname/IPv6 binds fail closed, and client sources are restricted to loopback/RFC1918. Authentication is mandatory before a P1 shell is constructed, uses a protected mode-`0600` PBKDF2-SHA256 verifier file with bounded attempts/timeouts, and is required again after reconnect. A separate host at `192.168.1.15` authenticated to the target Pi at `192.168.1.11:8023`; bad auth never exposed `cmd:`, valid auth reused frozen P1, reconnect reset monitor policy, and future `CONNECT`/`TX` commands remained unavailable. Telnet transport is explicitly plaintext/private-LAN-only and not WAN-qualified; no PTY/serial, modem/UART/RF, database-write, KISS session or TX capability was added.
 
 ## 0F — UNPROTO / converse / beaconing
 
