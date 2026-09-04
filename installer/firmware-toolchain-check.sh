@@ -12,6 +12,7 @@ packages=(
   binutils-arm-none-eabi
   libnewlib-arm-none-eabi
   libstdc++-arm-none-eabi-dev
+  libstdc++-arm-none-eabi-newlib
   stm32flash
 )
 
