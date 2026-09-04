@@ -1,0 +1,110 @@
+name: fresh-install-stage-c-observability-ci
+
+on:
+  push:
+    branches: [dev-fresh-install-flash-run]
+  pull_request:
+    branches: [dev]
+
+jobs:
+  product-observability-stage-c:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Compile Stage C product observability boundary
+        run: |
+          python -m py_compile src/ywd1278/service/observability.py
+          python -m py_compile src/ywd1278/service/appliance.py
+          python -m py_compile tests/product_observability_stage_c_test.py
+          python -m py_compile tests/product_observability_stage_c_contract_test.py
+
+      - name: Stage C product observability integration regression
+        run: PYTHONPATH=src:tests python tests/product_observability_stage_c_test.py
+
+      - name: Stage C architecture and safety contract
+        run: python tests/product_observability_stage_c_contract_test.py
+
+      - name: Preserve Stage A exact product packet-engine freeze
+        run: python tests/product_packet_engine_stage_a_contract_test.py
+
+      - name: Preserve Stage B daemon behavior without replaying superseded appliance-blob contract
+        run: PYTHONPATH=src:tests python tests/product_daemon_stage_b_test.py
+
+      - name: Replay frozen 0D monitor stream and controls
+        run: |
+          python tests/monitor_stream_test.py
+          python tests/monitor_stream_contract_test.py
+          python tests/monitor_stream_qualification_contract_test.py
+          python tests/monitor_policy_test.py
+          python tests/monitor_policy_contract_test.py
+          python tests/monitor_policy_qualification_contract_test.py
+
+      - name: Replay frozen 0D SQLite logging and MHEARD
+        run: |
+          python tests/sqlite_frame_log_test.py
+          python tests/sqlite_frame_log_contract_test.py
+          python tests/sqlite_frame_log_qualification_contract_test.py
+          python tests/sqlite_frame_log_target_pi_evidence_contract_test.py
+          python tests/mheard_test.py
+          python tests/mheard_contract_test.py
+          python tests/mheard_qualification_contract_test.py
+          python tests/mheard_target_pi_evidence_contract_test.py
+
+      - name: Preserve explicit-only retention boundary
+        run: |
+          python tests/retention_test.py
+          python tests/retention_contract_test.py
+          python tests/retention_qualification_contract_test.py
+          python tests/retention_target_pi_evidence_contract_test.py
+
+      - name: Replay frozen 0D diagnostics
+        run: |
+          python tests/diagnostics_status_test.py
+          python tests/diagnostics_status_contract_test.py
+          python tests/diagnostics_status_qualification_contract_test.py
+          python tests/diagnostics_status_target_pi_evidence_contract_test.py
+
+      - name: Preserve sustained TNC behavior and physical evidence contracts
+        run: |
+          python tests/sustained_kiss_queue_concurrency_test.py
+          python tests/sustained_kiss_tnc_integration_test.py
+          python tests/live_p7_kiss_one_shot_evidence_contract_test.py
+          python tests/live_p8_r3_physical_evidence_contract_test.py
+
+      - name: Preserve zero-I/O daemon framework self-test
+        run: |
+          tmp="$(mktemp)"
+          PYTHONPATH=src python -m ywd1278.daemon --config "$tmp" --framework-self-test | tee /tmp/ywd-stage-c-self-test.txt
+          grep -q '^YWD1278_FRAMEWORK_SELF_TEST=PASS$' /tmp/ywd-stage-c-self-test.txt
+          grep -q '^MODEM_UART_OPENED=NO$' /tmp/ywd-stage-c-self-test.txt
+          grep -q '^RF_TRANSMITTED=NO$' /tmp/ywd-stage-c-self-test.txt
+
+      - name: Parse Stage C manifest
+        run: |
+          python - <<'PY'
+          import json
+          p = 'firmware/qualification/0b-product-observability-stage-c.json'
+          d = json.load(open(p, encoding='utf-8'))
+          assert d['phase'] == 'fresh-install-stage-c-product-observability'
+          assert d['status'] in {'staged', 'host-qualified'}
+          assert d['stage_a_component_count'] == 29
+          assert d['stage_a_components_modified'] is False
+          assert d['frozen_0d_module_count'] == 7
+          assert d['frozen_0d_modules_modified'] is False
+          assert d['product_policy']['tx_policy_changed'] is False
+          assert d['product_policy']['automatic_retention_permitted'] is False
+          assert d['hardware_activity'] == {
+              'uart': False,
+              'rf': False,
+              'flash': False,
+              'gpio': False,
+              'option_bytes': False,
+          }
+          print('STAGE_C_MANIFEST_PARSE=PASS')
+          PY
