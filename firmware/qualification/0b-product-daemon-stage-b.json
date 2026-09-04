@@ -17,7 +17,7 @@
     "appliance_path": "src/ywd1278/service/appliance.py",
     "appliance_blob": "6d8c232c8927e9c76306c34779c1ce0da92ec010",
     "daemon_path": "src/ywd1278/daemon.py",
-    "daemon_blob": "0030d650a1909a0c0cdae0b57a2a371e8811c73b",
+    "daemon_blob": "f080abda1792577269b11833deec45edd4e95535",
     "regression_path": "tests/product_daemon_stage_b_test.py",
     "regression_blob": "e2fbb352fa98c6c0c3545dca0ecfd11348069ecc",
     "contract_path": "tests/product_daemon_stage_b_contract_test.py",
@@ -33,7 +33,8 @@
     "persistent_half_duplex_rx_stop_tx_rx_start": true,
     "reverse_order_shutdown": true,
     "sigint_sigterm_stop_event": true,
-    "daemon_framework_self_test_preserved": true
+    "daemon_framework_self_test_preserved": true,
+    "expected_runtime_failures_exit_78": true
   },
   "product_policy": {
     "safe_default_tx_disabled": true,
