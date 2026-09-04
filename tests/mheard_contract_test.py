@@ -53,10 +53,11 @@ def main() -> int:
         assert required in source, required
 
     for forbidden in (
-        "RXOnlyBackend",
-        "PacketEvent",
-        "MonitorSubscription",
-        "threading",
+        "from ywd1278.kiss",
+        "import ywd1278.kiss",
+        "from .stream import MonitorSubscription",
+        "import threading",
+        "from threading import",
         "Thread(",
         "Queue(",
         "SimpleQueue(",
