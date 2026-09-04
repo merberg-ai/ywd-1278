@@ -23,6 +23,7 @@ from dataclasses import dataclass
 import ipaddress
 from pathlib import Path
 import threading
+import tomllib
 from typing import Any, Callable
 
 from ywd1278.console.auth import load_credential_file
@@ -42,6 +43,10 @@ _RFC1918_NETWORKS = (
     ipaddress.ip_network("172.16.0.0/12"),
     ipaddress.ip_network("192.168.0.0/16"),
 )
+
+
+class ProductClassicConsoleConfigurationError(ValueError):
+    pass
 
 
 class ProductClassicConsoleError(RuntimeError):
@@ -98,6 +103,75 @@ class ProductClassicConsoleSnapshot:
     pty_enabled: bool
     pty_slave: str | None
     pty_link: str | None
+
+
+def _optional_bool(table: dict[str, Any], key: str, default: bool) -> bool:
+    value = table.get(key, default)
+    if not isinstance(value, bool):
+        raise ProductClassicConsoleConfigurationError(
+            f"console.{key} must be true or false"
+        )
+    return value
+
+
+def _optional_path(table: dict[str, Any], key: str) -> Path | None:
+    value = table.get(key)
+    if value is None:
+        return None
+    if not isinstance(value, str):
+        raise ProductClassicConsoleConfigurationError(f"console.{key} must be a string")
+    value = value.strip()
+    if not value:
+        return None
+    return Path(value)
+
+
+def load_product_classic_console_config(path: str | Path) -> ProductClassicConsoleConfig:
+    """Load only the product ``[console]`` table, preserving Stage-C config parsing.
+
+    An absent table is equivalent to a disabled Stage-D console, which keeps
+    older Stage-B/Stage-C host fixtures valid.  An enabled table requires the
+    existing ``listen`` and ``port`` keys.  New PTY/auth keys are optional so
+    pre-Stage-D loopback configurations continue to mean loopback Telnet only.
+    """
+
+    config_path = Path(path)
+    try:
+        with config_path.open("rb") as handle:
+            root = tomllib.load(handle)
+    except (OSError, tomllib.TOMLDecodeError) as exc:
+        raise ProductClassicConsoleConfigurationError(
+            f"cannot load configuration {config_path}: {exc}"
+        ) from exc
+
+    table = root.get("console")
+    if table is None:
+        return ProductClassicConsoleConfig()
+    if not isinstance(table, dict):
+        raise ProductClassicConsoleConfigurationError("invalid [console] table")
+
+    enabled = _optional_bool(table, "enabled", False)
+    host = table.get("listen", "127.0.0.1")
+    port = table.get("port", 8010)
+    if not isinstance(host, str):
+        raise ProductClassicConsoleConfigurationError("console.listen must be a string")
+    if isinstance(port, bool) or not isinstance(port, int):
+        raise ProductClassicConsoleConfigurationError("console.port must be an integer")
+    auth_file = _optional_path(table, "auth_file")
+    pty_enabled = _optional_bool(table, "pty_enabled", False)
+    pty_link = _optional_path(table, "pty_link")
+
+    try:
+        return ProductClassicConsoleConfig(
+            enabled=enabled,
+            host=host,
+            port=int(port),
+            auth_file=auth_file,
+            pty_enabled=pty_enabled,
+            pty_link=pty_link,
+        )
+    except ValueError as exc:
+        raise ProductClassicConsoleConfigurationError(str(exc)) from exc
 
 
 class _LiveDiagnostics:
@@ -257,17 +331,19 @@ class ProductClassicConsole:
     def _cleanup(self) -> None:
         # Stop accepting/serving command sessions before Stage-C sources are
         # torn down by the product engine.
-        if self.telnet_server is not None:
+        server = self.telnet_server
+        thread = self.telnet_thread
+        if server is not None and thread is not None and thread.is_alive():
             try:
-                self.telnet_server.shutdown()
+                server.shutdown()
             except BaseException:
                 pass
+            thread.join(timeout=2.0)
+        if server is not None:
             try:
-                self.telnet_server.server_close()
+                server.server_close()
             except BaseException:
                 pass
-        if self.telnet_thread is not None:
-            self.telnet_thread.join(timeout=2.0)
         self.telnet_thread = None
         self.telnet_server = None
 
@@ -283,6 +359,8 @@ class ProductClassicConsole:
 __all__ = [
     "ProductClassicConsole",
     "ProductClassicConsoleConfig",
+    "ProductClassicConsoleConfigurationError",
     "ProductClassicConsoleError",
     "ProductClassicConsoleSnapshot",
+    "load_product_classic_console_config",
 ]
