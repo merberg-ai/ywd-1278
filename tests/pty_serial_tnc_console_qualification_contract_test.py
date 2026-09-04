@@ -12,9 +12,9 @@ ROOT = Path(__file__).resolve().parents[1]
 EVIDENCE = ROOT / "firmware/qualification/0e-p4-virtual-pty-console-host.json"
 
 EXPECTED = {
-    "src/ywd1278/console/pty_serial.py": "701bfca3b01ded1d9c0a590e78272cfa6907301a",
+    "src/ywd1278/console/pty_serial.py": "c0ba2a3278ac1e790bf383fc12a220ae327255ba",
     "tests/pty_serial_tnc_console_test.py": "8acba59b456b2224dbb0e64b76b7f7ef0bfc4b94",
-    "tests/pty_serial_tnc_console_contract_test.py": "9582d141c38e2ea0395d7a836625ac8db9f0c133",
+    "tests/pty_serial_tnc_console_contract_test.py": "cff343aa56a6c20f9cb539bb95d4765ebdeb1da7",
     "tools/qualify_0e_p4_pty.py": "1740249933aa0ab8f8201f0bf5b136f86e3c8cbe",
     "src/ywd1278/console/local.py": "9fed5416ca9123811413f4ef284abff0006a48dd",
     "src/ywd1278/console/telnet.py": "d15669eb61f2afdf4d0d177191124ef8f13713e0",
@@ -41,8 +41,8 @@ def main() -> int:
         "sha": "3571031f65f65f410600b90b625e35440bc59778",
     }
     qualified = evidence["qualified_implementation"]
-    assert qualified["head_sha"] == "2f8bf6aff6cc95c7553a6344ac0d7313c1d21ba4"
-    assert qualified["dedicated_ci_run"] == 33834614216
+    assert qualified["head_sha"] == "aba04bc61810c8038ce6890e6bc9c634088690db"
+    assert qualified["dedicated_ci_run"] == 33834928723
     assert qualified["dedicated_ci_conclusion"] == "success"
 
     for relative, expected in EXPECTED.items():
@@ -60,6 +60,9 @@ def main() -> int:
     assert pty["slave_mode_octal"] == "0600"
     assert pty["slave_raw_mode"] is True
     assert pty["stable_link_existing_object_replaced"] is False
+    assert pty["stable_link_removed_on_clean_close_when_still_owned"] is True
+    assert pty["sigint_graceful_cleanup"] is True
+    assert pty["sigterm_graceful_cleanup"] is True
     assert pty["hardware_serial_path_opened"] is False
 
     command = evidence["serial_command_policy"]
@@ -78,6 +81,8 @@ def main() -> int:
         "architecture_contract",
         "real_kernel_pty_helper",
         "stable_link_create_resolve_cleanup",
+        "sigterm_process_exit",
+        "sigterm_stable_link_cleanup",
         "termios_tty_api",
         "detach_reopen_state_reset",
         "quit_logical_session_reset",
@@ -96,10 +101,11 @@ def main() -> int:
     assert evidence["phase_complete"] is False
 
     print("YWD1278_0E_P4_HOST_QUALIFICATION=PASS")
-    print("QUALIFIED_IMPLEMENTATION_HEAD=2f8bf6aff6cc95c7553a6344ac0d7313c1d21ba4")
-    print("DEDICATED_CI_RUN=33834614216_SUCCESS")
+    print("QUALIFIED_IMPLEMENTATION_HEAD=aba04bc61810c8038ce6890e6bc9c634088690db")
+    print("DEDICATED_CI_RUN=33834928723_SUCCESS")
     print("P4_REGRESSION_TESTS=11_OF_11_PASS")
     print("REAL_KERNEL_PTY_HELPER=PASS")
+    print("SIGTERM_STABLE_LINK_CLEANUP=PASS")
     print("FROZEN_0E_P1_P2_P3_HASHES=PASS")
     print("FROZEN_PYPROJECT_HASH=PASS")
     print("PTY_SLAVE_MODE=0600_RAW")
