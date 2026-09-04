@@ -1,12 +1,12 @@
 """Read-only 0D-P6 diagnostics/status aggregation.
 
 P6 intentionally does not create a sampler, scheduler, worker thread, packet
-subscriber, queue, modem owner, UART handle, or transmit surface.  It merely
+subscriber, queue, modem owner, UART handle, or transmit surface. It merely
 reads already-qualified snapshot/counter properties supplied by the running
 components and returns one immutable operator-facing status structure.
 
 Every source is optional so diagnostics can describe a partially assembled
-host graph without inventing state.  SQLite/MHEARD/retention summaries are
+host graph without inventing state. SQLite/MHEARD/retention summaries are
 queried on demand only when explicit database helpers are supplied by the
 caller.
 """
@@ -40,13 +40,15 @@ def _mapping(value: Any) -> dict[str, Any] | None:
         return asdict(value)
     if isinstance(value, dict):
         return dict(value)
-    raise TypeError(f"diagnostic source must be dataclass/dict/None, got {type(value).__name__}")
+    raise TypeError(
+        f"diagnostic source must be dataclass/dict/None, got {type(value).__name__}"
+    )
 
 
 def _read(obj: Any, name: str) -> Any:
     if obj is None:
         return None
-    return getattr(obj, name)
+    return getattr(obj, name, None)
 
 
 class DiagnosticsStatus:
@@ -64,9 +66,13 @@ class DiagnosticsStatus:
         retention_now_ns: int | None = None,
     ) -> None:
         if (retention_controller is None) != (retention_policy is None):
-            raise ValueError("retention_controller and retention_policy must be supplied together")
+            raise ValueError(
+                "retention_controller and retention_policy must be supplied together"
+            )
         if retention_controller is not None and retention_now_ns is None:
-            raise ValueError("retention_now_ns is required when retention diagnostics are enabled")
+            raise ValueError(
+                "retention_now_ns is required when retention diagnostics are enabled"
+            )
         self._runtime = runtime
         self._backend = backend
         self._sqlite_logger = sqlite_logger
@@ -78,10 +84,6 @@ class DiagnosticsStatus:
     def snapshot(self) -> DiagnosticsSnapshot:
         runtime_accounting = _read(self._runtime, "accounting")
         runtime_counters = _read(self._runtime, "runtime_counters")
-
-        backend = self._backend
-        if backend is None and self._runtime is not None:
-            backend = getattr(self._runtime, "_backend", None)
 
         runtime_map = None
         parameters = control = ingress = queue = connections = None
@@ -95,19 +97,19 @@ class DiagnosticsStatus:
         elif runtime_counters is not None:
             runtime_map = _mapping(runtime_counters)
 
-        backend_map = _mapping(_read(backend, "snapshot"))
+        backend_map = _mapping(_read(self._backend, "snapshot"))
         if parameters is None:
-            parameters = _mapping(_read(backend, "control_snapshot"))
+            parameters = _mapping(_read(self._backend, "control_snapshot"))
         if control is None:
-            control = _mapping(_read(backend, "control_counters"))
+            control = _mapping(_read(self._backend, "control_counters"))
         if ingress is None:
-            ingress = _mapping(_read(backend, "ingress_counters"))
-        if queue is None and backend is not None:
-            admission = getattr(backend, "admission", None)
+            ingress = _mapping(_read(self._backend, "ingress_counters"))
+        if queue is None and self._backend is not None:
+            admission = getattr(self._backend, "admission", None)
             if admission is not None:
                 queue = _mapping(_read(admission, "snapshot"))
         if connections is None:
-            connections = _mapping(_read(backend, "connection_counters"))
+            connections = _mapping(_read(self._backend, "connection_counters"))
 
         sqlite_map = _mapping(_read(self._sqlite_logger, "snapshot"))
 
@@ -125,25 +127,26 @@ class DiagnosticsStatus:
             )
 
         problems: list[str] = []
-        if runtime_map is not None:
-            if runtime_map.get("failure"):
-                problems.append("runtime-failure")
-            if runtime_map.get("running") is False:
-                problems.append("runtime-not-running")
+        if runtime_map is not None and runtime_map.get("failure"):
+            problems.append("runtime-failure")
         if backend_map is not None and int(backend_map.get("subscriber_drops", 0)) > 0:
             problems.append("subscriber-drops")
         if queue is not None:
-            if int(queue.get("timed_out_requests", queue.get("tx_access_timeouts", 0))) > 0:
+            if int(
+                queue.get("timed_out_requests", queue.get("tx_access_timeouts", 0))
+            ) > 0:
                 problems.append("tx-access-timeouts")
-            if int(queue.get("downstream_failures", queue.get("tx_downstream_failures", 0))) > 0:
+            if int(
+                queue.get(
+                    "downstream_failures", queue.get("tx_downstream_failures", 0)
+                )
+            ) > 0:
                 problems.append("tx-downstream-failures")
         if sqlite_map is not None:
             if int(sqlite_map.get("write_failures", 0)) > 0:
                 problems.append("sqlite-write-failures")
             if sqlite_map.get("fatal_error"):
                 problems.append("sqlite-fatal-error")
-        if retention_map is not None and bool(retention_map.get("enabled")) and int(retention_map.get("eligible_rows", 0)) > 0:
-            problems.append("retention-pending")
 
         return DiagnosticsSnapshot(
             runtime=runtime_map,
