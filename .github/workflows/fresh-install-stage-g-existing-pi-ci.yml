@@ -1,0 +1,99 @@
+name: fresh-install-stage-g-existing-pi-ci
+
+on:
+  push:
+    branches: [dev-fresh-install-stage-g-existing-pi]
+  pull_request:
+    branches: [dev]
+    paths:
+      - 'installer/enable-product-service.sh'
+      - 'tools/qualify_stage_g_live_rx.py'
+      - 'tools/qualify_stage_g_systemd_rx.sh'
+      - 'tests/existing_pi_stage_g_test.py'
+      - 'tests/existing_pi_stage_g_contract_test.py'
+      - 'firmware/qualification/0b-product-existing-pi-stage-g.json'
+      - 'docs/qualifications/fresh-install-stage-g-existing-pi-staged-2026-09-04.md'
+      - '.github/workflows/fresh-install-stage-g-existing-pi-ci.yml'
+
+jobs:
+  existing-pi-stage-g:
+    runs-on: ubuntu-latest
+    env:
+      PYTHONPATH: src:tests
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Compile Stage G helpers
+        run: |
+          python -m py_compile tools/qualify_stage_g_live_rx.py
+          python -m py_compile tests/existing_pi_stage_g_test.py
+          python -m py_compile tests/existing_pi_stage_g_contract_test.py
+
+      - name: Parse Stage G shell gates
+        run: |
+          bash -n installer/enable-product-service.sh
+          bash -n tools/qualify_stage_g_systemd_rx.sh
+
+      - name: Stage G host regression
+        run: python tests/existing_pi_stage_g_test.py
+
+      - name: Stage G architecture and safety contract
+        run: python tests/existing_pi_stage_g_contract_test.py
+
+      - name: Parse Stage G staging manifest when present
+        run: |
+          if test -f firmware/qualification/0b-product-existing-pi-stage-g.json; then
+            python - <<'PY'
+          import json
+          p='firmware/qualification/0b-product-existing-pi-stage-g.json'
+          d=json.load(open(p,encoding='utf-8'))
+          assert d['schema'] == 1
+          assert d['stage'] == 'G'
+          assert d['physical_existing_pi_rehearsal_complete'] is False
+          assert d['physical_tx_permitted'] is False
+          print('STAGE_G_STAGING_MANIFEST=PASS')
+          PY
+          else
+            echo STAGE_G_STAGING_MANIFEST=PENDING
+          fi
+
+      - name: Preserve Stage F firmware trust regression
+        run: python tests/firmware_trust_stage_f_test.py
+
+      - name: Preserve Stage F architecture
+        run: python tests/firmware_trust_stage_f_contract_test.py
+
+      - name: Preserve Stage F host evidence
+        run: python tests/firmware_trust_stage_f_qualification_contract_test.py
+
+      - name: Preserve Stage E installer runtime
+        run: |
+          python tests/installer_runtime_stage_e_test.py
+          python tests/installer_runtime_stage_e_contract_test.py
+
+      - name: Replay Stage D full daemon graph
+        run: |
+          python tests/product_full_daemon_stage_d_test.py
+          python tests/product_classic_console_stage_d_contract_test.py
+
+      - name: Preserve Stage A packet-engine freeze
+        run: python tests/product_packet_engine_stage_a_contract_test.py
+
+      - name: Preserve sustained TNC physical-evidence contracts
+        run: |
+          python tests/sustained_kiss_tnc_integration_test.py
+          python tests/live_p7_kiss_one_shot_evidence_contract_test.py
+          python tests/live_p8_r3_physical_evidence_contract_test.py
+
+      - name: Preserve zero-I/O daemon framework self-test
+        run: |
+          tmp="$(mktemp)"
+          python -m ywd1278.daemon --config "$tmp" --framework-self-test | tee /tmp/ywd-stage-g-self-test.txt
+          grep -q '^YWD1278_FRAMEWORK_SELF_TEST=PASS$' /tmp/ywd-stage-g-self-test.txt
+          grep -q '^MODEM_UART_OPENED=NO$' /tmp/ywd-stage-g-self-test.txt
+          grep -q '^RF_TRANSMITTED=NO$' /tmp/ywd-stage-g-self-test.txt
