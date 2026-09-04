@@ -12,6 +12,7 @@ on:
       - 'installer/resume.sh'
       - 'tests/installer_runtime_stage_e_test.py'
       - 'tests/installer_runtime_stage_e_contract_test.py'
+      - 'tests/installer_runtime_stage_e_qualification_contract_test.py'
       - 'firmware/qualification/0b-product-installer-runtime-stage-e.json'
       - 'docs/qualifications/fresh-install-stage-e-installer-runtime-host-qualified-2026-09-04.md'
       - '.github/workflows/fresh-install-stage-e-installer-runtime-ci.yml'
@@ -35,6 +36,7 @@ jobs:
           python -m py_compile src/ywd1278/install/readiness.py
           python -m py_compile tests/installer_runtime_stage_e_test.py
           python -m py_compile tests/installer_runtime_stage_e_contract_test.py
+          python -m py_compile tests/installer_runtime_stage_e_qualification_contract_test.py
 
       - name: Parse installer shell entrypoints
         run: |
@@ -65,6 +67,9 @@ jobs:
           grep -q '^RF_TRANSMITTED=NO$' <<<"$readiness"
           grep -q '^FLASH_WRITTEN=NO$' <<<"$readiness"
           /tmp/ywd-stage-e-venv/bin/ywd1278d --config config/ywd-1278.example.toml --framework-self-test
+
+      - name: Stage E qualification evidence contract
+        run: python tests/installer_runtime_stage_e_qualification_contract_test.py
 
       - name: Replay Stage D classic console integration
         run: python tests/product_classic_console_stage_d_test.py
