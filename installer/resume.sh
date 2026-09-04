@@ -63,11 +63,38 @@ ok "Configuration bound to detected HAT target: $target"
 
 section "Final framework verification"
 "$VENV/bin/ywd1278d" --config "$CONFIG" --framework-self-test
+
+section "Product runtime readiness"
+set +e
+readiness="$("$VENV/bin/python" -m ywd1278.install.readiness --config "$CONFIG" 2>&1)"
+readiness_rc=$?
+set -e
+printf '%s\n' "$readiness"
+case "$readiness_rc" in
+  0)
+    ok "Product runtime configuration is coherent and remains no-TX/no-auto-flash"
+    runtime_config_ready=YES
+    ;;
+  10)
+    warn "Product runtime configuration is safely incomplete; packet service remains disabled"
+    runtime_config_ready=NO
+    ;;
+  20)
+    die "Product runtime configuration is unsafe or invalid; installation state has been preserved and packet service remains disabled"
+    ;;
+  *)
+    die "Product runtime readiness check failed unexpectedly (rc=$readiness_rc); installation state has been preserved"
+    ;;
+esac
+
+systemctl disable --now ywd-1278.service >/dev/null 2>&1 || true
 systemctl disable ywd-1278-install-resume.service >/dev/null 2>&1 || true
 rm -f "$STATE_FILE"
 date -u +'%Y-%m-%dT%H:%M:%SZ' >/var/lib/ywd-1278/install-complete
 ok "YWD-1278 installation resumed and completed"
-info "The packet service remains disabled until its packet engine/firmware stage is qualified."
+info "The packet service remains disabled pending guarded firmware verification and explicit service-enable qualification."
 echo "YWD1278_INSTALL_RESUME=PASS"
+echo "YWD1278_RUNTIME_CONFIG_READY=$runtime_config_ready"
+echo "SERVICE_ENABLED=NO"
 echo "RF_TRANSMITTED=NO"
 echo "FLASH_WRITTEN=NO"
