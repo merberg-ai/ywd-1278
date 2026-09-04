@@ -43,7 +43,7 @@
     "contract_path": "tests/installer_runtime_stage_e_contract_test.py",
     "contract_blob": "c9667398d72dfac3c99a9019cf02754372a25477",
     "workflow_path": ".github/workflows/fresh-install-stage-e-installer-runtime-ci.yml",
-    "workflow_blob": "afaa7db5418e42b0e4523726e12fe21046b33e93"
+    "workflow_blob": "87373d6807cce2f5322182ad6b8bbc89a4739c91"
   },
   "runtime_readiness": {
     "configuration_only": true,
