@@ -1,0 +1,46 @@
+{
+  "schema": 1,
+  "stage": "H",
+  "phase": "fresh-os-protected-stock-backup",
+  "status": "target-pi-stock-backup-qualified",
+  "date": "2026-09-04",
+  "timezone": "America/Los_Angeles",
+  "target": "mmdvm-hs-hat-stm32f103-simplex-14.7456-adf7021",
+  "host": "Raspberry Pi 5 Model B Rev 1.0",
+  "pre_backup_identity": "MMDVM_HS_Hat-v1.6.1 20230526 14.7456MHz ADF7021 FW by CA6JAU GitID #7ff74ed",
+  "bootloader": {
+    "version": "0x22",
+    "device_id": "0x0410",
+    "identity_verified": true
+  },
+  "backup": {
+    "directory": "/var/lib/ywd-1278/firmware-backups/mmdvm-hs-hat-stm32f103-simplex-14.7456-adf7021/20260904-155623",
+    "flash_base": "0x08000000",
+    "flash_size_bytes": 131072,
+    "read_passes": 2,
+    "read_a_sha256": "4981b35b2d50ada0b09322d9de19dd58a0cbd49eb005693499d1acae92f9d684",
+    "read_b_sha256": "4981b35b2d50ada0b09322d9de19dd58a0cbd49eb005693499d1acae92f9d684",
+    "two_pass_byte_identical": true,
+    "stock_golden_sha256_match": true,
+    "option_bytes_read": false
+  },
+  "post_backup": {
+    "application_identity_returned_exactly": true,
+    "stock_backup_exit_code": 0,
+    "putty_session_survived": true,
+    "packet_service_enabled": false,
+    "packet_service_active": false,
+    "flash_written": false,
+    "option_bytes_written": false,
+    "rf_transmitted": false
+  },
+  "qualified_claims": {
+    "protected_stock_rollback_image": true,
+    "two_independent_full_flash_reads": true,
+    "golden_stock_hash_verified": true,
+    "post_backup_stock_identity_verified": true,
+    "firmware_write": false,
+    "physical_tx": false
+  },
+  "next_action": "Explicitly authorize the exact AX25R4 product deployment; require WRITE-FIRMWARE-NOW, programmer verification, independent 59892-byte programmed readback SHA256, exact AX25R4 runtime identity, and service-eligibility evidence while TX remains disabled."
+}
