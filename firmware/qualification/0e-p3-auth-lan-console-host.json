@@ -1,0 +1,131 @@
+{
+  "schema": 1,
+  "phase": "0E-P3",
+  "stage": "authenticated-private-lan-telnet-console",
+  "status": "host-qualified",
+  "qualification_date": "2026-09-03",
+  "timezone": "America/Los_Angeles",
+  "base_checkpoint": "checkpoint/0e-p2-telnet-console-target-pi-qualified",
+  "base_sha": "ef374e86b36ba4252d899acbe211084e293b190f",
+  "qualified_implementation_head": "dd58fbd3f1eade8227c0514751046201d2fb1e07",
+  "dedicated_ci": {
+    "workflow": "0e-p3-auth-lan-console-ci",
+    "run_id": 33832163068,
+    "result": "success"
+  },
+  "implementation_blobs": {
+    "src/ywd1278/console/auth.py": "0bdacaca9807012954c3362a8c0d92c4c1e21d40",
+    "src/ywd1278/console/lan_telnet.py": "a53bad81aa3ffa167375517bb48a19e8ac9143f3",
+    "tests/auth_lan_console_test.py": "b25c7753cec4ec8c0f8136a230e59a35b6ae8a41",
+    "tests/auth_lan_console_contract_test.py": "49fd1c2c5774aaa4744335a98532e2f6aced3eff"
+  },
+  "frozen_lower_layers": {
+    "p2_telnet_module": "src/ywd1278/console/telnet.py",
+    "p2_telnet_blob": "d15669eb61f2afdf4d0d177191124ef8f13713e0",
+    "p1_parser_module": "src/ywd1278/console/local.py",
+    "p1_parser_blob": "9fed5416ca9123811413f4ef284abff0006a48dd",
+    "package_manifest_blob": "9331c09b7f1e3c7111e437f3007e1e2c14716eb3",
+    "modified": false
+  },
+  "credential_policy": {
+    "hash_scheme": "pbkdf2-sha256",
+    "default_iterations": 310000,
+    "minimum_iterations": 200000,
+    "maximum_iterations": 1000000,
+    "salt_bytes": 16,
+    "digest_bytes": 32,
+    "username_max_chars": 32,
+    "password_min_chars": 10,
+    "password_max_chars": 128,
+    "auth_file_max_bytes": 1024,
+    "auth_file_mode": "0600",
+    "auth_file_symlink_follow": false,
+    "plaintext_password_persisted": false
+  },
+  "authentication_policy": {
+    "mandatory_before_shell_construction": true,
+    "default_timeout_seconds": 30,
+    "maximum_timeout_seconds": 300,
+    "default_attempts": 3,
+    "maximum_attempts": 5,
+    "reconnect_requires_authentication": true,
+    "failed_auth_reaches_command_parser": false
+  },
+  "network_policy": {
+    "transport": "plaintext-telnet",
+    "transport_encrypted": false,
+    "private_lan_only": true,
+    "default_bind": "127.0.0.1",
+    "default_port": 8023,
+    "allowed_bind_scopes": [
+      "ipv4-loopback",
+      "rfc1918-10.0.0.0/8",
+      "rfc1918-172.16.0.0/12",
+      "rfc1918-192.168.0.0/16"
+    ],
+    "allowed_client_scopes": [
+      "ipv4-loopback",
+      "rfc1918-10.0.0.0/8",
+      "rfc1918-172.16.0.0/12",
+      "rfc1918-192.168.0.0/16"
+    ],
+    "wildcard_bind": false,
+    "public_bind": false,
+    "hostname_bind": false,
+    "ipv6_bind": false,
+    "wan_exposure_qualified": false
+  },
+  "session_policy": {
+    "inherits_p2_telnet_decoder": true,
+    "inherits_p2_client_limit": true,
+    "inherits_p2_idle_timeout": true,
+    "inherits_p2_session_lifetime": true,
+    "inherits_p2_command_limit": true,
+    "inherits_p2_receive_chunk_limit": true,
+    "inherits_p2_telnet_negotiation_limit": true,
+    "shell_per_authenticated_connection": true,
+    "monitor_policy_per_connection": true,
+    "disconnect_reconnect_resets_monitor_policy": true
+  },
+  "host_tests": {
+    "regression_tests_run": 11,
+    "regression_tests_passed": 11,
+    "auth_timeout_before_shell": "pass",
+    "auth_attempt_limit_before_shell": "pass",
+    "client_limit_during_unauthenticated_session": "pass",
+    "wildcard_bind_rejected": "pass",
+    "public_bind_rejected": "pass",
+    "architecture_contract": "pass",
+    "frozen_p2_preservation": "pass",
+    "frozen_p1_preservation": "pass",
+    "frozen_0d_preservation": "pass",
+    "frozen_sustained_0c_preservation": "pass"
+  },
+  "future_commands_rejected": [
+    "CONNECT",
+    "CONVERSE",
+    "UNPROTO",
+    "BEACON",
+    "TX",
+    "SEND",
+    "TRANSMIT",
+    "KISS",
+    "SHELL"
+  ],
+  "safety": {
+    "pty": false,
+    "serial_personality": false,
+    "database_write_capability": false,
+    "retention_apply_capability": false,
+    "modem_dependency": false,
+    "kiss_session": false,
+    "packet_subscriber": false,
+    "tx_capability": false,
+    "uart_activity": false,
+    "rf_activity": false,
+    "gpio_reset_flash_option_byte_activity": false
+  },
+  "host_qualification_complete": true,
+  "target_pi_private_lan_smoke_pending": true,
+  "phase_complete": false
+}
