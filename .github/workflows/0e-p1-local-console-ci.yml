@@ -1,0 +1,75 @@
+name: 0e-p1-local-console-ci
+
+on:
+  push:
+    branches: [dev-0e-p1-local-tnc-shell]
+  pull_request:
+    branches: [dev]
+    paths:
+      - 'src/ywd1278/console/**'
+      - 'tests/local_tnc_console*_test.py'
+      - 'pyproject.toml'
+      - 'firmware/qualification/0e-p1-*'
+      - 'docs/qualifications/0e-p1-*'
+      - 'docs/ROADMAP.md'
+      - '.github/workflows/0e-p1-local-console-ci.yml'
+
+jobs:
+  local-console-host:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Compile 0E-P1 boundary
+        run: |
+          python -m py_compile src/ywd1278/console/__init__.py
+          python -m py_compile src/ywd1278/console/local.py
+          python -m py_compile tests/local_tnc_console_test.py
+          python -m py_compile tests/local_tnc_console_contract_test.py
+
+      - name: Local TNC console regression
+        run: python tests/local_tnc_console_test.py
+
+      - name: Local TNC console architecture and safety contract
+        run: python tests/local_tnc_console_contract_test.py
+
+      - name: Package entry-point smoke
+        run: |
+          python -m pip install --disable-pip-version-check -e .
+          ywd1278-console --help >/dev/null
+          printf 'VERSION\nSTATUS\nMCOM\nMCON\nMRPT\nQUIT\n' | ywd1278-console > /tmp/console.out
+          grep -F 'YWD-1278 0.1.0-alpha0' /tmp/console.out
+          grep -F 'STATUS UNAVAILABLE' /tmp/console.out
+          grep -F 'MCOM OFF' /tmp/console.out
+          grep -F 'MCON OFF' /tmp/console.out
+          grep -F 'MRPT ON' /tmp/console.out
+          grep -F 'BYE' /tmp/console.out
+
+      - name: Preserve frozen 0D-P6 target-Pi and host qualification
+        run: |
+          python tests/diagnostics_status_test.py
+          python tests/diagnostics_status_contract_test.py
+          python tests/diagnostics_status_qualification_contract_test.py
+          python tests/diagnostics_status_target_pi_evidence_contract_test.py
+
+      - name: Preserve frozen 0D-P5/P4/P3 qualification
+        run: |
+          python tests/retention_target_pi_evidence_contract_test.py
+          python tests/retention_qualification_contract_test.py
+          python tests/mheard_target_pi_evidence_contract_test.py
+          python tests/mheard_qualification_contract_test.py
+          python tests/sqlite_frame_log_target_pi_evidence_contract_test.py
+          python tests/sqlite_frame_log_qualification_contract_test.py
+          python tests/monitor_policy_qualification_contract_test.py
+          python tests/monitor_stream_qualification_contract_test.py
+
+      - name: Preserve frozen sustained TNC runtime boundary
+        run: |
+          python tests/live_p8_r3_physical_evidence_contract_test.py
+          python tests/sustained_live_fifo_drain_regression_test.py
+          python tests/sustained_kiss_tnc_integration_test.py
