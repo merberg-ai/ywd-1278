@@ -1,0 +1,68 @@
+{
+  "schema": 1,
+  "phase": "0D-P5",
+  "stage": "retention-target-pi-sanity",
+  "status": "supplementary-target-host-pass",
+  "checkpoint": "checkpoint/0d-p5-retention-host-qualified",
+  "checkpoint_sha": "b330e52bdf5eb902135138e32d91ff6538d5cf3c",
+  "python_version": "3.13.5",
+  "tests": {
+    "retention_test": "pass",
+    "retention_contract_test": "pass",
+    "retention_qualification_contract_test": "pass",
+    "p4_target_pi_evidence_contract_test": "pass",
+    "p4_qualification_contract_test": "pass",
+    "p3_target_pi_evidence_contract_test": "pass",
+    "p3_qualification_contract_test": "pass"
+  },
+  "retention": {
+    "default_enabled": false,
+    "age_limit": "pass",
+    "max_rows": "pass",
+    "combined_semantics": "age-or-row-limit",
+    "default_max_delete_per_run": 1000,
+    "automatic_loop": false,
+    "busy_writer": "fail-closed",
+    "automatic_vacuum": false,
+    "packet_subscriber": false,
+    "worker_thread": false,
+    "tx_capability": false
+  },
+  "smoke_database": {
+    "source_path": "/tmp/ywd1278-p3-smoke.sqlite3",
+    "copy_path": "/tmp/ywd1278-p5-retention-smoke.sqlite3",
+    "copy_created_with_sqlite_backup": true,
+    "before": {
+      "station_count": 2,
+      "frame_count": 2
+    },
+    "policy": {
+      "max_rows": 1
+    },
+    "plan": {
+      "enabled": true,
+      "total_rows": 2,
+      "eligible_rows": 1,
+      "next_batch_rows": 1,
+      "max_delete_per_run": 1000
+    },
+    "result": {
+      "deleted_rows": 1,
+      "remaining_rows": 1,
+      "remaining_eligible_rows": 0,
+      "more_eligible": false
+    },
+    "after": {
+      "station_count": 1,
+      "frame_count": 1,
+      "survivor_source": "KJ6YWD",
+      "survivor_line": "KJ6YWD>JIM:YWD-1278 P3 SQLITE TEST TWO"
+    },
+    "original_row_count_after_test": 2,
+    "retention_copy_row_count_after_test": 1,
+    "original_database_preserved": true
+  },
+  "uart_activity": false,
+  "rf_activity": false,
+  "qualification_complete": true
+}
