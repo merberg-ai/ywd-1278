@@ -1,0 +1,80 @@
+name: fresh-install-stage-b-daemon-ci
+
+on:
+  push:
+    branches: [dev-fresh-install-flash-run]
+  pull_request:
+    branches: [dev]
+
+jobs:
+  product-daemon-stage-b:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Compile Stage B product daemon boundary
+        run: |
+          python -m py_compile src/ywd1278/service/appliance.py
+          python -m py_compile src/ywd1278/daemon.py
+          python -m py_compile tests/product_daemon_stage_b_test.py
+          python -m py_compile tests/product_daemon_stage_b_contract_test.py
+
+      - name: Stage B product daemon integration regression
+        run: PYTHONPATH=src:tests python tests/product_daemon_stage_b_test.py
+
+      - name: Stage B architecture and safety contract
+        run: python tests/product_daemon_stage_b_contract_test.py
+
+      - name: Preserve Stage A exact product packet-engine freeze
+        run: python tests/product_packet_engine_stage_a_contract_test.py
+
+      - name: Preserve P8 sustained graph behavior
+        run: |
+          python tests/sustained_kiss_queue_concurrency_test.py
+          python tests/sustained_kiss_tnc_integration_test.py
+          python tests/sustained_kiss_tnc_contract_test.py
+
+      - name: Preserve P7/P8 physical evidence contracts without hardware access
+        run: |
+          python tests/live_p7_kiss_one_shot_evidence_contract_test.py
+          python tests/live_p8_r3_physical_evidence_contract_test.py
+
+      - name: Preserve zero-I/O daemon framework self-test
+        run: |
+          tmp="$(mktemp)"
+          PYTHONPATH=src python -m ywd1278.daemon --config "$tmp" --framework-self-test | tee /tmp/ywd-stage-b-self-test.txt
+          grep -q '^YWD1278_FRAMEWORK_SELF_TEST=PASS$' /tmp/ywd-stage-b-self-test.txt
+          grep -q '^MODEM_UART_OPENED=NO$' /tmp/ywd-stage-b-self-test.txt
+          grep -q '^RF_TRANSMITTED=NO$' /tmp/ywd-stage-b-self-test.txt
+
+      - name: Parse Stage B manifest
+        run: |
+          python - <<'PY'
+          import json
+          p = 'firmware/qualification/0b-product-daemon-stage-b.json'
+          d = json.load(open(p, encoding='utf-8'))
+          assert d['phase'] == 'fresh-install-stage-b-product-daemon'
+          assert d['status'] in {'staged', 'host-qualified'}
+          assert d['stage_a_component_count'] == 29
+          assert d['stage_a_components_modified'] is False
+          assert d['product_policy']['safe_default_tx_disabled'] is True
+          assert d['product_policy']['tx_disabled_data_rejected_at_ingress'] is True
+          assert d['product_policy']['tx_enabled_profile'] == {
+              'frequency_hz': 145050000,
+              'power': 200,
+              'arbitrary_profile_permitted': False,
+          }
+          assert d['hardware_activity'] == {
+              'uart': False,
+              'rf': False,
+              'flash': False,
+              'gpio': False,
+              'option_bytes': False,
+          }
+          print('STAGE_B_MANIFEST_PARSE=PASS')
+          PY
