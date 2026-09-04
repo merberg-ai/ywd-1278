@@ -62,8 +62,10 @@
     "regression_blob": "e6a97a46f7c6aae9390ebfb638634f92c1a8d1bb",
     "contract_path": "tests/firmware_trust_stage_f_contract_test.py",
     "contract_blob": "6325ed29a828bd857d894a1d29e2cb87d25d04f2",
+    "qualification_contract_path": "tests/firmware_trust_stage_f_qualification_contract_test.py",
+    "qualification_contract_blob": "436e3d5ac33f316d8194a9165e9d136b69659be5",
     "workflow_path": ".github/workflows/fresh-install-stage-f-firmware-trust-ci.yml",
-    "workflow_blob": "b85f0ae57d33b022d81096a10909e627e81824bc"
+    "workflow_blob": "d500121c643a3987ae91736c0a58b66b93b8e606"
   },
   "deployment_policy": {
     "runtime_readiness_must_be_ready": true,
