@@ -1,0 +1,4 @@
+stage=fresh-install-stage-b-product-daemon
+final_checkpoint_candidate=e81326784afc147e31ccd8242c748b9caf947c19
+final_exact_head_ci_run=33839726117
+final_exact_head_ci_conclusion=success
