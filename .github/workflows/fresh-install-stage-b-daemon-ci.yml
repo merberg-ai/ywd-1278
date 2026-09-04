@@ -1,8 +1,7 @@
 name: fresh-install-stage-b-daemon-ci
 
 on:
-  push:
-    branches: [dev-fresh-install-flash-run]
+  workflow_dispatch:
   pull_request:
     branches: [dev]
 
