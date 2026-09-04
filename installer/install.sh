@@ -83,15 +83,20 @@ if [[ $SKIP_PACKAGES -eq 0 ]]; then
   section "Dependencies"
   export DEBIAN_FRONTEND=noninteractive
   step "Refreshing apt metadata"; apt-get update
-  packages=(ca-certificates git python3 python3-venv python3-pip python3-setuptools python3-wheel sqlite3 build-essential pkg-config)
+  packages=(ca-certificates git python3 python3-venv python3-pip python3-setuptools python3-wheel sqlite3 build-essential pkg-config psmisc)
   apt-cache show raspi-utils >/dev/null 2>&1 && packages+=(raspi-utils)
-  [[ $WITH_FIRMWARE_TOOLCHAIN -eq 0 ]] || packages+=(gcc-arm-none-eabi binutils-arm-none-eabi stm32flash)
+  [[ $WITH_FIRMWARE_TOOLCHAIN -eq 0 ]] || packages+=(gcc-arm-none-eabi binutils-arm-none-eabi libnewlib-arm-none-eabi libstdc++-arm-none-eabi-dev libstdc++-arm-none-eabi-newlib stm32flash)
   step "Installing required packages"; apt-get install -y --no-install-recommends "${packages[@]}"
   ok "Dependencies ready"
 else
   warn "Package installation skipped by request"
 fi
 for cmd in python3 git systemctl tar sha256sum; do command_exists "$cmd" || die "Required command missing: $cmd"; done
+if [[ $WITH_FIRMWARE_TOOLCHAIN -eq 1 ]]; then
+  step "Verifying bare-metal ARM C/C++ headers and programmer tools"
+  bash "$REPO_ROOT/installer/firmware-toolchain-check.sh" check
+  ok "Firmware toolchain ready"
+fi
 
 section "Filesystem layout"
 install -d -m 0755 "$INSTALL_ROOT" "$CONFIG_DIR" "$STATE_DIR" "$BACKUP_DIR" "$LOG_DIR"
