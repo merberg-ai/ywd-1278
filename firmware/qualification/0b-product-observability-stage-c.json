@@ -2,7 +2,7 @@
   "schema": 1,
   "phase": "fresh-install-stage-c-product-observability",
   "stage": "compose-monitor-sqlite-mheard-diagnostics-into-ywd1278d",
-  "status": "staged",
+  "status": "host-qualified",
   "date": "2026-09-04",
   "timezone": "America/Los_Angeles",
   "base_checkpoint": {
@@ -44,6 +44,7 @@
     "monitor_table_optional_for_stage_b_compatibility": true,
     "monitor_log_frames_requires_monitor_enabled": true,
     "monitor_log_frames_requires_absolute_database_path": true,
+    "typed_config_revalidated_at_engine_construction": true,
     "example_config_modified": false,
     "systemd_unit_modified": false
   },
@@ -69,8 +70,16 @@
     "tx_disabled_data_rejection_preserved": true,
     "monitor_only_no_database_required": true,
     "logger_startup_failure_releases_modem_owner": true,
-    "exact_head_ci_run_id": null,
-    "exact_head_ci_conclusion": "pending"
+    "qualified_head_sha": "e45aef3326ed44241e6719f14e0b186acd0a07ee",
+    "exact_head_ci_run_id": 33870810415,
+    "exact_head_ci_conclusion": "success",
+    "stage_c_integration_regression": "pass",
+    "stage_c_architecture_contract": "pass",
+    "stage_a_29_blob_freeze": "pass",
+    "stage_b_behavioral_regression": "pass",
+    "frozen_0d_replay": "pass",
+    "sustained_tnc_preservation": "pass",
+    "daemon_zero_io_self_test": "pass"
   },
   "hardware_activity": {
     "uart": false,
