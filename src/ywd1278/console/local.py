@@ -86,7 +86,7 @@ def _source_count(snapshot: Any) -> int:
     return sum(getattr(snapshot, name, None) is not None for name in _COMPONENTS)
 
 
-def _error(command: str, exc: BaseException) -> CommandResult:
+def _error(command: str, exc: Exception) -> CommandResult:
     message = _clean_text(str(exc), limit=120)
     if message == "-":
         message = type(exc).__name__
@@ -168,7 +168,7 @@ class LocalTNCCommandShell:
             return None, CommandResult((f"{command} UNAVAILABLE",))
         try:
             return self._diagnostics.snapshot(), None
-        except BaseException as exc:
+        except Exception as exc:
             return None, _error(command, exc)
 
     def _status(self, args: list[str]) -> CommandResult:
@@ -231,7 +231,7 @@ class LocalTNCCommandShell:
 
         try:
             entries = self._mheard_db.list(limit=limit)
-        except BaseException as exc:
+        except Exception as exc:
             return _error("MHEARD", exc)
 
         lines = [f"MHEARD {len(entries)}"]
