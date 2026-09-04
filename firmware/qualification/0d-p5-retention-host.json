@@ -1,0 +1,63 @@
+{
+  "schema": 1,
+  "phase": "0D-P5",
+  "stage": "retention-controls-host",
+  "status": "host-qualified",
+  "base_checkpoint": "checkpoint/0d-p4-mheard-host-qualified",
+  "base_checkpoint_sha": "d75e253003762d1077e7300da52980b1f4739963",
+  "qualified_implementation_head_sha": "61cd2ff68ad7b4be22185c7f50bdab6da8418c11",
+  "retention_implementation_blob_sha1": "1e08367d98f39e15eaeb855ef5e6e6b39eef9302",
+  "policy": {
+    "default_enabled": false,
+    "max_age_ns_optional": true,
+    "max_rows_optional": true,
+    "combined_semantics": "age-or-row-limit",
+    "default_max_delete_per_run": 1000,
+    "absolute_max_delete_per_run": 10000
+  },
+  "execution": {
+    "plan_read_only": true,
+    "apply_explicit_only": true,
+    "automatic_scheduler": false,
+    "automatic_retry": false,
+    "transaction": "BEGIN IMMEDIATE",
+    "oldest_eligible_first": true,
+    "busy_writer_fails_closed": true,
+    "schema_change": false,
+    "automatic_vacuum": false,
+    "automatic_wal_checkpoint": false
+  },
+  "architecture": {
+    "packet_subscriber": false,
+    "worker_thread": false,
+    "additional_in_memory_queue": false,
+    "modem_dependency": false,
+    "tx_capability": false,
+    "uart_access": false,
+    "rf_access": false,
+    "flash_gpio_option_byte_activity": false
+  },
+  "integration": {
+    "p3_schema_version_unchanged": 1,
+    "p4_mheard_frozen": true,
+    "mheard_reflects_retained_frames": true,
+    "p4_target_pi_python_3_13_5_evidence_preserved": true
+  },
+  "dedicated_push_ci": {
+    "run_id": 33823733130,
+    "head_sha": "61cd2ff68ad7b4be22185c7f50bdab6da8418c11",
+    "result": "success"
+  },
+  "pull_request_ci": {
+    "pull_request": 29,
+    "head_sha": "61cd2ff68ad7b4be22185c7f50bdab6da8418c11",
+    "workflow_runs": 18,
+    "framework_run_id": 33823771799,
+    "framework_result": "success",
+    "p5_run_id": 33823771856,
+    "p5_result": "success",
+    "pending_runs": 0,
+    "failed_runs": 0
+  },
+  "qualification_complete": true
+}
