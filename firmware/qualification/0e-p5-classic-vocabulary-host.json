@@ -1,0 +1,88 @@
+{
+  "schema": 1,
+  "phase": "0E-P5",
+  "stage": "classic-tnc2-mfj-command-vocabulary",
+  "status": "host-qualified",
+  "qualification_date": "2026-09-03",
+  "timezone": "America/Los_Angeles",
+  "base_checkpoint": {
+    "branch": "checkpoint/0e-p4-virtual-pty-console-target-pi-qualified",
+    "sha": "b7b317ca7f6528ab344f22d78bfd10aa7afc55a0"
+  },
+  "qualified_implementation": {
+    "branch": "dev-0e-p5-classic-vocabulary",
+    "head_sha": "ab9e922b31bfb57b9a8be11c70a812dc1b0c0da3",
+    "dedicated_ci_run": 33836726120,
+    "dedicated_ci_conclusion": "success"
+  },
+  "p5_blobs": {
+    "src/ywd1278/console/classic.py": "4d6dfd5d439fb5dfd6ff586c2a47c37724381b2e",
+    "tests/classic_tnc_vocabulary_test.py": "d8e10890759d9d48ef8891be3cc4c74d58d3acc3",
+    "tests/classic_tnc_vocabulary_contract_test.py": "620b8900c15044130d7da954c85bc39847c54dae",
+    "tools/qualify_0e_p5_classic.py": "648b0b2165ac9a10aa0a0041da50e63aafeb17e1"
+  },
+  "frozen_boundaries": {
+    "src/ywd1278/console/local.py": "9fed5416ca9123811413f4ef284abff0006a48dd",
+    "src/ywd1278/console/telnet.py": "d15669eb61f2afdf4d0d177191124ef8f13713e0",
+    "src/ywd1278/console/auth.py": "0bdacaca9807012954c3362a8c0d92c4c1e21d40",
+    "src/ywd1278/console/lan_telnet.py": "a53bad81aa3ffa167375517bb48a19e8ac9143f3",
+    "src/ywd1278/console/pty_serial.py": "c0ba2a3278ac1e790bf383fc12a220ae327255ba",
+    "pyproject.toml": "9331c09b7f1e3c7111e437f3007e1e2c14716eb3"
+  },
+  "vocabulary_policy": {
+    "adapter": "ClassicTNCCommandShell subclasses frozen 0E-P1 LocalTNCCommandShell",
+    "generic_abbreviation_engine": false,
+    "safe_aliases": {
+      "DISP": "DISPLAY",
+      "MH": "MHEARD",
+      "VER": "VERSION",
+      "STAT": "STATUS",
+      "HEAL": "HEALTH"
+    },
+    "display_scope": "MONITOR only",
+    "display_values": ["MCOM", "MCON", "MRPT"],
+    "ambiguous_prefixes_fail_closed": ["D", "C", "CON", "MCO", "UNP", "XMIT"],
+    "deferred_0f": ["UNPROTO", "CONVERSE", "BEACON", "BTEXT", "ID"],
+    "deferred_0g": ["CONNECT", "DISCONNECT", "RECONNECT", "CSTATUS", "CONMODE", "CONOK", "CONPERM", "MAXFRAME", "PACLEN", "RETRY", "TRIES", "FRACK", "RESPTIME"],
+    "deferred_non_tx_configuration": ["MYCALL", "MYALIAS", "DIGIPEAT", "MONITOR", "MALL", "PASSALL"],
+    "deferred_tx_parameter_or_mode_controls": ["TXDELAY", "PERSIST", "SLOTTIME", "FULLDUP", "FULLDUPLEX", "XMITOK", "KISS", "TX", "SEND", "TRANSMIT"],
+    "disabled_destructive_commands": ["MHCLEAR", "RESET", "RESTART", "SHELL"]
+  },
+  "host_results": {
+    "python": "3.11",
+    "regression_tests_passed": 10,
+    "regression_tests_total": 10,
+    "architecture_contract": "pass",
+    "safe_aliases": "pass",
+    "display_monitor": "pass",
+    "deferred_tx_link_commands_inert": "pass",
+    "ambiguous_abbreviations_fail_closed": "pass",
+    "frozen_p2_real_telnet_composition": "pass",
+    "frozen_p4_real_kernel_pty_composition": "pass",
+    "deterministic_target_helper_on_host": "pass",
+    "detach_reopen_state_reset": "pass",
+    "frozen_p4_preservation": "pass",
+    "frozen_p3_preservation": "pass",
+    "frozen_p2_preservation": "pass",
+    "frozen_p1_preservation": "pass",
+    "frozen_0d_preservation": "pass",
+    "frozen_sustained_0c_runtime_preservation": "pass"
+  },
+  "safety": {
+    "network_listener_added_by_p5_adapter": false,
+    "pty_owner_added_by_p5_adapter": false,
+    "hardware_serial_open_added": false,
+    "database_write_added": false,
+    "retention_apply_added": false,
+    "modem_owner_added": false,
+    "kiss_session_added": false,
+    "tx_broker_added": false,
+    "uart_activity": false,
+    "rf_activity": false,
+    "gpio_activity": false,
+    "flash_activity": false
+  },
+  "host_qualification_complete": true,
+  "target_pi_classic_vocabulary_smoke_pending": true,
+  "phase_complete": false
+}
