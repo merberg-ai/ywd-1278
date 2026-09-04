@@ -98,6 +98,11 @@ def main() -> int:
         "MonitorPolicyState()",
         "MAX_COMMAND_CHARS",
         "SerialLineDecoder",
+        "stop_event = threading.Event()",
+        "signal.signal(signal.SIGINT, _request_stop)",
+        "signal.signal(signal.SIGTERM, _request_stop)",
+        "server.serve(stop_event)",
+        "server.close()",
     )
     for token in required_tokens:
         assert token in source, f"required PTY safety/composition token missing: {token}"
@@ -108,6 +113,7 @@ def main() -> int:
     print("PTY_IMPLEMENTATION=KERNEL_OPENPTY_ONLY")
     print("PTY_SLAVE_MODE=0600")
     print("STABLE_LINK=OPT_IN_ABSOLUTE_NO_REPLACE_CLEANUP")
+    print("SIGINT_SIGTERM_GRACEFUL_CLEANUP=REQUIRED")
     print("P1_COMMAND_PARSER=UNCHANGED")
     print("NETWORK_LISTENER=ABSENT")
     print("HARDWARE_SERIAL=ABSENT")
