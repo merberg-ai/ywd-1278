@@ -1,23 +1,29 @@
-"""Production packet-engine composition for the YWD-1278 appliance.
+"""Production packet-engine and observability composition for YWD-1278.
 
-Stage B composes the frozen Stage-A packet engine without modifying any of its
-qualified implementation blobs.  This module owns lifecycle and configuration
-only:
+Stage B assembled the frozen packet engine.  Stage C preserves those qualified
+engine components and composes the already-qualified 0D monitor/logging/MHEARD
+and diagnostics facilities around the same PacketEvent backend.
+
+The lifecycle remains intentionally narrow:
 
     one TXModemOwner
       -> active AX25R4 receive
-      -> sustained Bell-202/AX.25/KISS runtime
+      -> sustained Bell-202/AX.25 runtime
+      -> bounded PacketEvent backend
+           -> localhost KISS
+           -> optional decoded monitor subscriptions
+           -> optional bounded-subscriber SQLite logger -> read-only MHEARD
       -> bounded contextual DATA admission / CSMA
       -> persistent half-duplex RX_STOP/TX/RX_START
       -> contextual TXDELAY broker
 
 Transmit authority remains construction-time and fail-closed.  The normal safe
 configuration has ``tx_enabled = false``; in that mode KISS DATA is rejected at
-ingress and never enters the access queue.  Stage B permits TX construction only
-for the already physically-qualified 145.050 MHz / power-200 profile.
+ingress and never enters the access queue.  Product TX construction remains
+limited to the already physically-qualified 145.050 MHz / power-200 profile.
 
 This module does not flash firmware, manipulate GPIO/reset lines, write option
-bytes, implement beacons, or own console/monitor composition.
+bytes, implement beacons, schedule retention, or compose the classic console.
 """
 
 from __future__ import annotations
@@ -36,9 +42,17 @@ from ywd1278.kiss.framing import DATA, KISSMessage
 from ywd1278.kiss.server import ThreadingKISSServer, start_server_thread, stop_server_thread
 from ywd1278.kiss.sustained import SustainedTNCBackend, ThreadSafeKISSDataAdmissionQueue
 from ywd1278.modem._serial import posix_serial_transport_factory
-from ywd1278.modem.owner import ModemTransport, TransportFactory
+from ywd1278.modem.owner import TransportFactory
 from ywd1278.modem.rx_config import validate_rx_frequency_hz
 from ywd1278.modem.tx_owner import TXModemOwner
+from ywd1278.monitor.diagnostics import DiagnosticsSnapshot
+from ywd1278.monitor.mheard import MHeardDatabase
+from ywd1278.monitor.stream import MonitorSubscription
+from ywd1278.service.observability import (
+    ProductObservability,
+    ProductObservabilityConfig,
+    ProductObservabilityError,
+)
 from ywd1278.service.tnc_runtime import SustainedTNCRuntime
 from ywd1278.tx.contextual import ContextualHalfDuplexSubmitter, ContextualTXDelayRouter
 from ywd1278.tx.half_duplex import HalfDuplexParameters
@@ -79,6 +93,9 @@ class ProductPacketEngineConfig:
     kiss_enabled: bool
     kiss_host: str
     kiss_port: int
+    monitor_enabled: bool = False
+    monitor_log_frames: bool = False
+    database_path: Path | None = None
 
 
 @dataclass(frozen=True)
@@ -95,13 +112,7 @@ class ProductPacketEngineSnapshot:
 
 
 class ProductTNCBackend(SustainedTNCBackend):
-    """P8 backend with a healthy no-TX product operating mode.
-
-    Frozen P8 was physically qualified with transmit admission active.  A safe
-    appliance must also run indefinitely with TX disabled.  In that mode DATA
-    is routed directly through frozen P6 rejection/accounting and therefore
-    never reaches P7 admission or the disabled downstream router.
-    """
+    """P8 backend with a healthy no-TX product operating mode."""
 
     def __init__(self, *args, product_tx_enabled: bool, **kwargs) -> None:  # type: ignore[no-untyped-def]
         super().__init__(*args, **kwargs)
@@ -117,6 +128,15 @@ def _table(root: dict, name: str) -> dict:
     value = root.get(name)
     if not isinstance(value, dict):
         raise ProductConfigurationError(f"missing or invalid [{name}] table")
+    return value
+
+
+def _optional_table(root: dict, name: str) -> dict | None:
+    value = root.get(name)
+    if value is None:
+        return None
+    if not isinstance(value, dict):
+        raise ProductConfigurationError(f"invalid [{name}] table")
     return value
 
 
@@ -160,6 +180,48 @@ def _frequency_hz(value: object) -> int:
         raise ProductConfigurationError(str(exc)) from exc
 
 
+def _validate_product_config(config: ProductPacketEngineConfig) -> None:
+    """Revalidate typed configuration at the capability-owning boundary."""
+
+    if config.target != PRODUCT_TARGET:
+        raise ProductConfigurationError(
+            f"hardware.target must be the supported target {PRODUCT_TARGET!r}"
+        )
+    if not config.device.startswith("/dev/"):
+        raise ProductConfigurationError("radio.device must be an absolute /dev path")
+    try:
+        validate_rx_frequency_hz(config.frequency_hz)
+    except ValueError as exc:
+        raise ProductConfigurationError(str(exc)) from exc
+    if not 0 <= config.tx_power <= 255:
+        raise ProductConfigurationError("radio.tx_power must be 0..255")
+    if not 0 <= config.txdelay <= 255:
+        raise ProductConfigurationError("packet TXDELAY units must be 0..255")
+    if not 0 <= config.persist <= 255:
+        raise ProductConfigurationError("packet.persist must be 0..255")
+    if not 1 <= config.slottime <= 255:
+        raise ProductConfigurationError("packet SLOTTIME units must be 1..255")
+    if config.kiss_host != KISS_LOOPBACK_HOST:
+        raise ProductConfigurationError("product KISS listener must remain on 127.0.0.1")
+    if not 1 <= config.kiss_port <= 65535:
+        raise ProductConfigurationError("kiss.port must be 1..65535")
+    if config.tx_enabled and (
+        config.frequency_hz != QUALIFIED_TX_FREQUENCY_HZ
+        or config.tx_power != QUALIFIED_TX_POWER
+    ):
+        raise ProductConfigurationError(
+            "product TX may only use the physically-qualified 145.050 MHz / power-200 profile"
+        )
+    try:
+        ProductObservabilityConfig(
+            enabled=config.monitor_enabled,
+            log_frames=config.monitor_log_frames,
+            database_path=config.database_path,
+        )
+    except ValueError as exc:
+        raise ProductConfigurationError(str(exc)) from exc
+
+
 def load_product_packet_engine_config(path: str | Path) -> ProductPacketEngineConfig:
     config_path = Path(path)
     try:
@@ -174,20 +236,13 @@ def load_product_packet_engine_config(path: str | Path) -> ProductPacketEngineCo
     kiss = _table(root, "kiss")
     firmware = _table(root, "firmware")
     beacon = _table(root, "beacon")
+    monitor = _optional_table(root, "monitor")
+    storage = _optional_table(root, "storage")
 
     target = _string(hardware, "target")
-    if target != PRODUCT_TARGET:
-        raise ProductConfigurationError(
-            f"hardware.target must be the Stage-A supported target {PRODUCT_TARGET!r}"
-        )
-
     device = _string(radio, "device").strip()
-    if not device.startswith("/dev/"):
-        raise ProductConfigurationError("radio.device must be an absolute /dev path")
     frequency_hz = _frequency_hz(radio.get("frequency_mhz"))
     tx_power = _integer(radio, "tx_power")
-    if not 0 <= tx_power <= 255:
-        raise ProductConfigurationError("radio.tx_power must be 0..255")
     tx_enabled = _boolean(radio, "tx_enabled")
 
     baud = _integer(packet, "baud")
@@ -197,35 +252,38 @@ def load_product_packet_engine_config(path: str | Path) -> ProductPacketEngineCo
     if txdelay_ms < 0 or txdelay_ms % 10 or txdelay_ms > 2550:
         raise ProductConfigurationError("packet.txdelay_ms must be 0..2550 in 10 ms increments")
     persist = _integer(packet, "persist")
-    if not 0 <= persist <= 255:
-        raise ProductConfigurationError("packet.persist must be 0..255")
     slottime_ms = _integer(packet, "slottime_ms")
     if slottime_ms < 10 or slottime_ms % 10 or slottime_ms > 2550:
         raise ProductConfigurationError("packet.slottime_ms must be 10..2550 in 10 ms increments")
 
     kiss_enabled = _boolean(kiss, "enabled")
     kiss_host = _string(kiss, "listen")
-    if kiss_host != KISS_LOOPBACK_HOST:
-        raise ProductConfigurationError("Stage-B KISS listener must remain on 127.0.0.1")
     kiss_port = _integer(kiss, "port")
-    if not 1 <= kiss_port <= 65535:
-        raise ProductConfigurationError("kiss.port must be 1..65535")
 
     if _string(firmware, "required_product") != "YWD-1278":
         raise ProductConfigurationError("firmware.required_product must be 'YWD-1278'")
     if _boolean(firmware, "allow_automatic_flash"):
-        raise ProductConfigurationError("the Stage-B daemon does not permit automatic firmware flash")
+        raise ProductConfigurationError("the product daemon does not permit automatic firmware flash")
     if _boolean(beacon, "enabled"):
         raise ProductConfigurationError("beacon.enabled requires future 0F qualification")
 
-    if tx_enabled and (
-        frequency_hz != QUALIFIED_TX_FREQUENCY_HZ or tx_power != QUALIFIED_TX_POWER
-    ):
-        raise ProductConfigurationError(
-            "Stage-B TX may only use the physically-qualified 145.050 MHz / power-200 profile"
-        )
+    monitor_enabled = False
+    monitor_log_frames = False
+    database_path: Path | None = None
+    if monitor is not None:
+        monitor_enabled = _boolean(monitor, "enabled")
+        monitor_log_frames = _boolean(monitor, "log_frames")
+        if monitor_log_frames:
+            if storage is None:
+                raise ProductConfigurationError(
+                    "monitor.log_frames=true requires a [storage] table"
+                )
+            raw_database = _string(storage, "database").strip()
+            database_path = Path(raw_database)
+            if not database_path.is_absolute():
+                raise ProductConfigurationError("storage.database must be an absolute path")
 
-    return ProductPacketEngineConfig(
+    config = ProductPacketEngineConfig(
         target=target,
         device=device,
         frequency_hz=frequency_hz,
@@ -237,7 +295,12 @@ def load_product_packet_engine_config(path: str | Path) -> ProductPacketEngineCo
         kiss_enabled=kiss_enabled,
         kiss_host=kiss_host,
         kiss_port=kiss_port,
+        monitor_enabled=monitor_enabled,
+        monitor_log_frames=monitor_log_frames,
+        database_path=database_path,
     )
+    _validate_product_config(config)
+    return config
 
 
 class ProductPacketEngine:
@@ -252,6 +315,7 @@ class ProductPacketEngine:
         sleep: Sleeper = time.sleep,
         random_byte_source: RandomByteSource | None = None,
     ) -> None:
+        _validate_product_config(config)
         self.config = config
         self._transport_factory = transport_factory or posix_serial_transport_factory(config.device)
         self._monotonic = monotonic
@@ -265,6 +329,7 @@ class ProductPacketEngine:
         self.session: TNCSessionState | None = None
         self.backend: ProductTNCBackend | None = None
         self.runtime: SustainedTNCRuntime | None = None
+        self.observability: ProductObservability | None = None
         self.kiss_server: ThreadingKISSServer | None = None
         self.kiss_thread: threading.Thread | None = None
 
@@ -293,6 +358,8 @@ class ProductPacketEngine:
             tx_dispatches = runtime_snapshot.tx_dispatches
             failure = runtime_snapshot.failure
             running = running and runtime_snapshot.running
+        if self.observability is not None and self.config.monitor_log_frames:
+            running = running and self.observability.snapshot.logger_running
         listener = None
         if self.kiss_server is not None:
             host, port = self.kiss_server.server_address[:2]
@@ -309,6 +376,26 @@ class ProductPacketEngine:
             tx_dispatches=tx_dispatches,
             failure=failure,
         )
+
+    @property
+    def mheard_db(self) -> MHeardDatabase | None:
+        if self.observability is None:
+            return None
+        return self.observability.mheard_db
+
+    def open_monitor(self) -> MonitorSubscription:
+        if self.observability is None:
+            raise ProductPacketEngineError("product observability is not started")
+        return self.observability.open_monitor()
+
+    def diagnostics_snapshot(self) -> DiagnosticsSnapshot:
+        if self.observability is None:
+            if self.runtime is None or self.backend is None:
+                raise ProductPacketEngineError("product packet engine is not started")
+            from ywd1278.monitor.diagnostics import DiagnosticsStatus
+
+            return DiagnosticsStatus(runtime=self.runtime, backend=self.backend).snapshot()
+        return self.observability.diagnostics_snapshot()
 
     def start(self) -> None:
         if self._started:
@@ -403,6 +490,20 @@ class ProductPacketEngine:
                 status_interval_seconds=0.25,
             )
             self.runtime = runtime
+
+            observability = ProductObservability(
+                ProductObservabilityConfig(
+                    enabled=self.config.monitor_enabled,
+                    log_frames=self.config.monitor_log_frames,
+                    database_path=self.config.database_path,
+                ),
+                backend=backend,
+                runtime=runtime,
+            )
+            self.observability = observability
+            # Register the bounded logger subscriber before the RX runtime can
+            # publish its first decoded frame.
+            observability.start()
             runtime.start(timeout=1.5)
 
             if self.config.kiss_enabled:
@@ -425,6 +526,11 @@ class ProductPacketEngine:
         if not self.owner.snapshot.running:
             raise ProductPacketEngineError("modem owner is not running")
         self.runtime.check_health()
+        if self.observability is not None:
+            try:
+                self.observability.check_health()
+            except ProductObservabilityError as exc:
+                raise ProductPacketEngineError(str(exc)) from exc
         if self.kiss_server is not None:
             if self.kiss_thread is None or not self.kiss_thread.is_alive():
                 raise ProductPacketEngineError("KISS listener thread is not running")
@@ -449,9 +555,17 @@ class ProductPacketEngine:
                 self.kiss_server = None
                 self.kiss_thread = None
 
+        # Stop the producer before the persistent observer, so no new decoded
+        # events can be published after logger shutdown begins.
         if self.runtime is not None:
             try:
                 self.runtime.stop(timeout=3.0)
+            except BaseException as exc:
+                errors.append(exc)
+
+        if self.observability is not None:
+            try:
+                self.observability.stop()
             except BaseException as exc:
                 errors.append(exc)
 
