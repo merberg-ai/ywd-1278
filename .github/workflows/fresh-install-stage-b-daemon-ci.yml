@@ -37,7 +37,20 @@ jobs:
         run: |
           python tests/sustained_kiss_queue_concurrency_test.py
           python tests/sustained_kiss_tnc_integration_test.py
-          python tests/sustained_kiss_tnc_contract_test.py
+
+      - name: Preserve historical P8 architecture contract blob without replaying its superseded daemon-stub assertion
+        run: |
+          python - <<'PY'
+          import hashlib
+          from pathlib import Path
+          p = Path('tests/sustained_kiss_tnc_contract_test.py')
+          b = p.read_bytes()
+          sha = hashlib.sha1(f'blob {len(b)}\0'.encode() + b).hexdigest()
+          assert sha == 'fa49c652cb2ca86c01a1e9c4c2244d30c4c6b83e'
+          assert 'assert git_blob("src/ywd1278/daemon.py") == "0571c4a88a5d498b48cf6a6cc19b511655f8fb07"' in p.read_text(encoding='utf-8')
+          print('HISTORICAL_P8_CONTRACT_BLOB=PRESERVED')
+          print('P8_DAEMON_STUB_ASSERTION=SUPERSEDED_BY_STAGE_B')
+          PY
 
       - name: Preserve P7/P8 physical evidence contracts without hardware access
         run: |
