@@ -1,0 +1,66 @@
+name: fresh-install-stage-h-fresh-os-ci
+
+on:
+  push:
+    branches: [dev-fresh-install-stage-h-fresh-os]
+  pull_request:
+    branches: [dev]
+    paths:
+      - 'tools/stage_h_fresh_os_preflight.sh'
+      - 'tests/fresh_os_stage_h_contract_test.py'
+      - 'firmware/qualification/0b-product-fresh-os-stage-h.json'
+      - 'docs/qualifications/fresh-install-stage-h-fresh-os-staged-2026-09-04.md'
+      - '.github/workflows/fresh-install-stage-h-fresh-os-ci.yml'
+
+jobs:
+  fresh-os-stage-h:
+    runs-on: ubuntu-latest
+    env:
+      PYTHONPATH: src:tests
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Parse Stage H preflight
+        run: bash -n tools/stage_h_fresh_os_preflight.sh
+      - name: Stage H architecture and safety contract
+        run: python tests/fresh_os_stage_h_contract_test.py
+      - name: Preserve Stage G final reboot evidence
+        run: python tests/existing_pi_stage_g_reboot_evidence_contract_test.py
+      - name: Preserve Stage G target RX evidence
+        run: python tests/existing_pi_stage_g_target_evidence_contract_test.py
+      - name: Preserve Stage F firmware trust
+        run: |
+          python tests/firmware_trust_stage_f_test.py
+          python tests/firmware_trust_stage_f_contract_test.py
+          python tests/firmware_trust_stage_f_qualification_contract_test.py
+      - name: Preserve Stage E installer runtime
+        run: |
+          python tests/installer_runtime_stage_e_test.py
+          python tests/installer_runtime_stage_e_contract_test.py
+      - name: Replay Stage D full daemon graph
+        run: |
+          python tests/product_full_daemon_stage_d_test.py
+          python tests/product_classic_console_stage_d_contract_test.py
+      - name: Preserve Stage A packet-engine freeze
+        run: python tests/product_packet_engine_stage_a_contract_test.py
+      - name: Preserve sustained TNC physical evidence
+        run: |
+          python tests/sustained_kiss_tnc_integration_test.py
+          python tests/live_p7_kiss_one_shot_evidence_contract_test.py
+          python tests/live_p8_r3_physical_evidence_contract_test.py
+      - name: Parse Stage H staging manifest when present
+        run: |
+          if test -f firmware/qualification/0b-product-fresh-os-stage-h.json; then
+            python - <<'PY'
+          import json
+          d=json.load(open('firmware/qualification/0b-product-fresh-os-stage-h.json',encoding='utf-8'))
+          assert d['schema']==1 and d['stage']=='H'
+          assert d['status']=='host-staged-physical-fresh-os-pending'
+          assert d['physical_tx_permitted'] is False
+          print('STAGE_H_STAGING_MANIFEST=PASS')
+          PY
+          else
+            echo STAGE_H_STAGING_MANIFEST=PENDING
+          fi
