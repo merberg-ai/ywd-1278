@@ -18,6 +18,7 @@ from dataclasses import dataclass
 import errno
 import os
 import select
+import signal
 import termios
 import threading
 import time
@@ -411,16 +412,23 @@ def main(argv: list[str] | None = None) -> int:
         link_path=args.link,
         max_commands=args.max_commands,
     )
+    stop_event = threading.Event()
+
+    def _request_stop(_signum, _frame) -> None:
+        stop_event.set()
+
+    previous_sigint = signal.signal(signal.SIGINT, _request_stop)
+    previous_sigterm = signal.signal(signal.SIGTERM, _request_stop)
     try:
         slave_path = server.open()
         print(f"YWD1278_0E_P4_SLAVE_PTY={slave_path}", flush=True)
         if server.link_path is not None:
             print(f"YWD1278_0E_P4_STABLE_LINK={server.link_path}", flush=True)
-        server.serve()
-    except KeyboardInterrupt:
-        return 0
+        server.serve(stop_event)
     finally:
         server.close()
+        signal.signal(signal.SIGINT, previous_sigint)
+        signal.signal(signal.SIGTERM, previous_sigterm)
     return 0
 
 
