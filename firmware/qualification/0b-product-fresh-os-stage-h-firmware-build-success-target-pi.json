@@ -1,0 +1,58 @@
+{
+  "schema": 1,
+  "phase": "fresh-install-stage-h-fresh-os",
+  "stage": "H",
+  "status": "target-pi-firmware-build-qualified-after-toolchain-remediation",
+  "date": "2026-09-04",
+  "timezone": "America/Los_Angeles",
+  "remediation_checkpoint": {
+    "branch": "checkpoint/product-fresh-os-stage-h-toolchain-remediation-host-qualified",
+    "sha": "2f5299e65add072fea6ee55a54dc421faf00c276",
+    "host_ci_run_id": 33926348174,
+    "host_ci_conclusion": "success"
+  },
+  "capture_provenance": {
+    "source": "physical target-Pi terminal output supplied by operator",
+    "checkout_head_echo_present_in_this_capture": false,
+    "association_basis": "operator continued the instructed Stage-H remediation sequence from the frozen remediation checkpoint"
+  },
+  "build": {
+    "command_surface": "firmware/prepare-product-ax25r4.sh",
+    "exit_code": 0,
+    "putty_session_survived": true,
+    "reproducible_builds": "PASS",
+    "rssi_firmware_build": "PASS",
+    "product_firmware_artifact": "PASS",
+    "product_firmware_prepare": "PASS",
+    "artifact_size_bytes": 59892,
+    "artifact_sha256": "b06fcbf0baa36e865198091cee27c66e1624ef08117ee685253a7a5613c7c616",
+    "expected_artifact_sha256": "b06fcbf0baa36e865198091cee27c66e1624ef08117ee685253a7a5613c7c616",
+    "vector_initial_sp": "0x20005000",
+    "vector_reset": "0x080080ad",
+    "artifact_identity": "MMDVM_HS_Hat-YWD-1278-AX25R4-v0.1.0-alpha1 14.7456MHz ADF7021 FW based on CA6JAU GitID #7ff74ed",
+    "artifact_identity_count": 1,
+    "rssi_subcommand": "0x05",
+    "rssi_threshold_selected": false,
+    "engineering_external_repo_required": false
+  },
+  "safety": {
+    "hardware_access": false,
+    "modem_uart_opened": false,
+    "rf_configured": false,
+    "rf_transmitted": false,
+    "flash_written": false,
+    "option_bytes_written": false
+  },
+  "qualified_claims": {
+    "fresh_pi_can_build_frozen_product_ax25r4_artifact": true,
+    "artifact_matches_frozen_product_size": true,
+    "artifact_matches_frozen_product_sha256": true,
+    "artifact_matches_frozen_product_identity": true,
+    "build_is_reproducible": true,
+    "toolchain_header_failure_remediated": true,
+    "physical_tx": false,
+    "flash_write": false,
+    "option_byte_write": false
+  },
+  "next_gate": "Protected two-pass stock main-flash backup with exact allowlisted stock SHA256 verification; no firmware write yet."
+}
