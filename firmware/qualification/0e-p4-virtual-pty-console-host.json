@@ -11,14 +11,14 @@
   },
   "qualified_implementation": {
     "branch": "dev-0e-p4-virtual-pty-console",
-    "head_sha": "2f8bf6aff6cc95c7553a6344ac0d7313c1d21ba4",
-    "dedicated_ci_run": 33834614216,
+    "head_sha": "aba04bc61810c8038ce6890e6bc9c634088690db",
+    "dedicated_ci_run": 33834928723,
     "dedicated_ci_conclusion": "success"
   },
   "p4_blobs": {
-    "src/ywd1278/console/pty_serial.py": "701bfca3b01ded1d9c0a590e78272cfa6907301a",
+    "src/ywd1278/console/pty_serial.py": "c0ba2a3278ac1e790bf383fc12a220ae327255ba",
     "tests/pty_serial_tnc_console_test.py": "8acba59b456b2224dbb0e64b76b7f7ef0bfc4b94",
-    "tests/pty_serial_tnc_console_contract_test.py": "9582d141c38e2ea0395d7a836625ac8db9f0c133",
+    "tests/pty_serial_tnc_console_contract_test.py": "cff343aa56a6c20f9cb539bb95d4765ebdeb1da7",
     "tools/qualify_0e_p4_pty.py": "1740249933aa0ab8f8201f0bf5b136f86e3c8cbe"
   },
   "frozen_boundaries": {
@@ -36,6 +36,8 @@
     "stable_link": "optional explicit absolute path",
     "stable_link_existing_object_replaced": false,
     "stable_link_removed_on_clean_close_when_still_owned": true,
+    "sigint_graceful_cleanup": true,
+    "sigterm_graceful_cleanup": true,
     "hardware_serial_path_opened": false
   },
   "serial_command_policy": {
@@ -66,6 +68,8 @@
     "architecture_contract": "pass",
     "real_kernel_pty_helper": "pass",
     "stable_link_create_resolve_cleanup": "pass",
+    "sigterm_process_exit": "pass",
+    "sigterm_stable_link_cleanup": "pass",
     "termios_tty_api": "pass",
     "detach_reopen_state_reset": "pass",
     "quit_logical_session_reset": "pass",
