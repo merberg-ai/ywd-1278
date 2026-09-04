@@ -38,8 +38,7 @@ def main() -> int:
     assert listener["wildcard_bind_rejected"] is True
     assert listener["public_bind_rejected"] is True
 
-    remote = data["remote_host"]
-    assert remote == {
+    assert data["remote_host"] == {
         "source_address": "192.168.1.15",
         "source_scope": "rfc1918-private-ipv4",
         "separate_host_from_target": True,
@@ -85,7 +84,14 @@ def main() -> int:
     assert cleanup["actual_listener_pid_observed"] == 100607
     assert cleanup["listener_remained_available_for_remote_test_after_stale_pid_cleanup_attempt"] is True
     assert cleanup["qualification_behavior_affected"] is False
-    assert cleanup["residual_listener_cleanup_followup_required"] is True
+    assert cleanup["residual_listener_cleanup_followup_required"] is False
+    assert cleanup["followup_cleanup_tool"] == "tools/cleanup_0e_p3_lan.py"
+    assert cleanup["followup_listener_pid_terminated"] == 100607
+    assert cleanup["followup_state_removed"] == "/tmp/ywd1278-0e-p3-lan-state.json"
+    assert cleanup["followup_listener_process_absent"] is True
+    assert cleanup["followup_tcp_8023_not_listening"] is True
+    assert cleanup["followup_temp_auth_state_removed"] is True
+    assert cleanup["followup_result"] == "pass"
 
     expected_impl = {
         "src/ywd1278/console/auth.py": "0bdacaca9807012954c3362a8c0d92c4c1e21d40",
@@ -105,7 +111,8 @@ def main() -> int:
         assert value is False, (key, value)
 
     assert data["target_pi_private_lan_qualification_complete"] is True
-    assert data["phase_complete_pending_cleanup_confirmation"] is True
+    assert data["cleanup_followup_complete"] is True
+    assert data["phase_complete"] is True
 
     print("YWD1278_0E_P3_TARGET_PI_LAN_EVIDENCE=PASS")
     print("TARGET_PI=192.168.1.11:8023")
@@ -118,6 +125,8 @@ def main() -> int:
     print("FUTURE_TX_COMMANDS_REJECTED=PASS")
     print("WILDCARD_PUBLIC_BINDS_REJECTED=PASS")
     print("CLEANUP_STALE_PID_ANOMALY=RECORDED")
+    print("CLEANUP_FOLLOWUP=PASS")
+    print("P3_PHASE_COMPLETE=YES")
     print("TX_RF_HARDWARE_TEST_REQUIRED=NO")
     return 0
 
