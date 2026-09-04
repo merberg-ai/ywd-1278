@@ -1,0 +1,98 @@
+{
+  "schema": 1,
+  "phase": "0E-P2",
+  "stage": "loopback-telnet-command-console",
+  "status": "host-qualified",
+  "base_checkpoint": "checkpoint/0e-p1-local-tnc-console-host-qualified",
+  "base_sha": "c51484fce731fea0bb62ab923f3aa66ef214a1b5",
+  "qualified_implementation_head": "37bcc6808e5287bfd49ba37d56b1a7d5185f8b1c",
+  "dedicated_ci": {
+    "workflow": "0e-p2-telnet-console-ci",
+    "run_id": 33829902701,
+    "result": "success"
+  },
+  "implementation_blobs": {
+    "src/ywd1278/console/telnet.py": "d15669eb61f2afdf4d0d177191124ef8f13713e0",
+    "tests/telnet_tnc_console_test.py": "7ac266f0725eccf8981245ce0b80664617da7cf2",
+    "tests/telnet_tnc_console_contract_test.py": "8a904b0976f24c06092e170e5adb32fd4bc64d3b"
+  },
+  "frozen_p1": {
+    "parser_module": "src/ywd1278/console/local.py",
+    "parser_blob": "9fed5416ca9123811413f4ef284abff0006a48dd",
+    "package_manifest_blob": "9331c09b7f1e3c7111e437f3007e1e2c14716eb3",
+    "modified": false
+  },
+  "interface": {
+    "entry_point": "python -m ywd1278.console.telnet",
+    "transport": "ipv4-loopback-telnet-only",
+    "default_bind": "127.0.0.1",
+    "default_port": 8023,
+    "prompt": "cmd:",
+    "max_command_chars": 256,
+    "default_max_clients": 4,
+    "hard_max_clients": 16,
+    "default_idle_timeout_seconds": 300,
+    "default_max_session_seconds": 3600,
+    "default_max_commands": 1024,
+    "recv_chunk_bytes": 512,
+    "max_telnet_negotiations": 32,
+    "exact_token_commands": true,
+    "command_abbreviation": false,
+    "shell_escape": false,
+    "dynamic_execution": false
+  },
+  "telnet_policy": {
+    "optional_features_enabled": false,
+    "will_wont_do_dont_refused": true,
+    "unsupported_control_sequence_fatal": true,
+    "nul_data_fatal": true,
+    "non_nvt_control_fatal": true,
+    "oversized_line_discard_then_recover": true,
+    "crlf_supported": true,
+    "backspace_supported": true
+  },
+  "session_policy": {
+    "shell_per_connection": true,
+    "monitor_policy_per_connection": true,
+    "disconnect_reconnect_resets_session_monitor_policy": true,
+    "shared_modem_owner": false,
+    "shared_packet_subscriber": false,
+    "shared_tx_path": false
+  },
+  "exposure": {
+    "wildcard_bind": false,
+    "lan_bind": false,
+    "public_bind": false,
+    "hostname_bind": false,
+    "ipv6_bind": false,
+    "authentication": false,
+    "authentication_required_before_broader_bind": true
+  },
+  "future_commands_rejected": [
+    "CONNECT",
+    "CONVERSE",
+    "UNPROTO",
+    "BEACON",
+    "TX",
+    "SEND",
+    "TRANSMIT",
+    "KISS",
+    "SHELL"
+  ],
+  "safety": {
+    "pty": false,
+    "serial_port": false,
+    "modem_dependency": false,
+    "kiss_session": false,
+    "packet_subscriber": false,
+    "database_write_capability": false,
+    "retention_apply_capability": false,
+    "tx_capability": false,
+    "uart_activity": false,
+    "rf_activity": false,
+    "gpio_reset_flash_option_byte_activity": false
+  },
+  "host_qualification_complete": true,
+  "target_pi_loopback_smoke_pending": true,
+  "phase_complete": false
+}
