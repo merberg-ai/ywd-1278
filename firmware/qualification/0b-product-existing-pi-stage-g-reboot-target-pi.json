@@ -1,0 +1,84 @@
+{
+  "schema": 1,
+  "stage": "G",
+  "phase": "existing-pi-reboot-survival-rx-only",
+  "status": "target-pi-reboot-qualified",
+  "date": "2026-09-04",
+  "timezone": "America/Los_Angeles",
+  "product_under_test": {
+    "installed_commit": "5cb6e072c61d00376c1c46db7832912d71cace26",
+    "hardware": "Raspberry Pi 5 Model B Rev 1.0",
+    "os": "Debian GNU/Linux 13 (trixie)",
+    "uart": "/dev/ttyAMA0",
+    "frequency_hz": 145050000,
+    "tx_enabled": false,
+    "automatic_flash_enabled": false,
+    "runtime_identity": "MMDVM_HS_Hat-YWD-1278-AX25R4-v0.1.0-alpha1 14.7456MHz ADF7021 FW based on CA6JAU GitID #7ff74ed"
+  },
+  "qualification_harness": {
+    "branch": "dev-fresh-install-stage-g-existing-pi",
+    "checkout_sha": "2e5bcefb8f988c2366dc4d58cdc021c634a6f929",
+    "pre_reboot_marker_required": true,
+    "actual_reboot_required": true,
+    "fresh_mheard_advance_required": true
+  },
+  "reboot_proof": {
+    "boot_id_before": "74906ed4-3611-41d6-a194-b749088597c5",
+    "boot_id_after": "975c108c-2989-4904-8df3-d716649ae3a4",
+    "boot_id_changed": true,
+    "pre_reboot_main_pid": 143398,
+    "auto_started_main_pid": 1771,
+    "service_enabled_after_reboot": true,
+    "service_active_before_qualifier_mutation": true,
+    "pty_auto_return": "pass",
+    "kiss_loopback_port_8001_auto_return": "pass",
+    "console_loopback_port_8010_auto_return": "pass"
+  },
+  "post_reboot_trust_revalidation": {
+    "runtime_readiness": "ready",
+    "service_eligibility": "yes",
+    "uart_release_after_stop": "pass",
+    "exact_ax25r4_identity_after_stop": "pass",
+    "flash_written": false,
+    "rf_transmitted": false
+  },
+  "post_identity_restart": {
+    "kiss_loopback_port_8001": "pass",
+    "console_loopback_port_8010": "pass",
+    "service_enabled": true,
+    "service_active": true,
+    "final_main_pid": 2660
+  },
+  "fresh_post_reboot_rx": {
+    "result": "pass",
+    "frequency_hz": 145050000,
+    "kiss_frame_bytes": 36,
+    "ax25_source": "KJ6YWD-5",
+    "kiss_data_received": true,
+    "telnet_mheard_fresh_advance": true,
+    "pty_mheard_fresh_advance": true,
+    "tx_command_sent": false,
+    "kiss_data_sent": false,
+    "modem_uart_opened_by_qualifier": false,
+    "rf_transmitted_by_qualifier": false
+  },
+  "qualified_claims": {
+    "actual_reboot_proven": true,
+    "service_auto_start": true,
+    "runtime_readiness_survived": true,
+    "service_eligibility_survived": true,
+    "kiss_telnet_pty_auto_return": true,
+    "uart_release_after_post_reboot_stop": true,
+    "exact_ax25r4_identity_after_reboot": true,
+    "fresh_live_rx_145050": true,
+    "fresh_telnet_mheard_advance": true,
+    "fresh_pty_mheard_advance": true,
+    "service_enabled_final": true,
+    "service_active_final": true,
+    "physical_tx": false,
+    "flash_write": false
+  },
+  "stage_g_complete": true,
+  "physical_tx_permitted": false,
+  "next_action": "Freeze the final Stage-G evidence/checkpoint, then stage the fresh Raspberry Pi OS from-zero qualification. Physical TX remains a later explicit authorization gate."
+}
