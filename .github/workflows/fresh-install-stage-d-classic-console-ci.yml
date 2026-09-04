@@ -18,6 +18,8 @@ on:
 jobs:
   product-classic-console-stage-d:
     runs-on: ubuntu-latest
+    env:
+      PYTHONPATH: src:tests
     steps:
       - uses: actions/checkout@v4
 
@@ -34,20 +36,20 @@ jobs:
           python -m py_compile tests/product_classic_console_stage_d_contract_test.py
 
       - name: Stage D real socket and kernel PTY integration regression
-        run: PYTHONPATH=src:tests python tests/product_classic_console_stage_d_test.py
+        run: python tests/product_classic_console_stage_d_test.py
 
       - name: Stage D architecture and safety contract
         run: python tests/product_classic_console_stage_d_contract_test.py
 
       - name: Preserve Stage C product observability behavior
-        run: PYTHONPATH=src:tests python tests/product_observability_stage_c_test.py
+        run: python tests/product_observability_stage_c_test.py
 
       - name: Preserve Stage A exact packet-engine freeze
         run: python tests/product_packet_engine_stage_a_contract_test.py
 
       - name: Replay frozen 0E-P5 classic vocabulary and evidence
         run: |
-          PYTHONPATH=src:tests python tests/classic_tnc_vocabulary_test.py
+          python tests/classic_tnc_vocabulary_test.py
           python tests/classic_tnc_vocabulary_contract_test.py
           python tests/classic_tnc_vocabulary_qualification_contract_test.py
           python tests/classic_tnc_vocabulary_target_pi_evidence_contract_test.py
@@ -67,14 +69,14 @@ jobs:
 
       - name: Preserve sustained TNC and physical evidence contracts
         run: |
-          PYTHONPATH=src:tests python tests/sustained_kiss_tnc_integration_test.py
+          python tests/sustained_kiss_tnc_integration_test.py
           python tests/live_p7_kiss_one_shot_evidence_contract_test.py
           python tests/live_p8_r3_physical_evidence_contract_test.py
 
       - name: Preserve zero-I/O daemon framework self-test
         run: |
           tmp="$(mktemp)"
-          PYTHONPATH=src python -m ywd1278.daemon --config "$tmp" --framework-self-test | tee /tmp/ywd-stage-d-self-test.txt
+          python -m ywd1278.daemon --config "$tmp" --framework-self-test | tee /tmp/ywd-stage-d-self-test.txt
           grep -q '^YWD1278_FRAMEWORK_SELF_TEST=PASS$' /tmp/ywd-stage-d-self-test.txt
           grep -q '^MODEM_UART_OPENED=NO$' /tmp/ywd-stage-d-self-test.txt
           grep -q '^RF_TRANSMITTED=NO$' /tmp/ywd-stage-d-self-test.txt
