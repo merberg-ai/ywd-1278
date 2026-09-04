@@ -15,8 +15,9 @@
   "target_tested_tree": {
     "branch": "dev-0e-p4-virtual-pty-console",
     "head_sha": "1be7340d920bb64251245b67ce1c4fb32da15486",
-    "working_tree_clean_before_test": true,
-    "working_tree_clean_after_helper": true
+    "branch_pull_result": "already up to date",
+    "working_tree_clean_asserted_by_reduced_wrapper": false,
+    "note": "The reduced PuTTY-safe wrapper verified the expected branch/head and successful helper exit but did not run a separate git-status cleanliness assertion."
   },
   "p4_blobs": {
     "src/ywd1278/console/pty_serial.py": "c0ba2a3278ac1e790bf383fc12a220ae327255ba",
