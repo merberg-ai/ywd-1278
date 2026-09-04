@@ -1,0 +1,48 @@
+{
+  "schema": 1,
+  "stage": "H",
+  "phase": "fresh-raspberry-pi-os-from-zero-qualification",
+  "status": "host-staged-physical-fresh-os-pending",
+  "date": "2026-09-04",
+  "timezone": "America/Los_Angeles",
+  "base_checkpoint": {
+    "branch": "checkpoint/product-existing-pi-stage-g-qualified",
+    "sha": "1e2ecb162fdd900ca80b8e69ca085f8d591e7aab"
+  },
+  "branch": "dev-fresh-install-stage-h-fresh-os",
+  "host_staging": {
+    "implementation_head": "15c389d8df6a84a7adee5a93f6945f2852909fe2",
+    "ci_run_id": 33923952309,
+    "ci_conclusion": "success",
+    "stage_h_contract": "pass",
+    "stage_g_final_evidence_preserved": "pass",
+    "stage_f_firmware_trust_preserved": "pass",
+    "stage_e_installer_preserved": "pass",
+    "stage_d_full_graph_preserved": "pass",
+    "stage_a_packet_engine_preserved": "pass",
+    "sustained_tnc_physical_evidence_preserved": "pass"
+  },
+  "fresh_os_policy": {
+    "preexisting_ywd1278_state_permitted": false,
+    "preflight_mutation_permitted": false,
+    "tx_enabled": false,
+    "automatic_flash_enabled": false,
+    "packet_service_enable_during_install": false,
+    "uart_repair_reboot_resume_may_be_required": true,
+    "protected_stock_backup_required_before_firmware_write": true,
+    "exact_ax25r4_readback_required": true,
+    "service_eligibility_required_before_enable": true,
+    "live_rx_145050_required": true,
+    "reboot_survival_required": true,
+    "physical_tx_permitted": false
+  },
+  "physical_fresh_os_preflight_complete": false,
+  "physical_installer_complete": false,
+  "physical_uart_resume_complete": false,
+  "physical_firmware_deployment_complete": false,
+  "physical_service_activation_complete": false,
+  "physical_live_rx_complete": false,
+  "physical_reboot_complete": false,
+  "physical_tx_permitted": false,
+  "next_action": "On the fresh Raspberry Pi OS target, clone the pinned Stage-H branch into ~/ywd-1278 and run the read-only Stage-H preflight before starting the installer."
+}
