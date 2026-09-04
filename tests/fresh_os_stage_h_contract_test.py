@@ -56,6 +56,7 @@ def main() -> int:
 
     install = (ROOT / "installer/install.sh").read_text(encoding="utf-8")
     resume = (ROOT / "installer/resume.sh").read_text(encoding="utf-8")
+    toolchain = (ROOT / "installer/firmware-toolchain-check.sh").read_text(encoding="utf-8")
     for text, name in ((install, "install"), (resume, "resume")):
         assert "SERVICE_ENABLED=NO" in text, name
         assert "RF_TRANSMITTED=NO" in text, name
@@ -66,6 +67,31 @@ def main() -> int:
     assert "SERIAL_CONSOLE_PRESENT=NO" in resume
     assert "RUNTIME_UART_READY=YES" in resume
 
+    for token in (
+        "libnewlib-arm-none-eabi",
+        "libstdc++-arm-none-eabi-dev",
+        "libstdc++-arm-none-eabi-newlib",
+        "psmisc",
+        "firmware-toolchain-check.sh\" check",
+    ):
+        assert token in install, f"fresh installer missing firmware dependency/toolchain gate: {token}"
+
+    for token in (
+        "#include <stdint.h>",
+        "#include <string.h>",
+        "#include <cstdint>",
+        "#include <cstring>",
+        "arm-none-eabi-gcc",
+        "arm-none-eabi-g++",
+        "YWD1278_FIRMWARE_TOOLCHAIN_CHECK=PASS",
+        "HARDWARE_ACCESS=NO",
+        "FLASH_WRITTEN=NO",
+        "RF_TRANSMITTED=NO",
+    ):
+        assert token in toolchain, f"toolchain smoke check missing token: {token}"
+    for forbidden in ("/dev/tty", "hat_control", "stm32flash -w", "TX_ACCEPT"):
+        assert forbidden not in toolchain, f"toolchain check gained hardware/write capability: {forbidden}"
+
     print("YWD1278_STAGE_H_FRESH_OS_CONTRACT=PASS")
     print("FROZEN_STAGE_G_FINAL_EVIDENCE=PASS")
     print("FRESH_OS_PREINSTALL_STATE_REQUIRED=EMPTY")
@@ -73,6 +99,7 @@ def main() -> int:
     print("PREFLIGHT_FIRMWARE_WRITE=ABSENT")
     print("PREFLIGHT_RF_TX=ABSENT")
     print("INSTALLER_UART_REPAIR_RESUME_PATH=REQUIRED")
+    print("FIRMWARE_TOOLCHAIN_HEADERS_REQUIRED=YES")
     print("PACKET_SERVICE_ENABLE_DURING_INSTALL=ABSENT")
     return 0
 
