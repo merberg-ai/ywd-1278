@@ -1,0 +1,52 @@
+{
+  "schema": 1,
+  "phase": "0D-P4",
+  "stage": "mheard-target-pi-sanity",
+  "status": "supplementary-target-host-pass",
+  "checkpoint": "checkpoint/0d-p4-mheard-host-qualified",
+  "checkpoint_sha": "d75e253003762d1077e7300da52980b1f4739963",
+  "python_version": "3.13.5",
+  "tests": {
+    "mheard_test": "pass",
+    "mheard_contract_test": "pass",
+    "mheard_qualification_contract_test": "pass",
+    "p3_target_pi_evidence_contract_test": "pass",
+    "p3_qualification_contract_test": "pass",
+    "p2_qualification_contract_test": "pass",
+    "p1_qualification_contract_test": "pass"
+  },
+  "mheard": {
+    "source": "sqlite-frame-log-read-only",
+    "aggregation": "source-callsign-ssid",
+    "database_write_capability": false,
+    "packet_subscriber": false,
+    "worker_thread": false,
+    "additional_in_memory_queue": false,
+    "tx_capability": false
+  },
+  "smoke_database": {
+    "path": "/tmp/ywd1278-p3-smoke.sqlite3",
+    "station_count": 2,
+    "frame_count": 2,
+    "stations": [
+      {
+        "source": "KJ6YWD",
+        "heard_count": 1,
+        "destination": "JIM",
+        "path": [],
+        "line": "KJ6YWD>JIM:YWD-1278 P3 SQLITE TEST TWO"
+      },
+      {
+        "source": "KJ6YWD-9",
+        "heard_count": 1,
+        "destination": "APRS",
+        "path": ["WIDE1-1", "WIDE2-1"],
+        "line": "KJ6YWD-9>APRS,WIDE1-1,WIDE2-1:YWD-1278 P3 SQLITE TEST ONE"
+      }
+    ],
+    "ssid_identity_preserved": true
+  },
+  "uart_activity": false,
+  "rf_activity": false,
+  "qualification_complete": true
+}
