@@ -64,10 +64,10 @@
 
 ## 0D — Monitor and logging
 
-- [ ] decoded monitor stream
-- [ ] MCOM/MCON/MRPT-style controls
-- [ ] SQLite frame log
-- [ ] MHEARD database/list
+- [x] decoded monitor stream (0D-P1) — host-qualified read-only `PacketEvent` subscriber over the existing bounded backend queue. History is emitted before live data in source order; AX.25 I/S/U/UI frames are retained as structured monitor records with deterministic single-line rendering, binary escaping and path-repeat flags. The monitor adds no worker thread, no extra queue, no modem dependency and no TX surface
+- [x] MCOM/MCON/MRPT-style controls (0D-P2) — host-qualified typed monitor policy with classic defaults `MCOM=OFF`, `MCON=OFF`, `MRPT=ON`. MCOM gates protocol-control visibility, MCON applies connected-context filtering without inventing a connected-mode engine, MRPT changes presentation only, and effective policy updates are atomic/generation-tagged. No command shell, modem/UART/RF or TX surface is introduced
+- [x] SQLite frame log (0D-P3) — host-qualified one-thread SQLite sink over the existing bounded monitor subscriber. Schema v1 uses WAL/NORMAL, stores exact no-FCS AX.25 bytes plus information bytes/structured metadata, ignores backend history on logger restart to prevent duplicate persistence, fails closed on unsupported/unversioned schemas and isolates SQLite write failure from the packet backend. The merged checkpoint `0c6778278469ab5f1608cdc9e38d02bc0987541f` also passed supplementary target-Pi sanity on Python 3.13.5, including a real two-row WAL smoke database with no UART/RF activity
+- [x] MHEARD database/list (0D-P4) — host-qualified read-only on-demand view over the frozen P3 `frames` table. Exact source callsign+SSID is the station identity; entries expose first/last heard, count and latest destination/path/frame/monitor line with deterministic `(observed_at_ns,id)` recency. Optional `since_ns` windows and a bounded 1..1000 result limit are supported. SQLite opens `mode=ro` plus `query_only`; P4 adds no packet subscriber, worker thread, queue, database-write capability, modem/UART/RF or TX surface
 - [ ] retention controls
 - [ ] diagnostics/status counters
 
