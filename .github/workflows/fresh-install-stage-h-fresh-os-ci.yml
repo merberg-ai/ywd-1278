@@ -13,11 +13,13 @@ on:
       - 'tests/fresh_os_stage_h_preinstall_evidence_contract_test.py'
       - 'tests/fresh_os_stage_h_resume_evidence_contract_test.py'
       - 'tests/fresh_os_stage_h_firmware_build_failure_evidence_contract_test.py'
+      - 'tests/fresh_os_stage_h_firmware_build_success_evidence_contract_test.py'
       - 'tests/fresh_os_stage_h_prior_stage_preservation_test.py'
       - 'firmware/qualification/0b-product-fresh-os-stage-h.json'
       - 'firmware/qualification/0b-product-fresh-os-stage-h-preinstall-target-pi.json'
       - 'firmware/qualification/0b-product-fresh-os-stage-h-resume-target-pi.json'
       - 'firmware/qualification/0b-product-fresh-os-stage-h-firmware-build-failure-target-pi.json'
+      - 'firmware/qualification/0b-product-fresh-os-stage-h-firmware-build-success-target-pi.json'
       - 'docs/qualifications/fresh-install-stage-h-fresh-os-staged-2026-09-04.md'
       - '.github/workflows/fresh-install-stage-h-fresh-os-ci.yml'
 
@@ -44,6 +46,8 @@ jobs:
         run: python tests/fresh_os_stage_h_resume_evidence_contract_test.py
       - name: Stage H firmware-build failure evidence contract
         run: python tests/fresh_os_stage_h_firmware_build_failure_evidence_contract_test.py
+      - name: Stage H firmware-build success evidence contract
+        run: python tests/fresh_os_stage_h_firmware_build_success_evidence_contract_test.py
       - name: Stage H prior-stage immutable evidence preservation
         run: python tests/fresh_os_stage_h_prior_stage_preservation_test.py
       - name: Preserve Stage G final reboot evidence
@@ -116,4 +120,19 @@ jobs:
           assert d['safety']['flash_written'] is False
           assert d['safety']['rf_transmitted'] is False
           print('STAGE_H_FIRMWARE_BUILD_FAILURE_TARGET_PI_MANIFEST=PASS')
+          PY
+      - name: Parse Stage H successful firmware-build evidence
+        run: |
+          python - <<'PY'
+          import json
+          d=json.load(open('firmware/qualification/0b-product-fresh-os-stage-h-firmware-build-success-target-pi.json',encoding='utf-8'))
+          assert d['schema']==1 and d['stage']=='H'
+          assert d['status']=='target-pi-firmware-build-qualified-after-toolchain-remediation'
+          assert d['build']['exit_code']==0
+          assert d['build']['artifact_size_bytes']==59892
+          assert d['build']['artifact_sha256']=='b06fcbf0baa36e865198091cee27c66e1624ef08117ee685253a7a5613c7c616'
+          assert d['safety']['hardware_access'] is False
+          assert d['safety']['flash_written'] is False
+          assert d['safety']['rf_transmitted'] is False
+          print('STAGE_H_FIRMWARE_BUILD_SUCCESS_TARGET_PI_MANIFEST=PASS')
           PY
