@@ -1,0 +1,83 @@
+name: 0e-p5-classic-vocabulary-ci
+
+on:
+  push:
+    branches: [dev-0e-p5-classic-vocabulary]
+  pull_request:
+    branches: [dev]
+    paths:
+      - 'src/ywd1278/console/classic.py'
+      - 'tests/classic_tnc_vocabulary*_test.py'
+      - 'tools/qualify_0e_p5_classic.py'
+      - '.github/workflows/0e-p5-classic-vocabulary-ci.yml'
+      - 'firmware/qualification/0e-p5-*'
+      - 'docs/qualifications/0e-p5-*'
+      - 'docs/ROADMAP.md'
+
+jobs:
+  classic-vocabulary-host:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Compile 0E-P5 boundary
+        run: |
+          python -m py_compile src/ywd1278/console/classic.py
+          python -m py_compile tests/classic_tnc_vocabulary_test.py
+          python -m py_compile tests/classic_tnc_vocabulary_contract_test.py
+          python -m py_compile tools/qualify_0e_p5_classic.py
+      - name: Classic vocabulary regression
+        run: PYTHONPATH=src python tests/classic_tnc_vocabulary_test.py
+      - name: Classic vocabulary architecture and safety contract
+        run: PYTHONPATH=src python tests/classic_tnc_vocabulary_contract_test.py
+      - name: Classic local CLI and deterministic PTY helper smoke
+        run: |
+          PYTHONPATH=src python -m ywd1278.console.classic --help >/dev/null
+          PYTHONPATH=src python tools/qualify_0e_p5_classic.py
+      - name: Preserve frozen 0E-P4 qualification
+        run: |
+          PYTHONPATH=src python tests/pty_serial_tnc_console_test.py
+          PYTHONPATH=src python tests/pty_serial_tnc_console_contract_test.py
+          PYTHONPATH=src python tests/pty_serial_tnc_console_qualification_contract_test.py
+          PYTHONPATH=src python tests/pty_serial_tnc_console_target_pi_evidence_contract_test.py
+      - name: Preserve frozen 0E-P3 qualification
+        run: |
+          PYTHONPATH=src python tests/auth_lan_console_test.py
+          PYTHONPATH=src python tests/auth_lan_console_contract_test.py
+          PYTHONPATH=src python tests/auth_lan_console_qualification_contract_test.py
+          PYTHONPATH=src python tests/auth_lan_console_target_pi_evidence_contract_test.py
+      - name: Preserve frozen 0E-P2 qualification
+        run: |
+          PYTHONPATH=src python tests/telnet_tnc_console_test.py
+          PYTHONPATH=src python tests/telnet_tnc_console_contract_test.py
+          PYTHONPATH=src python tests/telnet_tnc_console_qualification_contract_test.py
+          PYTHONPATH=src python tests/telnet_tnc_console_target_pi_evidence_contract_test.py
+      - name: Preserve frozen 0E-P1 boundary and qualification
+        run: |
+          PYTHONPATH=src python tests/local_tnc_console_test.py
+          PYTHONPATH=src python tests/local_tnc_console_contract_test.py
+          PYTHONPATH=src python tests/local_tnc_console_qualification_contract_test.py
+      - name: Preserve frozen 0D-P6 target-Pi and host qualification
+        run: |
+          PYTHONPATH=src python tests/diagnostics_status_test.py
+          PYTHONPATH=src python tests/diagnostics_status_contract_test.py
+          PYTHONPATH=src python tests/diagnostics_status_qualification_contract_test.py
+          PYTHONPATH=src python tests/diagnostics_status_target_pi_evidence_contract_test.py
+      - name: Preserve frozen 0D-P5/P4/P3/P2/P1 qualification
+        run: |
+          PYTHONPATH=src python tests/retention_target_pi_evidence_contract_test.py
+          PYTHONPATH=src python tests/retention_qualification_contract_test.py
+          PYTHONPATH=src python tests/mheard_target_pi_evidence_contract_test.py
+          PYTHONPATH=src python tests/mheard_qualification_contract_test.py
+          PYTHONPATH=src python tests/sqlite_frame_log_target_pi_evidence_contract_test.py
+          PYTHONPATH=src python tests/sqlite_frame_log_qualification_contract_test.py
+          PYTHONPATH=src python tests/monitor_policy_qualification_contract_test.py
+          PYTHONPATH=src python tests/monitor_stream_qualification_contract_test.py
+      - name: Preserve frozen sustained TNC runtime boundary
+        run: |
+          PYTHONPATH=src python tests/live_p8_r3_physical_evidence_contract_test.py
+          PYTHONPATH=src python tests/sustained_live_fifo_drain_regression_test.py
+          PYTHONPATH=src python tests/sustained_kiss_tnc_integration_test.py
