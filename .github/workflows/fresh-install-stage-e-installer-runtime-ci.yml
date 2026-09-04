@@ -48,6 +48,24 @@ jobs:
       - name: Stage E installer architecture and safety contract
         run: python tests/installer_runtime_stage_e_contract_test.py
 
+      - name: Stage E packaged-runtime smoke
+        env:
+          PYTHONPATH: ''
+        run: |
+          python -m venv /tmp/ywd-stage-e-venv
+          /tmp/ywd-stage-e-venv/bin/python -m pip install --disable-pip-version-check --no-deps .
+          set +e
+          readiness="$(/tmp/ywd-stage-e-venv/bin/python -m ywd1278.install.readiness --config config/ywd-1278.example.toml 2>&1)"
+          readiness_rc=$?
+          set -e
+          printf '%s\n' "$readiness"
+          test "$readiness_rc" -eq 10
+          grep -q '^YWD1278_INSTALL_RUNTIME_READINESS=INCOMPLETE$' <<<"$readiness"
+          grep -q '^MODEM_UART_OPENED=NO$' <<<"$readiness"
+          grep -q '^RF_TRANSMITTED=NO$' <<<"$readiness"
+          grep -q '^FLASH_WRITTEN=NO$' <<<"$readiness"
+          /tmp/ywd-stage-e-venv/bin/ywd1278d --config config/ywd-1278.example.toml --framework-self-test
+
       - name: Replay Stage D classic console integration
         run: python tests/product_classic_console_stage_d_test.py
 
