@@ -12,6 +12,11 @@ from .service.appliance import (
     ProductPacketEngine,
     load_product_packet_engine_config,
 )
+from .service.classic_console import (
+    ProductClassicConsole,
+    ProductClassicConsoleConfigurationError,
+    load_product_classic_console_config,
+)
 
 
 def run_daemon(
@@ -21,33 +26,65 @@ def run_daemon(
     transport_factory=None,  # type: ignore[no-untyped-def]
     random_byte_source=None,  # type: ignore[no-untyped-def]
 ) -> int:
-    """Run one product packet-engine lifecycle until the caller requests stop.
+    """Run one product packet engine plus the qualified classic console stack.
 
     The injectable transport/randomness arguments are host-qualification seams.
     Normal CLI/systemd execution supplies neither and therefore uses the private
     POSIX serial transport plus runtime randomness owned by the appliance layer.
+    Stage D keeps console lifecycle outside the frozen Stage-C engine: consoles
+    consume only live diagnostics/MHEARD and own no modem/KISS/TX capability.
     """
 
-    config = load_product_packet_engine_config(config_path)
+    packet_config = load_product_packet_engine_config(config_path)
+    console_config = load_product_classic_console_config(config_path)
     engine = ProductPacketEngine(
-        config,
+        packet_config,
         transport_factory=transport_factory,
         random_byte_source=random_byte_source,
     )
     engine.start()
-    snapshot = engine.snapshot
-    print("YWD1278_PRODUCT_PACKET_ENGINE=RUNNING", flush=True)
-    print(f"FIRMWARE_IDENTITY={snapshot.firmware_identity}", flush=True)
-    print(f"PRODUCT_TX={'ENABLED' if snapshot.tx_enabled else 'DISABLED'}", flush=True)
-    if snapshot.kiss_listener is None:
-        print("KISS_LISTENER=DISABLED", flush=True)
-    else:
-        print(f"KISS_LISTENER={snapshot.kiss_listener[0]}:{snapshot.kiss_listener[1]}", flush=True)
+    console = ProductClassicConsole(
+        console_config,
+        diagnostics_snapshot=engine.diagnostics_snapshot,
+        mheard_db=engine.mheard_db,
+    )
 
     try:
+        console.start()
+
+        snapshot = engine.snapshot
+        console_snapshot = console.snapshot
+        print("YWD1278_PRODUCT_PACKET_ENGINE=RUNNING", flush=True)
+        print(f"FIRMWARE_IDENTITY={snapshot.firmware_identity}", flush=True)
+        print(f"PRODUCT_TX={'ENABLED' if snapshot.tx_enabled else 'DISABLED'}", flush=True)
+        if snapshot.kiss_listener is None:
+            print("KISS_LISTENER=DISABLED", flush=True)
+        else:
+            print(
+                f"KISS_LISTENER={snapshot.kiss_listener[0]}:{snapshot.kiss_listener[1]}",
+                flush=True,
+            )
+
+        if console_snapshot.telnet_listener is None:
+            print("CLASSIC_TELNET=DISABLED", flush=True)
+        else:
+            host, port = console_snapshot.telnet_listener
+            auth = "AUTHENTICATED" if console_snapshot.telnet_authenticated else "LOOPBACK"
+            print(f"CLASSIC_TELNET={host}:{port}:{auth}", flush=True)
+        if not console_snapshot.pty_enabled:
+            print("CLASSIC_PTY=DISABLED", flush=True)
+        else:
+            print(f"CLASSIC_PTY={console_snapshot.pty_slave}", flush=True)
+            if console_snapshot.pty_link is not None:
+                print(f"CLASSIC_PTY_LINK={console_snapshot.pty_link}", flush=True)
+
         while not stop_event.wait(0.25):
             engine.check_health()
+            console.check_health()
     finally:
+        # Command sessions consume Stage-C diagnostics/MHEARD.  Revoke those
+        # observers before the packet engine tears their sources down.
+        console.stop()
         engine.stop()
         print("YWD1278_PRODUCT_PACKET_ENGINE=STOPPED", flush=True)
     return 0
@@ -86,8 +123,16 @@ def main() -> int:
     signal.signal(signal.SIGTERM, request_stop)
     try:
         return run_daemon(config, stop_event=stop_event)
-    except (ProductConfigurationError, RuntimeError, OSError) as exc:
-        print(f"YWD-1278 {__version__}: packet-engine startup/runtime failure: {exc}", file=sys.stderr)
+    except (
+        ProductConfigurationError,
+        ProductClassicConsoleConfigurationError,
+        RuntimeError,
+        OSError,
+    ) as exc:
+        print(
+            f"YWD-1278 {__version__}: packet-engine/console startup/runtime failure: {exc}",
+            file=sys.stderr,
+        )
         return 78
     finally:
         signal.signal(signal.SIGINT, previous_sigint)
