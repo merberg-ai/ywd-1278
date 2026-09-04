@@ -1,0 +1,57 @@
+{
+  "schema": 1,
+  "phase": "0D-P3",
+  "stage": "sqlite-frame-log-target-pi-sanity",
+  "status": "pass",
+  "date": "2026-09-03",
+  "tested_checkpoint_sha": "0c6778278469ab5f1608cdc9e38d02bc0987541f",
+  "python_version": "3.13.5",
+  "sqlite_frame_log_regression": "pass",
+  "sqlite_frame_log_contract": "pass",
+  "sqlite_frame_log_host_qualification_contract": "pass",
+  "preserved_p1_host_qualification": "pass",
+  "preserved_p2_host_qualification": "pass",
+  "sqlite_schema_version": 1,
+  "sqlite_journal_mode": "wal",
+  "exact_frame_bytes_persisted": true,
+  "structured_ax25_fields_persisted": true,
+  "restart_history_replay_duplicates": false,
+  "unsupported_schema_fails_closed": true,
+  "sqlite_write_failure_isolated": true,
+  "additional_in_memory_queue": false,
+  "smoke_test": {
+    "rows_written": 2,
+    "write_failures": 0,
+    "ignored_history_events": 0,
+    "queued_live_events": 0,
+    "source_subscriber_drops": 0,
+    "fatal_error": null,
+    "row_count": 2,
+    "rows": [
+      {
+        "id": 1,
+        "source": "KJ6YWD-9",
+        "destination": "APRS",
+        "path_json": "[\"WIDE1-1\",\"WIDE2-1\"]",
+        "frame_type": "UI",
+        "info_length": 27,
+        "frame_no_fcs_length": 57,
+        "line": "KJ6YWD-9>APRS,WIDE1-1,WIDE2-1:YWD-1278 P3 SQLITE TEST ONE"
+      },
+      {
+        "id": 2,
+        "source": "KJ6YWD",
+        "destination": "JIM",
+        "path_json": "[]",
+        "frame_type": "UI",
+        "info_length": 27,
+        "frame_no_fcs_length": 43,
+        "line": "KJ6YWD>JIM:YWD-1278 P3 SQLITE TEST TWO"
+      }
+    ]
+  },
+  "modem_uart_opened": false,
+  "rf_transmitted": false,
+  "flash_gpio_option_byte_activity": false,
+  "qualification_scope": "supplementary target-Pi sanity; frozen host qualification remains authoritative"
+}
