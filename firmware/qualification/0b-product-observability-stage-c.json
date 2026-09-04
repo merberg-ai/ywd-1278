@@ -1,0 +1,91 @@
+{
+  "schema": 1,
+  "phase": "fresh-install-stage-c-product-observability",
+  "stage": "compose-monitor-sqlite-mheard-diagnostics-into-ywd1278d",
+  "status": "staged",
+  "date": "2026-09-04",
+  "timezone": "America/Los_Angeles",
+  "base_checkpoint": {
+    "branch": "checkpoint/product-daemon-stage-b-host-qualified",
+    "sha": "f223737a001410d0ebeac221fd43722670c7ee03"
+  },
+  "branch": "dev-fresh-install-flash-run",
+  "scope": "Compose the frozen 0D decoded monitor stream, bounded SQLite frame logger, read-only MHEARD database, and one-shot diagnostics around the Stage-B product packet engine. Host qualification uses only the existing thread-bound in-memory AX25R4 fake transport.",
+  "stage_a_component_count": 29,
+  "stage_a_components_modified": false,
+  "frozen_0d_module_count": 7,
+  "frozen_0d_modules_modified": false,
+  "implementation": {
+    "observability_path": "src/ywd1278/service/observability.py",
+    "observability_blob": "ead3167c67a49e993e42bdb2f3710096bfa0f99a",
+    "appliance_path": "src/ywd1278/service/appliance.py",
+    "appliance_blob": "fa1b086d6d8fa40b537c002dbeec34fdc6532396",
+    "regression_path": "tests/product_observability_stage_c_test.py",
+    "regression_blob": "7acac5cbac56c1a8a5d69e27f035a7b4c66be09f",
+    "contract_path": "tests/product_observability_stage_c_contract_test.py",
+    "contract_blob": "8300eb6a5dc1c1ffb7a0f1ead8b221fe296cd1ad"
+  },
+  "composition": {
+    "decoded_monitor_stream": true,
+    "sqlite_live_frame_logger": true,
+    "mheard_read_only_view": true,
+    "diagnostics_status": true,
+    "retention_scheduler": false,
+    "retention_apply": false,
+    "logger_subscriber_registered_before_runtime_start": true,
+    "runtime_stopped_before_logger_shutdown": true,
+    "packet_decoder_duplicated": false,
+    "modem_owner_duplicated": false,
+    "packet_queue_duplicated": false
+  },
+  "configuration": {
+    "uses_existing_monitor_table": true,
+    "uses_existing_storage_table": true,
+    "monitor_table_optional_for_stage_b_compatibility": true,
+    "monitor_log_frames_requires_monitor_enabled": true,
+    "monitor_log_frames_requires_absolute_database_path": true,
+    "example_config_modified": false,
+    "systemd_unit_modified": false
+  },
+  "product_policy": {
+    "tx_policy_changed": false,
+    "automatic_flash_permitted": false,
+    "automatic_retention_permitted": false,
+    "monitor_uses_existing_bounded_backend": true,
+    "sqlite_logger_registered_before_rx_runtime": true,
+    "mheard_read_only": true,
+    "diagnostics_one_shot": true,
+    "observer_problems_do_not_automatically_halt_packet_service": true,
+    "configured_logger_failure_is_health_failure": true
+  },
+  "host_qualification": {
+    "transport": "thread-bound in-memory AX25R4 fake",
+    "real_posix_serial": false,
+    "rx_to_kiss_required": true,
+    "rx_to_monitor_required": true,
+    "rx_to_sqlite_required": true,
+    "sqlite_to_mheard_required": true,
+    "diagnostics_healthy_required": true,
+    "tx_disabled_data_rejection_preserved": true,
+    "monitor_only_no_database_required": true,
+    "logger_startup_failure_releases_modem_owner": true,
+    "exact_head_ci_run_id": null,
+    "exact_head_ci_conclusion": "pending"
+  },
+  "hardware_activity": {
+    "uart": false,
+    "rf": false,
+    "flash": false,
+    "gpio": false,
+    "option_bytes": false
+  },
+  "not_in_stage_c": {
+    "retention_automation": true,
+    "classic_console_composition": true,
+    "installer_runtime_update": true,
+    "firmware_flash_path": true,
+    "installed_pi_rehearsal": true,
+    "fresh_os_qualification": true
+  },
+  "next_stage": "Compose the frozen classic TNC console transports/personality around the Stage-C product runtime"
+}
