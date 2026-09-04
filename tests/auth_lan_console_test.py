@@ -198,6 +198,16 @@ class AuthenticatedServerTests(unittest.TestCase):
         self.assertEqual(self.shell_creations, 0)
         sock.close()
 
+    def test_auth_timeout_closes_without_shell_creation(self) -> None:
+        self.server.auth_timeout_seconds = 0.15
+        sock = self.connect()
+        recv_until(sock, b"Username:")
+        timed_out = recv_until(sock, b"BYE\r\n", timeout=1.0)
+        self.assertIn(b"ERROR AUTH timeout", timed_out)
+        self.assertIn(b"BYE", timed_out)
+        self.assertEqual(self.shell_creations, 0)
+        sock.close()
+
     def test_live_authenticated_session_reuses_p1_and_rejects_future_tx_commands(self) -> None:
         sock = self.connect()
         authenticated = self.authenticate(sock)
@@ -251,6 +261,43 @@ class AuthenticatedServerTests(unittest.TestCase):
         self.assertIn(b"BYE", data)
         self.assertEqual(self.shell_creations, 0)
         sock.close()
+
+    def test_client_limit_rejects_second_unauthenticated_connection(self) -> None:
+        creations = 0
+
+        def factory() -> LocalTNCCommandShell:
+            nonlocal creations
+            creations += 1
+            return LocalTNCCommandShell()
+
+        limited = AuthenticatedLanTNCServer(
+            ("127.0.0.1", 0),
+            credential=test_credential(),
+            shell_factory=factory,
+            max_clients=1,
+            auth_timeout_seconds=2.0,
+            idle_timeout_seconds=2.0,
+            max_session_seconds=10.0,
+        )
+        thread = threading.Thread(target=limited.serve_forever, daemon=True)
+        thread.start()
+        first = second = None
+        try:
+            host, port = limited.server_address
+            first = socket.create_connection((host, port), timeout=1.0)
+            recv_until(first, b"Username:")
+            second = socket.create_connection((host, port), timeout=1.0)
+            rejected = recv_until(second, b"\r\n")
+            self.assertIn(b"BUSY maximum Telnet clients reached", rejected)
+            self.assertEqual(creations, 0)
+        finally:
+            if first is not None:
+                first.close()
+            if second is not None:
+                second.close()
+            limited.shutdown()
+            limited.server_close()
+            thread.join(timeout=3.0)
 
 
 if __name__ == "__main__":
