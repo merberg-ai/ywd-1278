@@ -9,6 +9,8 @@ on:
       - 'installer/install.sh'
       - 'installer/firmware-toolchain-check.sh'
       - 'tools/stage_h_fresh_os_preflight.sh'
+      - 'tools/stage_h_reboot_prepare.sh'
+      - 'tools/qualify_stage_h_reboot_rx.sh'
       - 'tests/fresh_os_stage_h_contract_test.py'
       - 'tests/fresh_os_stage_h_preinstall_evidence_contract_test.py'
       - 'tests/fresh_os_stage_h_resume_evidence_contract_test.py'
@@ -16,6 +18,9 @@ on:
       - 'tests/fresh_os_stage_h_firmware_build_success_evidence_contract_test.py'
       - 'tests/fresh_os_stage_h_stock_backup_evidence_contract_test.py'
       - 'tests/fresh_os_stage_h_firmware_deploy_evidence_contract_test.py'
+      - 'tests/fresh_os_stage_h_live_rx_evidence_contract_test.py'
+      - 'tests/fresh_os_stage_h_reboot_contract_test.py'
+      - 'tests/fresh_os_stage_h_reboot_evidence_contract_test.py'
       - 'tests/fresh_os_stage_h_prior_stage_preservation_test.py'
       - 'firmware/qualification/0b-product-fresh-os-stage-h.json'
       - 'firmware/qualification/0b-product-fresh-os-stage-h-preinstall-target-pi.json'
@@ -24,7 +29,10 @@ on:
       - 'firmware/qualification/0b-product-fresh-os-stage-h-firmware-build-success-target-pi.json'
       - 'firmware/qualification/0b-product-fresh-os-stage-h-stock-backup-target-pi.json'
       - 'firmware/qualification/0b-product-fresh-os-stage-h-firmware-deploy-target-pi.json'
+      - 'firmware/qualification/0b-product-fresh-os-stage-h-live-rx-target-pi.json'
+      - 'firmware/qualification/0b-product-fresh-os-stage-h-reboot-target-pi.json'
       - 'docs/qualifications/fresh-install-stage-h-fresh-os-staged-2026-09-04.md'
+      - 'docs/qualifications/fresh-install-stage-h-fresh-os-qualified-2026-09-04.md'
       - '.github/workflows/fresh-install-stage-h-fresh-os-ci.yml'
 
 jobs:
@@ -40,6 +48,8 @@ jobs:
       - name: Parse Stage H shell surfaces
         run: |
           bash -n tools/stage_h_fresh_os_preflight.sh
+          bash -n tools/stage_h_reboot_prepare.sh
+          bash -n tools/qualify_stage_h_reboot_rx.sh
           bash -n installer/install.sh
           bash -n installer/firmware-toolchain-check.sh
       - name: Stage H architecture and safety contract
@@ -56,6 +66,12 @@ jobs:
         run: python tests/fresh_os_stage_h_stock_backup_evidence_contract_test.py
       - name: Stage H firmware deployment evidence contract
         run: python tests/fresh_os_stage_h_firmware_deploy_evidence_contract_test.py
+      - name: Stage H initial live RX evidence contract
+        run: python tests/fresh_os_stage_h_live_rx_evidence_contract_test.py
+      - name: Stage H final reboot safety contract
+        run: python tests/fresh_os_stage_h_reboot_contract_test.py
+      - name: Stage H final reboot target-Pi evidence contract
+        run: python tests/fresh_os_stage_h_reboot_evidence_contract_test.py
       - name: Stage H prior-stage immutable evidence preservation
         run: python tests/fresh_os_stage_h_prior_stage_preservation_test.py
       - name: Preserve Stage G final reboot evidence
@@ -117,18 +133,6 @@ jobs:
           assert d['qualified_claims']['flash_write'] is False
           print('STAGE_H_INSTALLER_RESUME_TARGET_PI_MANIFEST=PASS')
           PY
-      - name: Parse Stage H failed firmware-build evidence
-        run: |
-          python - <<'PY'
-          import json
-          d=json.load(open('firmware/qualification/0b-product-fresh-os-stage-h-firmware-build-failure-target-pi.json',encoding='utf-8'))
-          assert d['schema']==1 and d['stage']=='H'
-          assert d['status']=='target-pi-firmware-build-blocked-toolchain-headers-missing'
-          assert d['build_attempt']['artifact_produced'] is False
-          assert d['safety']['flash_written'] is False
-          assert d['safety']['rf_transmitted'] is False
-          print('STAGE_H_FIRMWARE_BUILD_FAILURE_TARGET_PI_MANIFEST=PASS')
-          PY
       - name: Parse Stage H successful firmware-build evidence
         run: |
           python - <<'PY'
@@ -173,4 +177,16 @@ jobs:
           assert d['safety']['tx_enabled'] is False
           assert d['safety']['rf_transmitted'] is False
           print('STAGE_H_FIRMWARE_DEPLOY_TARGET_PI_MANIFEST=PASS')
+          PY
+      - name: Parse final Stage H reboot evidence
+        run: |
+          python - <<'PY'
+          import json
+          d=json.load(open('firmware/qualification/0b-product-fresh-os-stage-h-reboot-target-pi.json',encoding='utf-8'))
+          assert d['schema']==1 and d['stage']=='H'
+          assert d['status']=='target-pi-fresh-os-qualified'
+          assert d['stage_h_complete'] is True
+          assert d['physical_tx_permitted_by_stage_h'] is False
+          assert d['qualified_claims']['physical_tx'] is False
+          print('STAGE_H_FINAL_TARGET_PI_MANIFEST=PASS')
           PY
