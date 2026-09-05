@@ -25,9 +25,7 @@ from .service.classic_tx_console import (
     make_product_backend_submitter,
 )
 from .service.beacon_scheduler import ProductBeaconScheduler
-from .service.product_beacon_console import (
-    ThreadSafeProductBeaconCoordinator,
-)
+from .service.beacon_access_policy import JitteredThreadSafeProductBeaconCoordinator
 from .service.product_id_console import ProductClassicIDConsole
 
 
@@ -38,6 +36,7 @@ def run_daemon(
     transport_factory=None,  # type: ignore[no-untyped-def]
     random_byte_source=None,  # type: ignore[no-untyped-def]
     beacon_clock=None,  # type: ignore[no-untyped-def]
+    beacon_jitter_byte_source=None,  # type: ignore[no-untyped-def]
     beacon_poll_interval_seconds: float = 0.1,
 ) -> int:
     """Run one product packet engine plus the qualified classic console stack.
@@ -78,11 +77,16 @@ def run_daemon(
     if console_config.enabled and classic_tx_config.configured:
         submitter = make_product_backend_submitter(lambda: engine.backend)
         assert classic_tx_config.source is not None
-        beacon = ThreadSafeProductBeaconCoordinator(
+        jitter_source = beacon_jitter_byte_source
+        if jitter_source is None and random_byte_source is not None:
+            jitter_source = random_byte_source
+        beacon_kwargs = {} if jitter_source is None else {"jitter_byte_source": jitter_source}
+        beacon = JitteredThreadSafeProductBeaconCoordinator(
             source=classic_tx_config.source,
             paclen=classic_tx_config.paclen,
             tx_enabled=packet_config.tx_enabled,
             tx_submitter=submitter,
+            **beacon_kwargs,
         )
         beacon_scheduler = ProductBeaconScheduler(
             beacon,
