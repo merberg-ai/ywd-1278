@@ -1,0 +1,18 @@
+name: 0h-p5-inbound-node-pre-rf-ci
+on:
+ push: {branches: [dev-0h-p5-inbound-node-pre-rf]}
+ pull_request: {branches: [checkpoint/0h-p4-sysop-controls-host-qualified]}
+ workflow_dispatch:
+jobs:
+ inbound-node:
+  runs-on: ubuntu-latest
+  env: {PYTHONPATH: "src:tests"}
+  steps:
+   - uses: actions/checkout@v4
+   - uses: actions/setup-python@v5
+     with: {python-version: '3.11'}
+   - run: python -m py_compile src/ywd1278/node/inbound.py tools/qualify_0h_p5_inbound_node.py tests/inbound_node_0h_p5_test.py tests/inbound_node_0h_p5_contract_test.py
+   - run: python tests/inbound_node_0h_p5_test.py && python tests/inbound_node_0h_p5_contract_test.py
+   - run: python tools/qualify_0h_p5_inbound_node.py
+   - run: if test -f firmware/qualification/0h-p5-inbound-node-target-pi.json; then python tests/inbound_node_0h_p5_evidence_contract_test.py; fi
+   - run: python tests/timed_link_0g_p3_test.py && python tests/node_commands_0h_p1_test.py && python tests/sysop_controls_0h_p4_contract_test.py

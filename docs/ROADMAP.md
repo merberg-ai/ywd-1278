@@ -106,6 +106,7 @@
 - [x] mailbox/message storage — 0H-P2 host-qualified schema-versioned mode-0600 SQLite deposits, inode-protected owner-scoped list/read, caller-supplied timestamps, bounded ASCII content, parameterized SQL, and atomic global/per-recipient quotas; deletion and forwarding remain absent
 - [x] forwarding policy design — 0H-P3 host-qualified exact static routes, local-delivery precedence, disabled/missing-route HOLD, bounded traces, loop/hop rejection, and inert next-hop decisions without storage mutation, scheduling, runtime, or RF
 - [x] sysop controls — 0H-P4 host-qualified injected PBKDF2 credentials rather than RF callsign trust, lockout after three failures, and typed inert STATUS/message-delete/route-enable/route-disable intents; no mutation or shell/service control exists
+- [x] inbound node product integration — 0H-P5 physically qualified at 145.050 MHz against the deployed LinBPQ node's exact `KJ6YWD-15` outgoing downlink identity (`KJ6YWD-5` remains its listener): SABM/UA, exact banner and HELP/INFO/VERSION/BYE responses, acknowledged BYE before DISC/UA, 12 link actions, and unchanged persistent no-TX service restoration
 
 ## Later product work
 
