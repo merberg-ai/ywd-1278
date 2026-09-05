@@ -22,6 +22,7 @@ jobs:
           python -m py_compile tests/fresh_os_stage_i_single_tx_test.py
           python -m py_compile tests/fresh_os_stage_i_single_tx_contract_test.py
           python -m py_compile tests/fresh_os_stage_i_host_qualification_contract_test.py
+          python -m py_compile tests/fresh_os_stage_i_dry_run_evidence_contract_test.py
 
       - name: Stage I single-shot regression
         run: python tests/fresh_os_stage_i_single_tx_test.py
@@ -31,6 +32,9 @@ jobs:
 
       - name: Mandatory Stage I host qualification evidence
         run: python tests/fresh_os_stage_i_host_qualification_contract_test.py
+
+      - name: Stage I target-Pi pre-RF dry-run evidence
+        run: python tests/fresh_os_stage_i_dry_run_evidence_contract_test.py
 
       - name: Stage I zero-I/O dry run
         run: python tools/qualify_stage_i_single_tx.py
