@@ -82,9 +82,9 @@
 
 ## 0F — UNPROTO / converse / beaconing
 
-- [ ] UNPROTO destination/path
-- [ ] CONVERSE mode
-- [ ] BTEXT / beacon scheduler
+- [x] UNPROTO destination/path — host and physical P4 qualified
+- [x] CONVERSE mode — host and physical P4 qualified
+- [ ] BTEXT / beacon scheduler — P5a host-only state machine implemented; product composition and physical qualification remain pending
 - [ ] jitter and channel-access integration
 - [ ] no-beacon-until-CSMA safety gate
 

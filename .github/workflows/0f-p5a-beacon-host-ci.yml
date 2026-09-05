@@ -1,0 +1,47 @@
+name: 0f-p5a-beacon-host-ci
+
+on:
+  push:
+    branches: [dev-0f-classic-tx-p5-beacon]
+  pull_request:
+    branches: [dev-0f-classic-tx]
+  workflow_dispatch:
+
+jobs:
+  p5a-host:
+    runs-on: ubuntu-latest
+    env:
+      PYTHONPATH: src:tests
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Compile P5a implementation and tests
+        run: |
+          python -m py_compile src/ywd1278/console/classic_beacon.py
+          python -m py_compile tests/classic_beacon_0f_p5a_test.py
+          python -m py_compile tests/classic_beacon_0f_p5a_contract_test.py
+
+      - name: P5a host behavior
+        run: python tests/classic_beacon_0f_p5a_test.py
+
+      - name: P5a architecture and frozen-boundary contract
+        run: python tests/classic_beacon_0f_p5a_contract_test.py
+
+      - name: Preserve P4 classic TX and final evidence
+        run: |
+          python tests/classic_tnc_tx_0f_test.py
+          python tests/product_classic_tx_0f_test.py
+          python tests/product_classic_tx_daemon_0f_test.py
+          python tests/classic_tx_0f_contract_test.py
+          python tests/classic_tx_0f_host_qualification_contract_test.py
+          python tests/classic_tx_0f_p4_final_acceptance_contract_test.py
+
+      - name: Preserve appliance and physical packet lineage
+        run: |
+          python tests/product_fresh_install_appliance_qualified_contract_test.py
+          python tests/fresh_os_stage_i_physical_tx_evidence_contract_test.py
+          python tests/live_p7_kiss_one_shot_evidence_contract_test.py
+          python tests/live_p8_r3_physical_evidence_contract_test.py
