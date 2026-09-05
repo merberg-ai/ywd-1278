@@ -1,0 +1,77 @@
+{
+  "schema": 1,
+  "stage": "I",
+  "phase": "fresh-os-single-shot-product-tx-acceptance",
+  "status": "host-staging-physical-tx-pending",
+  "date": "2026-09-04",
+  "timezone": "America/Los_Angeles",
+  "base_stage_h": {
+    "checkpoint": "checkpoint/product-fresh-os-stage-h-qualified",
+    "sha": "e7e203ba6ef76a0465ff6c25ef9671a46a4ab582",
+    "final_target_evidence_blob": "b4f32d40184bb4ce74a7d786940638583beab04d"
+  },
+  "product_under_test": {
+    "installed_commit": "2f5299e65add072fea6ee55a54dc421faf00c276",
+    "target": "mmdvm-hs-hat-stm32f103-simplex-14.7456-adf7021",
+    "firmware_identity": "MMDVM_HS_Hat-YWD-1278-AX25R4-v0.1.0-alpha1 14.7456MHz ADF7021 FW based on CA6JAU GitID #7ff74ed",
+    "firmware_sha256": "b06fcbf0baa36e865198091cee27c66e1624ef08117ee685253a7a5613c7c616",
+    "frequency_hz": 145050000,
+    "qualified_tx_power": 200
+  },
+  "operator_authorization": {
+    "stage_i_authorized": true,
+    "authorization_scope": "one physical product TX acceptance frame only",
+    "persistent_tx_authorized": false,
+    "automatic_tx_authorized": false,
+    "beacon_tx_authorized": false,
+    "connected_mode_tx_authorized": false,
+    "firmware_write_authorized": false
+  },
+  "fixed_vector": {
+    "source": "KJ6YWD-10",
+    "destination": "YWD127",
+    "path": [],
+    "information": "YWD-1278 STAGE-I TX 1/1",
+    "kiss_data_includes_fcs": false,
+    "tnc_appends_fcs": true,
+    "maximum_kiss_data_messages": 1,
+    "maximum_internal_tx_dispatches": 1,
+    "automatic_retry": false,
+    "requires_exactly_one_independent_external_decode": true
+  },
+  "runtime_policy": {
+    "persistent_config_must_begin_tx_disabled": true,
+    "persistent_config_mutation_permitted": false,
+    "temporary_tx_config_location": "/run/ywd-1278-stage-i/config.toml",
+    "temporary_kiss_endpoint": "127.0.0.1:18001",
+    "temporary_console_endpoint": "127.0.0.1:18010",
+    "temporary_pty": "/run/ywd-1278-stage-i/tnc",
+    "normal_service_stopped_before_temporary_tx_runtime": true,
+    "normal_service_restored_after_test": true,
+    "firmware_flash_permitted": false,
+    "option_bytes_permitted": false,
+    "gpio_reset_permitted": false
+  },
+  "acceptance_gates": {
+    "stage_f_service_eligibility_revalidated_before_tx": true,
+    "exact_hat_identity_revalidated_with_uart_free": true,
+    "product_daemon_used_for_tx": true,
+    "one_kiss_data_message_only": true,
+    "one_runtime_tx_dispatch_only": true,
+    "no_second_dispatch_hold_required": true,
+    "independent_external_decode_required": true,
+    "post_tx_rx_resume_required": true,
+    "queue_depth_final_zero_required": true,
+    "subscriber_drops_final_zero_required": true,
+    "access_timeouts_final_zero_required": true,
+    "downstream_failures_final_zero_required": true,
+    "persistent_no_tx_service_restored_required": true
+  },
+  "physical": {
+    "tx_attempted": false,
+    "external_decode_observed": false,
+    "post_tx_rx_observed": false,
+    "qualified": false
+  },
+  "next_action": "Host-qualify and freeze the Stage-I one-shot harness. Only then run its dry-run on the Pi, prepare an independent 145.050 receiver, and execute the explicitly authorized single physical TX acceptance."
+}
