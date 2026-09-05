@@ -23,6 +23,9 @@ jobs:
           python -m py_compile tests/connected_physical_0g_p6_safety_contract_test.py
           python tools/qualify_0g_p6_connected.py
           python tests/connected_physical_0g_p6_safety_contract_test.py
+          if test -f firmware/qualification/0g-p6-connected-target-pi.json; then
+            python tests/connected_physical_0g_p6_evidence_contract_test.py
+          fi
       - name: Preserve complete connected host stack
         run: |
           python tests/connected_sessions_0g_p5_test.py
