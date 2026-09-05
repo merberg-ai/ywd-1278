@@ -1,0 +1,42 @@
+name: 0f-p5d-beacon-pre-rf-ci
+
+on:
+  push:
+    branches: [dev-0f-p5d-beacon-physical]
+  pull_request:
+    branches: [checkpoint/0f-p5c2-beacon-integration-host-qualified]
+  workflow_dispatch:
+
+jobs:
+  p5d-pre-rf:
+    runs-on: ubuntu-latest
+    env:
+      PYTHONPATH: src:tests
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Compile harness and contracts
+        run: |
+          python -m py_compile tools/qualify_0f_p5d_beacon.py
+          python -m py_compile tests/classic_beacon_0f_p5d_harness_test.py
+          python -m py_compile tests/classic_beacon_0f_p5d_safety_contract_test.py
+      - name: Zero-I/O dry run
+        run: python tools/qualify_0f_p5d_beacon.py
+      - name: Harness and authorization contracts
+        run: |
+          python tests/classic_beacon_0f_p5d_harness_test.py
+          python tests/classic_beacon_0f_p5d_safety_contract_test.py
+      - name: Preserve full host beacon graph
+        run: |
+          python tests/product_beacon_console_0f_p5c2_test.py
+          python tests/product_beacon_scheduler_0f_p5c_test.py
+          python tests/product_classic_beacon_0f_p5b_test.py
+          python tests/classic_beacon_0f_p5a_test.py
+          python tests/classic_tx_0f_p4_final_acceptance_contract_test.py
+      - name: Preserve appliance and physical lineage
+        run: |
+          python tests/product_fresh_install_appliance_qualified_contract_test.py
+          python tests/fresh_os_stage_i_physical_tx_evidence_contract_test.py
+          python tests/live_p8_r3_physical_evidence_contract_test.py
