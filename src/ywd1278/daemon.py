@@ -17,6 +17,12 @@ from .service.classic_console import (
     ProductClassicConsoleConfigurationError,
     load_product_classic_console_config,
 )
+from .service.classic_tx_console import (
+    ProductClassicTXConfigurationError,
+    ProductClassicTXConsole,
+    load_product_classic_tx_config,
+    make_product_backend_submitter,
+)
 
 
 def run_daemon(
@@ -31,23 +37,46 @@ def run_daemon(
     The injectable transport/randomness arguments are host-qualification seams.
     Normal CLI/systemd execution supplies neither and therefore uses the private
     POSIX serial transport plus runtime randomness owned by the appliance layer.
-    Stage D keeps console lifecycle outside the frozen Stage-C engine: consoles
-    consume only live diagnostics/MHEARD and own no modem/KISS/TX capability.
+
+    0F extends only the console personality.  When ``[station]`` identity is
+    configured, per-session UNPROTO/converse UI frame bodies are handed to the
+    exact live ``ProductTNCBackend`` KISS DATA admission boundary.  The console
+    does not gain a second queue, CSMA engine, modem owner, UART path, or retry
+    loop.  ``radio.tx_enabled=false`` remains the construction-time product TX
+    gate and the 0F shell fails closed before invoking its submit callback.
+
+    Historical host fixtures with no ``[station]`` table retain the exact
+    frozen P5 personality so earlier qualification remains replayable.
     """
 
     packet_config = load_product_packet_engine_config(config_path)
     console_config = load_product_classic_console_config(config_path)
+    classic_tx_config = load_product_classic_tx_config(config_path)
     engine = ProductPacketEngine(
         packet_config,
         transport_factory=transport_factory,
         random_byte_source=random_byte_source,
     )
     engine.start()
-    console = ProductClassicConsole(
-        console_config,
-        diagnostics_snapshot=engine.diagnostics_snapshot,
-        mheard_db=engine.mheard_db,
-    )
+
+    if console_config.enabled and classic_tx_config.configured:
+        submitter = make_product_backend_submitter(lambda: engine.backend)
+        console: ProductClassicConsole = ProductClassicTXConsole(
+            console_config,
+            tx_config=classic_tx_config,
+            tx_enabled=packet_config.tx_enabled,
+            tx_submitter=submitter,
+            diagnostics_snapshot=engine.diagnostics_snapshot,
+            mheard_db=engine.mheard_db,
+        )
+        classic_0f = "ENABLED" if packet_config.tx_enabled else "TX-DISABLED"
+    else:
+        console = ProductClassicConsole(
+            console_config,
+            diagnostics_snapshot=engine.diagnostics_snapshot,
+            mheard_db=engine.mheard_db,
+        )
+        classic_0f = "UNCONFIGURED"
 
     try:
         console.start()
@@ -57,6 +86,7 @@ def run_daemon(
         print("YWD1278_PRODUCT_PACKET_ENGINE=RUNNING", flush=True)
         print(f"FIRMWARE_IDENTITY={snapshot.firmware_identity}", flush=True)
         print(f"PRODUCT_TX={'ENABLED' if snapshot.tx_enabled else 'DISABLED'}", flush=True)
+        print(f"CLASSIC_0F={classic_0f}", flush=True)
         if snapshot.kiss_listener is None:
             print("KISS_LISTENER=DISABLED", flush=True)
         else:
@@ -126,6 +156,7 @@ def main() -> int:
     except (
         ProductConfigurationError,
         ProductClassicConsoleConfigurationError,
+        ProductClassicTXConfigurationError,
         RuntimeError,
         OSError,
     ) as exc:
