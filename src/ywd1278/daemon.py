@@ -5,6 +5,7 @@ from pathlib import Path
 import signal
 import sys
 import threading
+import time
 
 from . import __version__
 from .service.appliance import (
@@ -23,6 +24,11 @@ from .service.classic_tx_console import (
     load_product_classic_tx_config,
     make_product_backend_submitter,
 )
+from .service.beacon_scheduler import ProductBeaconScheduler
+from .service.product_beacon_console import (
+    ProductClassicBeaconConsole,
+    ThreadSafeProductBeaconCoordinator,
+)
 
 
 def run_daemon(
@@ -31,6 +37,8 @@ def run_daemon(
     stop_event: threading.Event,
     transport_factory=None,  # type: ignore[no-untyped-def]
     random_byte_source=None,  # type: ignore[no-untyped-def]
+    beacon_clock=None,  # type: ignore[no-untyped-def]
+    beacon_poll_interval_seconds: float = 0.1,
 ) -> int:
     """Run one product packet engine plus the qualified classic console stack.
 
@@ -52,20 +60,42 @@ def run_daemon(
     packet_config = load_product_packet_engine_config(config_path)
     console_config = load_product_classic_console_config(config_path)
     classic_tx_config = load_product_classic_tx_config(config_path)
+    shared_beacon_clock = time.monotonic if beacon_clock is None else beacon_clock
+    if not callable(shared_beacon_clock):
+        raise TypeError("beacon_clock must be callable or None")
+    if isinstance(beacon_poll_interval_seconds, bool) or not isinstance(
+        beacon_poll_interval_seconds, (int, float)
+    ) or not 0.01 <= float(beacon_poll_interval_seconds) <= 1.0:
+        raise ValueError("beacon_poll_interval_seconds must be 0.01..1.0")
     engine = ProductPacketEngine(
         packet_config,
         transport_factory=transport_factory,
         random_byte_source=random_byte_source,
     )
     engine.start()
+    beacon_scheduler: ProductBeaconScheduler | None = None
 
     if console_config.enabled and classic_tx_config.configured:
         submitter = make_product_backend_submitter(lambda: engine.backend)
-        console: ProductClassicConsole = ProductClassicTXConsole(
+        assert classic_tx_config.source is not None
+        beacon = ThreadSafeProductBeaconCoordinator(
+            source=classic_tx_config.source,
+            paclen=classic_tx_config.paclen,
+            tx_enabled=packet_config.tx_enabled,
+            tx_submitter=submitter,
+        )
+        beacon_scheduler = ProductBeaconScheduler(
+            beacon,
+            poll_interval_seconds=beacon_poll_interval_seconds,
+            clock=shared_beacon_clock,
+        )
+        console: ProductClassicConsole = ProductClassicBeaconConsole(
             console_config,
             tx_config=classic_tx_config,
             tx_enabled=packet_config.tx_enabled,
             tx_submitter=submitter,
+            beacon=beacon,
+            clock=shared_beacon_clock,
             diagnostics_snapshot=engine.diagnostics_snapshot,
             mheard_db=engine.mheard_db,
         )
@@ -80,6 +110,8 @@ def run_daemon(
 
     try:
         console.start()
+        if beacon_scheduler is not None:
+            beacon_scheduler.start()
 
         snapshot = engine.snapshot
         console_snapshot = console.snapshot
@@ -114,8 +146,14 @@ def run_daemon(
     finally:
         # Command sessions consume Stage-C diagnostics/MHEARD.  Revoke those
         # observers before the packet engine tears their sources down.
-        console.stop()
-        engine.stop()
+        try:
+            console.stop()
+        finally:
+            try:
+                if beacon_scheduler is not None:
+                    beacon_scheduler.stop()
+            finally:
+                engine.stop()
         print("YWD1278_PRODUCT_PACKET_ENGINE=STOPPED", flush=True)
     return 0
 
