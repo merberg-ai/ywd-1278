@@ -1,17 +1,16 @@
 #!/usr/bin/env python3
 """Stage-I guarded one-shot product TX acceptance.
 
-Default invocation is a zero-I/O dry run.  Physical mode is intentionally
-operator-gated and narrow: verify the already-qualified no-TX appliance, stop
-the normal service, launch the *installed* product daemon against a root-only
-temporary /run config with only the qualified TX profile enabled, inject exactly
-one localhost KISS DATA frame, prove exactly one product runtime dispatch, require
-operator confirmation of one matching external decode, prove a later received
-packet after RX restart, then tear the TX-capable daemon down and restore the
-original persistent no-TX service.
+Default invocation is a zero-I/O dry run. Physical mode is intentionally narrow:
+verify the qualified no-TX appliance, stop the normal service, launch the
+*installed* product daemon against a root-only temporary /run config with only
+the physically-qualified TX profile enabled, inject exactly one localhost KISS
+DATA frame, prove exactly one runtime dispatch, require operator confirmation of
+one matching independent decode, prove a later RX frame after half-duplex
+restart, tear the TX-capable daemon down, and restore the original no-TX service.
 
-The persistent /etc/ywd-1278/config.toml is never modified.  This harness has no
-firmware flash, GPIO/reset, option-byte, beacon, connected-mode, or retry path.
+The persistent /etc/ywd-1278/config.toml is never modified. This harness has no
+firmware-flash, GPIO/reset, option-byte, beacon, connected-mode, or retry path.
 """
 
 from __future__ import annotations
@@ -25,8 +24,6 @@ import shutil
 import signal
 import socket
 import subprocess
-import sys
-import tempfile
 import time
 import tomllib
 
@@ -57,7 +54,7 @@ TEMP_CONFIG = TEMP_ROOT / "config.toml"
 TEMP_LOG = TEMP_ROOT / "daemon.log"
 TEMP_KISS_PORT = 18001
 TEMP_CONSOLE_PORT = 18010
-TEMP_PTY = "/run/ywd-1278/stage-i-tnc"
+TEMP_PTY = "/run/ywd-1278-stage-i/tnc"
 AUTHORIZATION_TOKEN = "STAGE-I-TX-145050-ONE"
 ARM_PHRASE = "TRANSMIT-STAGE-I-ONE"
 EXTERNAL_PHRASE = "EXTERNAL-DECODE-MATCH-ONE"
@@ -78,7 +75,8 @@ def _station_source(root: dict) -> str:
         raise ValueError("invalid station.callsign")
     if isinstance(ssid, bool) or not isinstance(ssid, int) or not 0 <= ssid <= 15:
         raise ValueError("invalid station.ssid")
-    return callsign.strip().upper() if ssid == 0 else f"{callsign.strip().upper()}-{ssid}"
+    call = callsign.strip().upper()
+    return call if ssid == 0 else f"{call}-{ssid}"
 
 
 def build_vector(source: str = "KJ6YWD-10") -> bytes:
@@ -106,15 +104,15 @@ def replace_toml_key(text: str, section: str, key: str, rendered_value: str) -> 
     section_re = re.compile(r"^\s*\[([^]]+)\]\s*(?:#.*)?(?:\r?\n)?$")
     key_re = re.compile(rf"^(\s*){re.escape(key)}\s*=.*?(\r?\n)?$")
     for line in lines:
-        match = section_re.match(line)
-        if match:
-            current = match.group(1).strip()
+        section_match = section_re.match(line)
+        if section_match:
+            current = section_match.group(1).strip()
             out.append(line)
             continue
-        match = key_re.match(line)
-        if current == section and match:
-            newline = match.group(2) or "\n"
-            out.append(f"{match.group(1)}{key} = {rendered_value}{newline}")
+        key_match = key_re.match(line)
+        if current == section and key_match:
+            newline = key_match.group(2) or "\n"
+            out.append(f"{key_match.group(1)}{key} = {rendered_value}{newline}")
             changed += 1
         else:
             out.append(line)
@@ -180,12 +178,12 @@ def validate_persistent_config(root: dict) -> str:
     return source
 
 
-def _run(args: list[str], *, check: bool = True, capture: bool = True) -> subprocess.CompletedProcess[str]:
+def _run(args: list[str], *, check: bool = True) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
         args,
         text=True,
-        stdout=subprocess.PIPE if capture else None,
-        stderr=subprocess.STDOUT if capture else None,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
         check=check,
     )
 
@@ -258,9 +256,8 @@ def assert_single_shot_status(text: str, *, require_dispatched: bool) -> None:
                 f"dispatches={dispatches} accepted={accepted} dispatched={dispatched} "
                 f"depth={depth} received={received} admitted={admitted}"
             )
-    else:
-        if (dispatches, accepted, dispatched, received, admitted) != (0, 0, 0, 0, 0):
-            raise RuntimeError("Stage-I temporary runtime was not clean before injection")
+    elif (dispatches, accepted, dispatched, received, admitted) != (0, 0, 0, 0, 0):
+        raise RuntimeError("Stage-I temporary runtime was not clean before injection")
 
     for key in (
         "tx_invalid_rejections",
@@ -300,7 +297,9 @@ def wait_for_one_dispatch(timeout: float = DISPATCH_TIMEOUT_SECONDS) -> str:
     raise RuntimeError(f"timed out waiting for one product TX dispatch; last STATUS={last!r}")
 
 
-def recv_post_tx_non_qualification(kiss: socket.socket, *, tx_source: str, timeout: float) -> tuple[bytes, str]:
+def recv_post_tx_non_qualification(
+    kiss: socket.socket, *, tx_source: str, timeout: float
+) -> tuple[bytes, str]:
     decoder = KISSStreamDecoder(max_body_bytes=4096)
     deadline = time.monotonic() + timeout
     kiss.settimeout(0.5)
@@ -380,12 +379,9 @@ def _check_firmware(firmware: Path) -> None:
 
 
 def _restore_service(original_hash: str) -> None:
-    if TEMP_PTY and Path(TEMP_PTY).exists():
-        # The temporary daemon should remove this itself; do not unlink a live PTY.
-        pass
     if hashlib.sha256(PERSISTENT_CONFIG.read_bytes()).hexdigest() != original_hash:
-        raise RuntimeError("persistent config changed during Stage I")
-    _run(["systemctl", "start", SERVICE], capture=True)
+        raise RuntimeError("persistent config changed during Stage I; normal service left stopped fail-closed")
+    _run(["systemctl", "start", SERVICE])
     deadline = time.monotonic() + 8.0
     while time.monotonic() < deadline:
         if _systemctl_state("is-active") == "active":
@@ -473,6 +469,8 @@ def main() -> int:
     log_handle = None
     service_stopped = False
     tx_dispatched = False
+    cleanup_error: BaseException | None = None
+    pty_leaked = False
     try:
         _run(["systemctl", "stop", SERVICE])
         service_stopped = True
@@ -484,12 +482,18 @@ def main() -> int:
             raise RuntimeError("UART remained owned after normal service stop")
         _verify_hardware_identity()
 
-        TEMP_ROOT.mkdir(mode=0o700, parents=True, exist_ok=False)
+        if TEMP_ROOT.exists():
+            raise RuntimeError(f"stale Stage-I runtime directory exists: {TEMP_ROOT}")
+        TEMP_ROOT.mkdir(mode=0o700, parents=True)
         temp_text = make_temporary_tx_config(original_text)
         TEMP_CONFIG.write_text(temp_text, encoding="utf-8")
         os.chmod(TEMP_CONFIG, 0o600)
         temp_cfg = load_product_packet_engine_config(TEMP_CONFIG)
-        if not temp_cfg.tx_enabled or temp_cfg.tx_power != TX_POWER or temp_cfg.frequency_hz != EXPECTED_FREQUENCY_HZ:
+        if (
+            not temp_cfg.tx_enabled
+            or temp_cfg.tx_power != TX_POWER
+            or temp_cfg.frequency_hz != EXPECTED_FREQUENCY_HZ
+        ):
             raise RuntimeError("temporary Stage-I TX profile failed product config validation")
 
         log_handle = TEMP_LOG.open("w", encoding="utf-8")
@@ -510,8 +514,8 @@ def main() -> int:
         print("PERSISTENT_CONFIG_MUTATED=NO")
 
         with socket.create_connection(("127.0.0.1", TEMP_KISS_PORT), timeout=3.0) as kiss:
-            # Exactly one application-originated KISS DATA message.  There is no
-            # retry loop around this send, and the body intentionally excludes FCS.
+            # Exactly one application-originated KISS DATA message. There is no
+            # retry loop around this send; the TNC owns FCS and all lower layers.
             kiss.sendall(encode(body, command=DATA))
             print("STAGE_I_KISS_DATA_INJECTED=ONE")
             status = wait_for_one_dispatch()
@@ -569,12 +573,18 @@ def main() -> int:
                 daemon.wait(timeout=2.0)
         if log_handle is not None:
             log_handle.close()
+        pty_leaked = Path(TEMP_PTY).exists()
         if TEMP_ROOT.exists():
             shutil.rmtree(TEMP_ROOT)
-        if Path(TEMP_PTY).exists():
-            raise RuntimeError("temporary Stage-I PTY leaked after daemon teardown")
         if service_stopped:
-            _restore_service(original_hash)
+            try:
+                _restore_service(original_hash)
+            except BaseException as exc:
+                cleanup_error = exc
+        if pty_leaked and cleanup_error is None:
+            cleanup_error = RuntimeError("temporary Stage-I PTY leaked after daemon teardown")
+        if cleanup_error is not None:
+            raise cleanup_error
 
     if not tx_dispatched:
         raise SystemExit("[FAIL] Stage-I physical path ended without a TX dispatch")
