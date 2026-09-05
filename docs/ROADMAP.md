@@ -106,6 +106,7 @@
 - [x] mailbox/message storage — 0H-P2 host-qualified schema-versioned mode-0600 SQLite deposits, inode-protected owner-scoped list/read, caller-supplied timestamps, bounded ASCII content, parameterized SQL, and atomic global/per-recipient quotas; deletion and forwarding remain absent
 - [x] forwarding policy design — 0H-P3 host-qualified exact static routes, local-delivery precedence, disabled/missing-route HOLD, bounded traces, loop/hop rejection, and inert next-hop decisions without storage mutation, scheduling, runtime, or RF
 - [x] sysop controls — 0H-P4 host-qualified injected PBKDF2 credentials rather than RF callsign trust, lockout after three failures, and typed inert STATUS/message-delete/route-enable/route-disable intents; no mutation or shell/service control exists
+- [ ] inbound node product integration — 0H-P5 pre-RF candidate accepts one exact `KJ6YWD-5` peer, serves the bounded HELP/INFO/BYE node session, waits for the BYE acknowledgement before orderly release, and restores the persistent no-TX appliance
 
 ## Later product work
 
