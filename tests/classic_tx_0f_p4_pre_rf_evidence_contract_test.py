@@ -10,12 +10,12 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
 EVIDENCE = ROOT / "firmware/qualification/0f-p4-classic-tx-pre-rf.json"
-EXPECTED_BLOBS = {
+EXPECTED_RUNTIME_BLOBS = {
     "tools/qualify_0f_p4_classic_tx.py": "8ed7ea78b332539e8db48288bc96dfc14c31f23d",
     "tests/classic_tx_0f_p4_harness_test.py": "76087b66e18355a3f95b95c8d5937a30350d3c8d",
     "tests/classic_tx_0f_p4_safety_contract_test.py": "b72f205a55809fafa7a6cc056eb3b048d1315910",
-    ".github/workflows/0f-p4-physical-staging-ci.yml": "ea325d0172f944519f5b70c4cab0d0ec606cb14a",
 }
+HISTORICAL_STAGING_WORKFLOW_BLOB = "ea325d0172f944519f5b70c4cab0d0ec606cb14a"
 
 
 def blob(path: Path) -> str:
@@ -37,10 +37,10 @@ class ClassicTX0FP4PreRFEvidenceTests(unittest.TestCase):
         self.assertEqual(staging["implementation_head"], "22bb40da367b575c0c81e02b604080c1cae67aad")
         self.assertEqual(staging["ci_run_id"], 33939208615)
         self.assertEqual(staging["ci_conclusion"], "success")
-        self.assertEqual(staging["harness_blob"], EXPECTED_BLOBS["tools/qualify_0f_p4_classic_tx.py"])
-        self.assertEqual(staging["harness_test_blob"], EXPECTED_BLOBS["tests/classic_tx_0f_p4_harness_test.py"])
-        self.assertEqual(staging["safety_contract_blob"], EXPECTED_BLOBS["tests/classic_tx_0f_p4_safety_contract_test.py"])
-        self.assertEqual(staging["workflow_blob"], EXPECTED_BLOBS[".github/workflows/0f-p4-physical-staging-ci.yml"])
+        self.assertEqual(staging["harness_blob"], EXPECTED_RUNTIME_BLOBS["tools/qualify_0f_p4_classic_tx.py"])
+        self.assertEqual(staging["harness_test_blob"], EXPECTED_RUNTIME_BLOBS["tests/classic_tx_0f_p4_harness_test.py"])
+        self.assertEqual(staging["safety_contract_blob"], EXPECTED_RUNTIME_BLOBS["tests/classic_tx_0f_p4_safety_contract_test.py"])
+        self.assertEqual(staging["workflow_blob"], HISTORICAL_STAGING_WORKFLOW_BLOB)
 
         auth = data["operator_authorization"]
         self.assertTrue(auth["authorized"])
@@ -75,7 +75,7 @@ class ClassicTX0FP4PreRFEvidenceTests(unittest.TestCase):
         self.assertFalse(physical["option_bytes_written"])
         self.assertFalse(physical["p4_qualified"])
 
-        for relative, expected in EXPECTED_BLOBS.items():
+        for relative, expected in EXPECTED_RUNTIME_BLOBS.items():
             with self.subTest(path=relative):
                 self.assertEqual(blob(ROOT / relative), expected)
 
