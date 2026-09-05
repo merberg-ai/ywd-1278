@@ -1,0 +1,94 @@
+{
+  "schema": 1,
+  "stage": "I",
+  "phase": "fresh-os-single-shot-product-tx-acceptance",
+  "status": "target-pi-physical-tx-qualified",
+  "date": "2026-09-04",
+  "timezone": "America/Los_Angeles",
+  "checkpoint_under_test": {
+    "host_qualified_checkpoint": "checkpoint/product-fresh-os-stage-i-single-tx-host-qualified",
+    "host_qualified_sha": "0b0e288e619368f2b3d8928e241efd806b2df442",
+    "pre_tx_qualified_checkpoint": "checkpoint/product-fresh-os-stage-i-pre-tx-qualified",
+    "pre_tx_qualified_sha": "a54f51c93415d2652e0f7204bf7209fab41a25d7",
+    "physical_harness_checkout_sha": "0b0e288e619368f2b3d8928e241efd806b2df442"
+  },
+  "product_under_test": {
+    "installed_commit": "2f5299e65add072fea6ee55a54dc421faf00c276",
+    "target": "mmdvm-hs-hat-stm32f103-simplex-14.7456-adf7021",
+    "firmware_identity": "MMDVM_HS_Hat-YWD-1278-AX25R4-v0.1.0-alpha1 14.7456MHz ADF7021 FW based on CA6JAU GitID #7ff74ed",
+    "firmware_sha256": "b06fcbf0baa36e865198091cee27c66e1624ef08117ee685253a7a5613c7c616",
+    "frequency_hz": 145050000,
+    "tx_power": 200
+  },
+  "fixed_vector": {
+    "source": "KJ6YWD-10",
+    "destination": "YWD127",
+    "path": [],
+    "information": "YWD-1278 STAGE-I TX 1/1",
+    "kiss_body_bytes": 39,
+    "kiss_body_sha256": "7ce21d988402ca554cbb7f8c4626cddda9f8f2b970bb53a79ccf2264be67e7e2",
+    "expected_external_decode": "KJ6YWD-10>YWD127:YWD-1278 STAGE-I TX 1/1"
+  },
+  "pre_tx_gates": {
+    "firmware_artifact_sha256_reverified": true,
+    "service_eligibility_check": "pass",
+    "service_eligible": true,
+    "exact_hat_identity_recheck": "pass",
+    "persistent_config_mutated": false,
+    "beacon_enabled": false,
+    "flash_permitted": false,
+    "option_bytes_permitted": false,
+    "operator_arm_phrase_entered": true,
+    "authorization_scope": "one RF frame only"
+  },
+  "physical_tx": {
+    "temporary_product_daemon_running": true,
+    "product_tx_enabled_temporarily": true,
+    "kiss_data_injected": 1,
+    "tx_dispatches": 1,
+    "tx_queue_accepted": 1,
+    "tx_queue_dispatched": 1,
+    "automatic_tx_retry": false,
+    "no_second_internal_dispatch_after_hold": true,
+    "operator_confirmed_independent_exact_decode": true,
+    "independent_external_decode_count": 1,
+    "independent_decoder_raw_log_archived": false,
+    "external_decode_confirmation_method": "operator entered the exact harness confirmation phrase after observing one matching independent decode"
+  },
+  "post_tx_rx": {
+    "resumed": true,
+    "frame_bytes": 73,
+    "source": "KJ6YWD",
+    "source_differs_from_stage_i_tx_source": true,
+    "final_tx_dispatches": 1,
+    "tx_queue_depth_final": 0,
+    "subscriber_drops_final": 0,
+    "tx_access_timeouts_final": 0,
+    "tx_downstream_failures_final": 0
+  },
+  "cleanup_and_safety": {
+    "persistent_tx_enabled_final": false,
+    "persistent_config_mutated": false,
+    "normal_service_restored": true,
+    "automatic_tx_retry": false,
+    "flash_written": false,
+    "option_bytes_written": false
+  },
+  "qualified_claims": {
+    "product_kiss_to_csma_to_rf": true,
+    "single_internal_tx_dispatch": true,
+    "operator_confirmed_exact_independent_over_air_decode": true,
+    "no_automatic_retry": true,
+    "post_tx_rx_resumed": true,
+    "queue_drained": true,
+    "subscriber_drops_zero": true,
+    "access_timeouts_zero": true,
+    "downstream_failures_zero": true,
+    "persistent_no_tx_default_restored": true,
+    "persistent_config_unchanged": true,
+    "no_firmware_write": true,
+    "no_option_byte_write": true
+  },
+  "stage_i_complete": true,
+  "next_action": "Freeze Stage-I physical evidence/checkpoint. Persistent TX remains disabled by default; later user-facing TX features require their own staged command/policy work and are not implicitly authorized by this acceptance test."
+}
