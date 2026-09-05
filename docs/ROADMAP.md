@@ -108,7 +108,7 @@
 - [x] sysop controls — 0H-P4 host-qualified injected PBKDF2 credentials rather than RF callsign trust, lockout after three failures, and typed inert STATUS/message-delete/route-enable/route-disable intents; no mutation or shell/service control exists
 - [x] inbound node product integration — 0H-P5 physically qualified at 145.050 MHz against the deployed LinBPQ node's exact `KJ6YWD-15` outgoing downlink identity (`KJ6YWD-5` remains its listener): SABM/UA, exact banner and HELP/INFO/VERSION/BYE responses, acknowledged BYE before DISC/UA, 12 link actions, and unchanged persistent no-TX service restoration
 - [x] mailbox command integration — 0H-P6 host-qualified peer-owned LIST/READ/SP, listings capped at 12, 512-byte paged reads in PACLEN-safe chunks, injected message time, bounded `/EX` or `/ABORT` composition, and fail-closed queue overflow; runtime, persistent service, and RF integration remain absent
-- [ ] mailbox RF round trip — 0H-P7 pre-RF candidate uses one disposable `/run` database to prove HELP, empty/populated LIST, exact SP deposit, owner READ, BYE acknowledgement, and DISC/UA against LinBPQ `KJ6YWD-15`, with persistent service restoration
+- [x] mailbox RF round trip — 0H-P7 physically qualified with a disposable `/run` database: HELP, empty/populated LIST, exact self-addressed SP deposit, owner READ, acknowledged BYE and DISC/UA against LinBPQ `KJ6YWD-15`, 25 link actions, exact content, database removal, and unchanged persistent no-TX service
 
 ## Later product work
 
