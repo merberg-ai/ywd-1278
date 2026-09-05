@@ -7,6 +7,7 @@ from pathlib import Path
 import socket
 import tempfile
 import threading
+import time
 import unittest
 
 from product_classic_console_stage_d_test import connect_when_ready, read_socket_until
@@ -158,8 +159,9 @@ class ProductClassicTXDaemon0FTests(unittest.TestCase):
                 client.sendall(b"VER\r")
                 self.assertIn(b"YWD-1278 0.1.0-alpha0", read_socket_until(client, b"cmd:"))
 
-                # Holding in command mode must not create a second transmit.
-                wait_until(lambda: created[0].tx_accept_count == 1, timeout=0.2, detail="no second TX")
+                # Hold after command-mode return; no background retry or second
+                # console dispatch may appear.
+                time.sleep(0.25)
                 self.assertEqual(created[0].tx_accept_count, 1)
             finally:
                 if client is not None:
