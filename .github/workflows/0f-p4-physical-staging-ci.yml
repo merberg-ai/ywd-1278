@@ -1,0 +1,60 @@
+name: 0f-p4-physical-staging-ci
+
+on:
+  push:
+    branches: [dev-0f-classic-tx-p4-physical]
+  workflow_dispatch:
+
+jobs:
+  p4-staging:
+    runs-on: ubuntu-latest
+    env:
+      PYTHONPATH: src:tests:tools
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Compile P4 harness and contracts
+        run: |
+          python -m py_compile tools/qualify_0f_p4_classic_tx.py
+          python -m py_compile tests/classic_tx_0f_p4_harness_test.py
+          python -m py_compile tests/classic_tx_0f_p4_safety_contract_test.py
+
+      - name: P4 zero-I/O dry run
+        run: python tools/qualify_0f_p4_classic_tx.py
+
+      - name: P4 harness host regression
+        run: python tests/classic_tx_0f_p4_harness_test.py
+
+      - name: P4 authorization and safety contract
+        run: python tests/classic_tx_0f_p4_safety_contract_test.py
+
+      - name: Preserve sealed 0F P1/P2/P3 qualification
+        run: python tests/classic_tx_0f_host_qualification_contract_test.py
+
+      - name: Preserve 0F behavior and product composition
+        run: |
+          python tests/classic_tnc_tx_0f_test.py
+          python tests/product_classic_tx_0f_test.py
+          python tests/product_classic_tx_daemon_0f_test.py
+          python tests/classic_tx_0f_contract_test.py
+
+      - name: Preserve physical Stage-I single-shot TX evidence
+        run: python tests/fresh_os_stage_i_physical_tx_evidence_contract_test.py
+
+      - name: Preserve final fresh-install appliance seal
+        run: python tests/product_fresh_install_appliance_qualified_contract_test.py
+
+      - name: Preserve frozen classic console and product TX graph
+        run: |
+          python tests/classic_tnc_vocabulary_test.py
+          python tests/product_classic_console_stage_d_test.py
+          python tests/product_daemon_stage_b_test.py
+
+      - name: Preserve sustained physical packet lineage
+        run: |
+          python tests/sustained_kiss_tnc_integration_test.py
+          python tests/live_p7_kiss_one_shot_evidence_contract_test.py
+          python tests/live_p8_r3_physical_evidence_contract_test.py
