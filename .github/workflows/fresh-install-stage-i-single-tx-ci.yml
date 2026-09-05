@@ -24,6 +24,7 @@ jobs:
           python -m py_compile tests/fresh_os_stage_i_host_qualification_contract_test.py
           python -m py_compile tests/fresh_os_stage_i_dry_run_evidence_contract_test.py
           python -m py_compile tests/fresh_os_stage_i_physical_tx_evidence_contract_test.py
+          python -m py_compile tests/product_local_console_target_pi_evidence_contract_test.py
 
       - name: Stage I single-shot regression
         run: python tests/fresh_os_stage_i_single_tx_test.py
@@ -39,6 +40,9 @@ jobs:
 
       - name: Stage I physical TX target-Pi evidence
         run: python tests/fresh_os_stage_i_physical_tx_evidence_contract_test.py
+
+      - name: Final installed local-console target-Pi evidence
+        run: python tests/product_local_console_target_pi_evidence_contract_test.py
 
       - name: Stage I zero-I/O dry run remains safe after physical qualification
         run: python tools/qualify_stage_i_single_tx.py
