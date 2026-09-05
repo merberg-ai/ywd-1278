@@ -90,8 +90,8 @@
 
 ## 0G — Native connected-mode AX.25
 
-- [ ] modulo-8 link state machine
-- [ ] SABM/UA/DISC/DM
+- [ ] modulo-8 link state machine — 0G-P1 host candidate provides explicit disconnected/awaiting-connect/connected/awaiting-release states, frozen V(S)/V(R)/V(A) reset state, and validated modulo-8 arithmetic without timers, queues, runtime integration, or RF
+- [ ] SABM/UA/DISC/DM — 0G-P1 host candidate constructs and consumes strictly addressed direct U frames with conventional command/response and Poll/Final semantics; returned response frames remain inert
 - [ ] I frames and V(S)/V(R)/V(A)
 - [ ] RR/RNR/REJ handling
 - [ ] T1/T2/T3 timers
