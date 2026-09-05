@@ -13,7 +13,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 FROZEN = {
     "src/ywd1278/console/local.py": "9fed5416ca9123811413f4ef284abff0006a48dd",
-    "src/ywd1278/console/classic.py": "4d6dfd5d439fb5df6ff586c2a47c37724381b2e",
+    "src/ywd1278/console/classic.py": "4d6dfd5d439fb5dfd6ff586c2a47c37724381b2e",
     "src/ywd1278/console/telnet.py": "d15669eb61f2afdf4d0d177191124ef8f13713e0",
     "src/ywd1278/console/pty_serial.py": "c0ba2a3278ac1e790bf383fc12a220ae327255ba",
     "src/ywd1278/ax25/codec.py": "866a500d9f3a5d3fc80f6918d07ff83a6672ad64",
