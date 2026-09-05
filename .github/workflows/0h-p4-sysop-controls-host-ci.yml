@@ -1,0 +1,16 @@
+name: 0h-p4-sysop-controls-host-ci
+on:
+ push: {branches: [dev-0h-p4-sysop-controls]}
+ pull_request: {branches: [checkpoint/0h-p3-forwarding-policy-host-qualified]}
+ workflow_dispatch:
+jobs:
+ sysop-controls:
+  runs-on: ubuntu-latest
+  env: {PYTHONPATH: "src:tests"}
+  steps:
+   - uses: actions/checkout@v4
+   - uses: actions/setup-python@v5
+     with: {python-version: '3.11'}
+   - run: python -m py_compile src/ywd1278/node/sysop.py tests/sysop_controls_0h_p4_test.py tests/sysop_controls_0h_p4_contract_test.py
+   - run: python tests/sysop_controls_0h_p4_test.py && python tests/sysop_controls_0h_p4_contract_test.py
+   - run: python tests/forwarding_policy_0h_p3_test.py && python tests/forwarding_policy_0h_p3_contract_test.py && python tests/mailbox_storage_0h_p2_test.py && python tests/mailbox_storage_0h_p2_contract_test.py && python tests/node_commands_0h_p1_test.py && python tests/connected_physical_0g_p6_evidence_contract_test.py
