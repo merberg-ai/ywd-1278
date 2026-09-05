@@ -1,0 +1,89 @@
+{
+  "schema": 1,
+  "stage": "0F",
+  "phase": "classic-unproto-converse-host-qualification",
+  "status": "host-qualified-physical-tx-pending",
+  "date": "2026-09-04",
+  "timezone": "America/Los_Angeles",
+  "base_appliance": {
+    "checkpoint": "checkpoint/product-fresh-install-appliance-qualified",
+    "sha": "e9fc1c4e3810bb7ed63ffd3417d2f3958cd9d1ca"
+  },
+  "development": {
+    "branch": "dev-0f-classic-tx",
+    "issue": 36,
+    "implementation_head": "ef2f630844e12f7d5ff68e25695a95b0fb84fce0",
+    "ci_run_id": 33938085041,
+    "ci_conclusion": "success"
+  },
+  "implementation_blobs": {
+    "src/ywd1278/console/classic_tx.py": "e920bf5d26a0b7b2005a374384b3dda68996fc4c",
+    "src/ywd1278/service/classic_tx_console.py": "579cab015b20556dd9354e91edfd307e3120db8c",
+    "src/ywd1278/daemon.py": "ce1ba6af92f7238ab1a1ac0aca268a94c4fa515b",
+    "tests/classic_tnc_tx_0f_test.py": "5feb2b3851f6e5d81eb79e8d490a53407b097a82",
+    "tests/product_classic_tx_0f_test.py": "b70ba6cf188725c05f0533a882e0f656211ff5da",
+    "tests/product_classic_tx_daemon_0f_test.py": "3db15806094945408075be355805dc3ec04865a4",
+    "tests/classic_tx_0f_contract_test.py": "aa160b96f023e14ea9bf68d7eda764cfb3410fdd",
+    ".github/workflows/0f-classic-tx-ci.yml": "4cfc3358f6e0280412f0dfa517509d93c781d83a"
+  },
+  "p1_unproto": {
+    "qualified": true,
+    "per_session_state": true,
+    "destination_query_set": true,
+    "direct_path": true,
+    "via_path": true,
+    "maximum_digipeaters": 8,
+    "ax25_ui_frame_builder": "frozen Stage-A codec",
+    "frame_body_includes_fcs": false,
+    "invalid_input_fails_closed": true
+  },
+  "p2_converse": {
+    "qualified": true,
+    "line_oriented": true,
+    "command_mode_escape": "COMMAND",
+    "one_input_line_maximum_submit_calls": 1,
+    "printable_ascii_only": true,
+    "paclen_enforced": true,
+    "empty_line_transmitted": false,
+    "automatic_retry": false,
+    "beacon_btext_id_deferred": true,
+    "connected_mode_deferred_to_0g": true
+  },
+  "p3_product_composition": {
+    "qualified": true,
+    "persistent_tx_disabled_fails_closed_before_submit": true,
+    "uses_existing_product_backend": true,
+    "uses_kiss_data_admission_boundary": true,
+    "creates_second_admission_queue": false,
+    "creates_second_csma": false,
+    "creates_second_modem_owner": false,
+    "creates_uart_path": false,
+    "creates_firmware_or_gpio_path": false,
+    "fake_hat_tx_enabled_dispatches": 1,
+    "fake_hat_rx_restarted_after_tx": true,
+    "no_second_dispatch_hold": true,
+    "kiss_tcp_listener_required_for_console_tx": false,
+    "historical_configs_without_station_preserve_p5": true
+  },
+  "preserved_boundaries": {
+    "frozen_0e_p1_p5": true,
+    "frozen_stage_a_ax25_codec": true,
+    "frozen_kiss_tx_path": true,
+    "frozen_product_packet_engine": true,
+    "stage_b_product_graph": true,
+    "stage_d_console_graph": true,
+    "stage_i_physical_tx_evidence": true,
+    "final_fresh_install_appliance_seal": true,
+    "sustained_p7_p8_lineage": true
+  },
+  "physical": {
+    "target_pi_modified": false,
+    "installed_appliance_modified": false,
+    "modem_uart_opened": false,
+    "rf_transmitted": false,
+    "firmware_written": false,
+    "physical_0f_tx_authorized": false,
+    "physical_0f_tx_qualified": false
+  },
+  "next_action": "Freeze host qualification, then require separate explicit operator authorization before installing/staging a bounded 0F physical UNPROTO/converse test on the qualified Pi. Beaconing remains deferred until after that gate."
+}
