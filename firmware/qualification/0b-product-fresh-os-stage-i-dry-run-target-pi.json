@@ -1,0 +1,61 @@
+{
+  "schema": 1,
+  "stage": "I",
+  "phase": "fresh-os-single-shot-product-tx-pre-rf-dry-run",
+  "status": "target-pi-dry-run-qualified-physical-tx-pending",
+  "date": "2026-09-04",
+  "timezone": "America/Los_Angeles",
+  "checkpoint_under_test": {
+    "name": "checkpoint/product-fresh-os-stage-i-single-tx-host-qualified",
+    "sha": "0b0e288e619368f2b3d8928e241efd806b2df442"
+  },
+  "product_under_test": {
+    "installed_commit": "2f5299e65add072fea6ee55a54dc421faf00c276",
+    "target": "mmdvm-hs-hat-stm32f103-simplex-14.7456-adf7021",
+    "frequency_hz": 145050000,
+    "tx_power": 200,
+    "persistent_tx_enabled": false,
+    "automatic_flash_enabled": false
+  },
+  "checkout_recovery": {
+    "explicit_checkpoint_fetch_required": true,
+    "expected_head": "0b0e288e619368f2b3d8928e241efd806b2df442",
+    "fetched_head": "0b0e288e619368f2b3d8928e241efd806b2df442",
+    "commit_object_present": true,
+    "tree_object_present": true,
+    "harness_present": true,
+    "checkout_result": "pass",
+    "child_exit_code": 0,
+    "putty_session_survived": true
+  },
+  "fixed_vector": {
+    "source": "KJ6YWD-10",
+    "destination": "YWD127",
+    "path": [],
+    "information": "YWD-1278 STAGE-I TX 1/1",
+    "kiss_body_bytes": 39,
+    "kiss_body_sha256": "7ce21d988402ca554cbb7f8c4626cddda9f8f2b970bb53a79ccf2264be67e7e2",
+    "expected_external_decode": "KJ6YWD-10>YWD127:YWD-1278 STAGE-I TX 1/1",
+    "automatic_tx_retry": false,
+    "maximum_kiss_data_messages": 1
+  },
+  "dry_run": {
+    "result": "pass",
+    "exit_code": 0,
+    "service_mutated": false,
+    "modem_uart_opened": false,
+    "kiss_data_sent": false,
+    "rf_transmitted": false,
+    "persistent_config_mutated": false,
+    "beacon_enabled": false,
+    "flash_permitted": false,
+    "option_bytes_permitted": false,
+    "putty_session_survived": true
+  },
+  "authorization": {
+    "stage_i_one_shot_authorization_still_unused": true,
+    "physical_tx_attempted": false,
+    "physical_tx_qualified": false
+  },
+  "next_action": "Freeze this pre-RF target-Pi evidence and execute exactly one explicitly armed Stage-I transmission only after an independent 145.050 MHz 1200-baud AFSK receiver is ready."
+}
