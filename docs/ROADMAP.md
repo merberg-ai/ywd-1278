@@ -96,7 +96,7 @@
 - [x] RR/RNR/REJ handling — 0G-P2 host-qualified receiver-ready/busy flow control, duplicate/out-of-order REJ, Poll/Final responses, and explicitly inert REJ retransmission sets with no timer or automatic execution
 - [x] T1/T2/T3 timers — 0G-P3 host-qualified caller-driven monotonic T1 supervision, T2 delayed RR acknowledgement, and T3 idle RR Poll enquiry; all returned actions remain inert and no runtime or RF owner imports the layer
 - [x] retry/MAXFRAME/PACLEN controls — 0G-P2 host-qualified MAXFRAME/PACLEN bounds plus 0G-P3 host-qualified bounded N2 retry policy (0..15) with fail-closed exhaustion
-- [ ] connected terminal sessions — 0G-P4 host candidate provides one bounded direct-peer command/text session over frozen P3, with explicit CONNECT/COMMAND/CONVERSE/CSTATUS/DISCONNECT behavior and inert frame actions; transport/runtime integration remains disconnected
+- [x] connected terminal sessions — 0G-P4 host-qualified one bounded direct-peer command/text session over frozen P3, with explicit CONNECT/COMMAND/CONVERSE/CSTATUS/DISCONNECT behavior, safe received-text rendering, and inert frame actions; transport/runtime integration remains disconnected
 - [ ] multi-session policy
 
 ## 0H — Packet node / mailbox
