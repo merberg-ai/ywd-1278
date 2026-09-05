@@ -1,0 +1,16 @@
+name: 0h-p7-mailbox-pre-rf-ci
+on:
+ push: {branches: [dev-0h-p7-mailbox-pre-rf]}
+ pull_request: {branches: [checkpoint/0h-p6-mailbox-commands-host-qualified]}
+ workflow_dispatch:
+jobs:
+ mailbox-pre-rf:
+  runs-on: ubuntu-latest
+  env: {PYTHONPATH: "src:tests"}
+  steps:
+   - uses: actions/checkout@v4
+   - uses: actions/setup-python@v5
+     with: {python-version: '3.11'}
+   - run: python -m py_compile tools/qualify_0h_p7_mailbox.py tests/mailbox_physical_0h_p7_safety_contract_test.py
+   - run: python tools/qualify_0h_p7_mailbox.py && python tests/mailbox_physical_0h_p7_safety_contract_test.py
+   - run: python tests/mailbox_commands_0h_p6_test.py && python tests/mailbox_commands_0h_p6_contract_test.py && python tests/inbound_node_0h_p5_evidence_contract_test.py
