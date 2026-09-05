@@ -94,8 +94,8 @@
 - [x] SABM/UA/DISC/DM — 0G-P1 host-qualified construction and handling of strictly addressed direct U frames with conventional command/response and Poll/Final semantics; returned response frames remain inert
 - [x] I frames and V(S)/V(R)/V(A) — 0G-P2 host-qualified PACLEN-bounded I-frame preparation/delivery, a MAXFRAME 1..7 outstanding window, cumulative N(R), atomic invalid acknowledgements, and exact modulo-8 wrap above frozen P1
 - [x] RR/RNR/REJ handling — 0G-P2 host-qualified receiver-ready/busy flow control, duplicate/out-of-order REJ, Poll/Final responses, and explicitly inert REJ retransmission sets with no timer or automatic execution
-- [ ] T1/T2/T3 timers — 0G-P3 host candidate implements caller-driven monotonic T1 supervision, T2 delayed RR acknowledgement, and T3 idle RR Poll enquiry; all returned actions remain inert and no runtime or RF owner imports the layer
-- [ ] retry/MAXFRAME/PACLEN controls — 0G-P2 host-qualified MAXFRAME/PACLEN bounds plus 0G-P3 host-candidate bounded N2 retry policy (0..15) with fail-closed exhaustion
+- [x] T1/T2/T3 timers — 0G-P3 host-qualified caller-driven monotonic T1 supervision, T2 delayed RR acknowledgement, and T3 idle RR Poll enquiry; all returned actions remain inert and no runtime or RF owner imports the layer
+- [x] retry/MAXFRAME/PACLEN controls — 0G-P2 host-qualified MAXFRAME/PACLEN bounds plus 0G-P3 host-qualified bounded N2 retry policy (0..15) with fail-closed exhaustion
 - [ ] connected terminal sessions
 - [ ] multi-session policy
 
