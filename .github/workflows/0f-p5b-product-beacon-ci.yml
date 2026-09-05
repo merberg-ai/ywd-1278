@@ -3,6 +3,8 @@ name: 0f-p5b-product-beacon-ci
 on:
   push:
     branches: [dev-0f-p5b-product-beacon]
+  pull_request:
+    branches: [checkpoint/0f-p5a-host-qualified]
   workflow_dispatch:
 
 jobs:
