@@ -19,6 +19,8 @@ jobs:
         run: |
           bash -n tools/stage_h_reboot_prepare.sh
           bash -n tools/qualify_stage_h_reboot_rx.sh
+      - name: Stage H final reboot target-Pi evidence
+        run: python tests/fresh_os_stage_h_reboot_evidence_contract_test.py
       - name: Stage H fresh-OS live RX evidence
         run: python tests/fresh_os_stage_h_live_rx_evidence_contract_test.py
       - name: Stage H reboot safety contract
@@ -39,3 +41,15 @@ jobs:
         run: python tests/firmware_trust_stage_f_test.py
       - name: Preserve Stage A packet-engine freeze
         run: python tests/product_packet_engine_stage_a_contract_test.py
+      - name: Parse final Stage H reboot manifest
+        run: |
+          python - <<'PY'
+          import json
+          d=json.load(open('firmware/qualification/0b-product-fresh-os-stage-h-reboot-target-pi.json',encoding='utf-8'))
+          assert d['schema']==1 and d['stage']=='H'
+          assert d['status']=='target-pi-fresh-os-qualified'
+          assert d['stage_h_complete'] is True
+          assert d['physical_tx_permitted_by_stage_h'] is False
+          assert d['qualified_claims']['physical_tx'] is False
+          print('STAGE_H_FINAL_REBOOT_MANIFEST=PASS')
+          PY
