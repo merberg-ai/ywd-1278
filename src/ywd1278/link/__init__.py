@@ -30,6 +30,11 @@ from .terminal_session import (
     ConnectedTerminalSnapshot,
     TerminalMode,
 )
+from .session_manager import (
+    ConnectedSessionManager,
+    ManagedSessionResult,
+    SessionManagerSnapshot,
+)
 
 __all__ = [
     "LinkAction",
@@ -54,4 +59,7 @@ __all__ = [
     "ConnectedTerminalSession",
     "ConnectedTerminalSnapshot",
     "TerminalMode",
+    "ConnectedSessionManager",
+    "ManagedSessionResult",
+    "SessionManagerSnapshot",
 ]
