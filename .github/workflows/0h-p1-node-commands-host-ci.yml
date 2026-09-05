@@ -1,0 +1,31 @@
+name: 0h-p1-node-commands-host-ci
+on:
+  push:
+    branches: [dev-0h-p1-node-command-layer]
+  pull_request:
+    branches: [checkpoint/0g-p6-connected-physical-qualified]
+  workflow_dispatch:
+jobs:
+  p1-node-commands-host:
+    runs-on: ubuntu-latest
+    env:
+      PYTHONPATH: src:tests
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Qualify node command layer
+        run: |
+          python -m py_compile src/ywd1278/node/commands.py tests/node_commands_0h_p1_test.py tests/node_commands_0h_p1_contract_test.py
+          python tests/node_commands_0h_p1_test.py
+          python tests/node_commands_0h_p1_contract_test.py
+      - name: Preserve connected stack and physical evidence
+        run: |
+          python tests/connected_physical_0g_p6_evidence_contract_test.py
+          python tests/connected_sessions_0g_p5_test.py
+          python tests/connected_sessions_0g_p5_contract_test.py
+          python tests/connected_terminal_0g_p4_test.py
+          python tests/connected_terminal_0g_p4_contract_test.py
+          python tests/timed_link_0g_p3_test.py
+          python tests/timed_link_0g_p3_contract_test.py

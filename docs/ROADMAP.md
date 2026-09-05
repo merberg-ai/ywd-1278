@@ -102,7 +102,7 @@
 
 ## 0H — Packet node / mailbox
 
-- [ ] node command layer
+- [ ] node command layer — 0H-P1 host candidate provides bounded fragmented CR/LF command assembly, HELP/INFO/VERSION/BYE, safe ASCII responses, and explicit mailbox/forwarding unavailability without runtime, storage, or RF integration
 - [ ] mailbox/message storage
 - [ ] forwarding policy design
 - [ ] sysop controls
