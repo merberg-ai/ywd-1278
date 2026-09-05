@@ -30,7 +30,9 @@ jobs:
       - name: Preserve Stage H deterministic build evidence
         run: python tests/fresh_os_stage_h_firmware_build_success_evidence_contract_test.py
       - name: Reuse qualified fresh-MHEARD reboot primitive tests
-        run: python tests/existing_pi_stage_g_reboot_test.py
+        run: |
+          python tests/existing_pi_stage_g_reboot_live_rx_test.py
+          python tests/existing_pi_stage_g_reboot_contract_test.py
       - name: Preserve Stage G final reboot evidence
         run: python tests/existing_pi_stage_g_reboot_evidence_contract_test.py
       - name: Preserve Stage F firmware trust behavior
