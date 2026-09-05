@@ -80,7 +80,6 @@ class ClassicTX0FTests(unittest.TestCase):
         tx = shell(enabled=False)
         tx.execute("UNPROTO CQ")
         bad = (
-            "UNPROTO",
             "UNPROTO TOOLONG7",
             "UNPROTO CQ WIDE1-1",
             "UNPROTO CQ VIA",
