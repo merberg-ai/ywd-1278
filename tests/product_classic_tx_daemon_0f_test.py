@@ -150,6 +150,11 @@ class ProductClassicTXDaemon0FTests(unittest.TestCase):
                     timeout=6.0,
                     detail="0F fake-HAT TX",
                 )
+                wait_until(
+                    lambda: created[0].rx_start_count == 2 and created[0].rx_active,
+                    timeout=6.0,
+                    detail="0F half-duplex RX restart",
+                )
                 self.assertEqual(created[0].tx_accept_count, 1)
                 self.assertEqual(created[0].rx_stop_count, 1)
                 self.assertEqual(created[0].rx_start_count, 2)
