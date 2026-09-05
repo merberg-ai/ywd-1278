@@ -28,6 +28,7 @@ jobs:
         run: |
           python tests/classic_beacon_0f_p5d_harness_test.py
           python tests/classic_beacon_0f_p5d_safety_contract_test.py
+          python tests/classic_beacon_0f_p5d_physical_evidence_contract_test.py
       - name: Preserve full host beacon graph
         run: |
           python tests/product_beacon_console_0f_p5c2_test.py
