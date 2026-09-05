@@ -14,7 +14,7 @@ EXPECTED_FIRMWARE_SHA = "b06fcbf0baa36e865198091cee27c66e1624ef08117ee685253a7a5
 EXPECTED_IDENTITY = "MMDVM_HS_Hat-YWD-1278-AX25R4-v0.1.0-alpha1 14.7456MHz ADF7021 FW based on CA6JAU GitID #7ff74ed"
 
 # Immutable Stage-H final evidence blob at the Stage-I base boundary.
-EXPECTED_STAGE_H_EVIDENCE_BLOB = "da4ba6f9c0da1fb66feef1148e9d478fae4fba04"
+EXPECTED_STAGE_H_EVIDENCE_BLOB = "b4f32d40184bb4ce74a7d786940638583beab04d"
 
 
 def blob(path: Path) -> str:
