@@ -26,9 +26,9 @@ from .service.classic_tx_console import (
 )
 from .service.beacon_scheduler import ProductBeaconScheduler
 from .service.product_beacon_console import (
-    ProductClassicBeaconConsole,
     ThreadSafeProductBeaconCoordinator,
 )
+from .service.product_id_console import ProductClassicIDConsole
 
 
 def run_daemon(
@@ -89,7 +89,7 @@ def run_daemon(
             poll_interval_seconds=beacon_poll_interval_seconds,
             clock=shared_beacon_clock,
         )
-        console: ProductClassicConsole = ProductClassicBeaconConsole(
+        console: ProductClassicConsole = ProductClassicIDConsole(
             console_config,
             tx_config=classic_tx_config,
             tx_enabled=packet_config.tx_enabled,
