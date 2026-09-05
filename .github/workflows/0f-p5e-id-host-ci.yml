@@ -1,0 +1,41 @@
+name: 0f-p5e-id-host-ci
+
+on:
+  push:
+    branches: [dev-0f-p5e-id]
+  pull_request:
+    branches: [checkpoint/0f-p5d-beacon-physical-qualified]
+  workflow_dispatch:
+
+jobs:
+  p5e-id-host:
+    runs-on: ubuntu-latest
+    env:
+      PYTHONPATH: src:tests
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Compile P5e implementation and contracts
+        run: |
+          python -m py_compile src/ywd1278/service/product_id_console.py
+          python -m py_compile tests/product_id_console_0f_p5e_test.py
+          python -m py_compile tests/product_id_console_0f_p5e_contract_test.py
+      - name: Qualify manual ID host graph
+        run: |
+          python tests/product_id_console_0f_p5e_test.py
+          python tests/product_id_console_0f_p5e_contract_test.py
+      - name: Preserve P5d evidence and beacon graph
+        run: |
+          python tests/classic_beacon_0f_p5d_physical_evidence_contract_test.py
+          python tests/product_beacon_console_0f_p5c2_test.py
+          python tests/product_beacon_scheduler_0f_p5c_test.py
+          python tests/product_classic_beacon_0f_p5b_test.py
+          python tests/classic_beacon_0f_p5a_test.py
+      - name: Preserve P4 and physical lineage
+        run: |
+          python tests/classic_tx_0f_p4_final_acceptance_contract_test.py
+          python tests/product_fresh_install_appliance_qualified_contract_test.py
+          python tests/fresh_os_stage_i_physical_tx_evidence_contract_test.py
+          python tests/live_p8_r3_physical_evidence_contract_test.py
