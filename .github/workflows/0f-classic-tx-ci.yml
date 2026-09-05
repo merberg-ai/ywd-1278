@@ -25,6 +25,7 @@ jobs:
           python -m py_compile tests/product_classic_tx_0f_test.py
           python -m py_compile tests/product_classic_tx_daemon_0f_test.py
           python -m py_compile tests/classic_tx_0f_contract_test.py
+          python -m py_compile tests/classic_tx_0f_host_qualification_contract_test.py
 
       - name: 0F P1/P2 UNPROTO and converse regression
         run: python tests/classic_tnc_tx_0f_test.py
@@ -37,6 +38,9 @@ jobs:
 
       - name: 0F architecture and preservation contract
         run: python tests/classic_tx_0f_contract_test.py
+
+      - name: Sealed 0F P1/P2/P3 host qualification evidence
+        run: python tests/classic_tx_0f_host_qualification_contract_test.py
 
       - name: Preserve frozen 0E-P5 vocabulary
         run: python tests/classic_tnc_vocabulary_test.py
