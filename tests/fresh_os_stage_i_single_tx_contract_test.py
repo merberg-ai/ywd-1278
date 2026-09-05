@@ -44,7 +44,7 @@ def main() -> int:
     assert assigned_constant(tree, "EXTERNAL_PHRASE") == "EXTERNAL-DECODE-MATCH-ONE"
     assert assigned_constant(tree, "DESTINATION") == "YWD127"
     assert assigned_constant(tree, "INFORMATION") == "YWD-1278 STAGE-I TX 1/1"
-    assert str(assigned_constant(tree, "PERSISTENT_CONFIG")) == "/etc/ywd-1278/config.toml"
+    assert 'PERSISTENT_CONFIG = Path("/etc/ywd-1278/config.toml")' in text
 
     # Exactly one application-originated KISS DATA send exists in the physical path.
     assert text.count("kiss.sendall(encode(body, command=DATA))") == 1
@@ -65,7 +65,7 @@ def main() -> int:
     assert "PERSISTENT_CONFIG.write" not in text
 
     # Temporary TX capability is restricted to /run and the qualified profile.
-    assert str(assigned_constant(tree, "TEMP_ROOT")) == "/run/ywd-1278-stage-i"
+    assert 'TEMP_ROOT = Path("/run/ywd-1278-stage-i")' in text
     assert assigned_constant(tree, "TEMP_KISS_PORT") == 18001
     assert assigned_constant(tree, "TEMP_CONSOLE_PORT") == 18010
     assert assigned_constant(tree, "TEMP_PTY") == "/run/ywd-1278-stage-i/tnc"
