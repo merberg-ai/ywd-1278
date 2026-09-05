@@ -23,6 +23,14 @@ EXPECTED_BLOBS = {
     ".github/workflows/0f-classic-tx-ci.yml": "4cfc3358f6e0280412f0dfa517509d93c781d83a",
 }
 
+# The manifest pins the exact workflow blob that produced the successful
+# implementation run.  The live workflow is intentionally extended afterward
+# to require this very evidence contract, so only implementation/code/test
+# blobs stay byte-equal to the implementation-head versions.
+LIVE_FROZEN = tuple(
+    path for path in EXPECTED_BLOBS if path != ".github/workflows/0f-classic-tx-ci.yml"
+)
+
 
 def git_blob(path: Path) -> str:
     data = path.read_bytes()
@@ -68,9 +76,9 @@ class ClassicTX0FHostQualificationContractTests(unittest.TestCase):
         self.assertFalse(physical["physical_0f_tx_authorized"])
         self.assertFalse(physical["physical_0f_tx_qualified"])
 
-        for relative, expected in EXPECTED_BLOBS.items():
+        for relative in LIVE_FROZEN:
             with self.subTest(path=relative):
-                self.assertEqual(git_blob(ROOT / relative), expected)
+                self.assertEqual(git_blob(ROOT / relative), EXPECTED_BLOBS[relative])
 
         print("YWD1278_0F_HOST_QUALIFICATION=PASS")
         print("P1_UNPROTO=PASS")
