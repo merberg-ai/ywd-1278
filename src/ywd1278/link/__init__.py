@@ -24,6 +24,12 @@ from .timed_link import (
     TimedLinkResult,
     TimedModulo8DataLink,
 )
+from .terminal_session import (
+    ConnectedTerminalResult,
+    ConnectedTerminalSession,
+    ConnectedTerminalSnapshot,
+    TerminalMode,
+)
 
 __all__ = [
     "LinkAction",
@@ -44,4 +50,8 @@ __all__ = [
     "LinkTimerSnapshot",
     "TimedLinkResult",
     "TimedModulo8DataLink",
+    "ConnectedTerminalResult",
+    "ConnectedTerminalSession",
+    "ConnectedTerminalSnapshot",
+    "TerminalMode",
 ]
