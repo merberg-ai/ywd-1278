@@ -1,0 +1,38 @@
+name: 0f-p5b-product-beacon-ci
+
+on:
+  push:
+    branches: [dev-0f-p5b-product-beacon]
+  workflow_dispatch:
+
+jobs:
+  p5b-host:
+    runs-on: ubuntu-latest
+    env:
+      PYTHONPATH: src:tests
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Compile P5b
+        run: |
+          python -m py_compile src/ywd1278/service/classic_beacon.py
+          python -m py_compile tests/product_classic_beacon_0f_p5b_test.py
+          python -m py_compile tests/product_classic_beacon_0f_p5b_contract_test.py
+      - name: P5b product composition
+        run: |
+          python tests/product_classic_beacon_0f_p5b_test.py
+          python tests/product_classic_beacon_0f_p5b_contract_test.py
+      - name: Preserve P5a and P4
+        run: |
+          python tests/classic_beacon_0f_p5a_test.py
+          python tests/classic_tnc_tx_0f_test.py
+          python tests/product_classic_tx_0f_test.py
+          python tests/product_classic_tx_daemon_0f_test.py
+          python tests/classic_tx_0f_p4_final_acceptance_contract_test.py
+      - name: Preserve appliance and physical lineage
+        run: |
+          python tests/product_fresh_install_appliance_qualified_contract_test.py
+          python tests/fresh_os_stage_i_physical_tx_evidence_contract_test.py
+          python tests/live_p8_r3_physical_evidence_contract_test.py
