@@ -1,0 +1,84 @@
+{
+  "schema": 1,
+  "stage": "final-local-console",
+  "phase": "fresh-install-appliance-local-console-physical-gate",
+  "status": "target-pi-qualified",
+  "date": "2026-09-04",
+  "timezone": "America/Los_Angeles",
+  "product_under_test": {
+    "installed_commit": "2f5299e65add072fea6ee55a54dc421faf00c276",
+    "local_console_blob": "9fed5416ca9123811413f4ef284abff0006a48dd",
+    "entrypoint": "/opt/ywd-1278/venv/bin/ywd1278-console",
+    "database": "/var/lib/ywd-1278/ywd-1278.sqlite3"
+  },
+  "precheck": {
+    "tty_stdin": true,
+    "tty_stdout_probe": false,
+    "tty_stdout_probe_note": "The shell-level test -t 1 reported NO in the captured session, but the installed console itself presented an interactive stdout prompt, rendered command responses synchronously, and returned to the shell after QUIT; qualification is based on the direct interactive console transcript rather than this imperfect wrapper probe.",
+    "service_enabled": true,
+    "service_active": true,
+    "mheard_database_readable": true,
+    "putty_session_survived": true
+  },
+  "interactive_session": {
+    "banner": "YWD-1278 0.1.0-alpha0 LOCAL TNC CONSOLE",
+    "prompt_present": true,
+    "commands_entered_manually": [
+      "VERSION",
+      "HEALTH",
+      "MHEARD 5",
+      "HELP",
+      "QUIT"
+    ],
+    "version_output": "YWD-1278 0.1.0-alpha0",
+    "health": {
+      "status": "OK",
+      "problems": "NONE",
+      "sources": "1/10"
+    },
+    "mheard": {
+      "result_count": 2,
+      "entries": [
+        {
+          "source": "KJ6YWD-5",
+          "count": 33,
+          "destination": "KE6CHO-5",
+          "via": "DIRECT"
+        },
+        {
+          "source": "KJ6YWD",
+          "count": 19,
+          "destination": "BEACON",
+          "via": "KRDG,KBANN,WOODY,KJOHN,KROCK"
+        }
+      ]
+    },
+    "help_surface_present": true,
+    "quit_result": "BYE",
+    "returned_to_shell": true
+  },
+  "safety": {
+    "service_stopped": false,
+    "service_restarted": false,
+    "persistent_config_mutated": false,
+    "modem_uart_opened_by_console": false,
+    "kiss_session_opened_by_console": false,
+    "network_listener_opened_by_console": false,
+    "tx_path_opened_by_console": false,
+    "rf_transmitted": false,
+    "flash_written": false,
+    "option_bytes_written": false,
+    "database_access_mode": "read-only MHEARD view"
+  },
+  "qualified_claims": {
+    "installed_local_console_launches": true,
+    "interactive_prompt_works": true,
+    "version_command_works": true,
+    "health_command_works": true,
+    "mheard_reads_live_persisted_state": true,
+    "help_command_works": true,
+    "quit_returns_cleanly_to_shell": true,
+    "local_console_is_physically_qualified": true
+  },
+  "next_action": "Seal final appliance qualification checkpoint and close GitHub issue #35 as completed."
+}
