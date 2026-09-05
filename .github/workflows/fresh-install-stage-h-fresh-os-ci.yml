@@ -15,6 +15,7 @@ on:
       - 'tests/fresh_os_stage_h_firmware_build_failure_evidence_contract_test.py'
       - 'tests/fresh_os_stage_h_firmware_build_success_evidence_contract_test.py'
       - 'tests/fresh_os_stage_h_stock_backup_evidence_contract_test.py'
+      - 'tests/fresh_os_stage_h_firmware_deploy_evidence_contract_test.py'
       - 'tests/fresh_os_stage_h_prior_stage_preservation_test.py'
       - 'firmware/qualification/0b-product-fresh-os-stage-h.json'
       - 'firmware/qualification/0b-product-fresh-os-stage-h-preinstall-target-pi.json'
@@ -22,6 +23,7 @@ on:
       - 'firmware/qualification/0b-product-fresh-os-stage-h-firmware-build-failure-target-pi.json'
       - 'firmware/qualification/0b-product-fresh-os-stage-h-firmware-build-success-target-pi.json'
       - 'firmware/qualification/0b-product-fresh-os-stage-h-stock-backup-target-pi.json'
+      - 'firmware/qualification/0b-product-fresh-os-stage-h-firmware-deploy-target-pi.json'
       - 'docs/qualifications/fresh-install-stage-h-fresh-os-staged-2026-09-04.md'
       - '.github/workflows/fresh-install-stage-h-fresh-os-ci.yml'
 
@@ -52,6 +54,8 @@ jobs:
         run: python tests/fresh_os_stage_h_firmware_build_success_evidence_contract_test.py
       - name: Stage H protected stock backup evidence contract
         run: python tests/fresh_os_stage_h_stock_backup_evidence_contract_test.py
+      - name: Stage H firmware deployment evidence contract
+        run: python tests/fresh_os_stage_h_firmware_deploy_evidence_contract_test.py
       - name: Stage H prior-stage immutable evidence preservation
         run: python tests/fresh_os_stage_h_prior_stage_preservation_test.py
       - name: Preserve Stage G final reboot evidence
@@ -153,4 +157,20 @@ jobs:
           assert d['post_backup']['flash_written'] is False
           assert d['post_backup']['rf_transmitted'] is False
           print('STAGE_H_STOCK_BACKUP_TARGET_PI_MANIFEST=PASS')
+          PY
+      - name: Parse Stage H firmware deployment evidence
+        run: |
+          python - <<'PY'
+          import json
+          d=json.load(open('firmware/qualification/0b-product-fresh-os-stage-h-firmware-deploy-target-pi.json',encoding='utf-8'))
+          assert d['schema']==1 and d['stage']=='H'
+          assert d['status']=='target-pi-firmware-deployment-qualified'
+          assert d['write']['main_flash_write_occurred'] is True
+          assert d['write']['programmed_readback_sha256']=='b06fcbf0baa36e865198091cee27c66e1624ef08117ee685253a7a5613c7c616'
+          assert d['write']['exact_runtime_identity_verified'] is True
+          assert d['service_eligibility']['service_eligible'] is True
+          assert d['service_eligibility']['service_enabled'] is False
+          assert d['safety']['tx_enabled'] is False
+          assert d['safety']['rf_transmitted'] is False
+          print('STAGE_H_FIRMWARE_DEPLOY_TARGET_PI_MANIFEST=PASS')
           PY
