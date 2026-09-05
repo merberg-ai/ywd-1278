@@ -105,7 +105,7 @@
 - [x] node command layer — 0H-P1 host-qualified bounded fragmented CR/LF command assembly, HELP/INFO/VERSION/BYE, safe ASCII responses, and explicit mailbox/forwarding unavailability without runtime, storage, or RF integration
 - [x] mailbox/message storage — 0H-P2 host-qualified schema-versioned mode-0600 SQLite deposits, inode-protected owner-scoped list/read, caller-supplied timestamps, bounded ASCII content, parameterized SQL, and atomic global/per-recipient quotas; deletion and forwarding remain absent
 - [x] forwarding policy design — 0H-P3 host-qualified exact static routes, local-delivery precedence, disabled/missing-route HOLD, bounded traces, loop/hop rejection, and inert next-hop decisions without storage mutation, scheduling, runtime, or RF
-- [ ] sysop controls
+- [ ] sysop controls — 0H-P4 host candidate requires injected PBKDF2 credentials rather than RF callsign trust, locks after three failures, and prepares only typed inert STATUS/message-delete/route-enable/route-disable intents; no mutation or shell/service control exists
 
 ## Later product work
 
