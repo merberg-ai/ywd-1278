@@ -22,6 +22,7 @@ jobs:
           python -m py_compile tests/classic_tx_0f_p4_harness_test.py
           python -m py_compile tests/classic_tx_0f_p4_safety_contract_test.py
           python -m py_compile tests/classic_tx_0f_p4_pre_rf_evidence_contract_test.py
+          python -m py_compile tests/classic_tx_0f_p4_physical_evidence_contract_test.py
 
       - name: P4 zero-I/O dry run
         run: python tools/qualify_0f_p4_classic_tx.py
@@ -34,6 +35,9 @@ jobs:
 
       - name: Sealed P4 pre-RF staging evidence
         run: python tests/classic_tx_0f_p4_pre_rf_evidence_contract_test.py
+
+      - name: Qualified P4 physical target-Pi evidence
+        run: python tests/classic_tx_0f_p4_physical_evidence_contract_test.py
 
       - name: Preserve sealed 0F P1/P2/P3 qualification
         run: python tests/classic_tx_0f_host_qualification_contract_test.py
