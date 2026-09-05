@@ -97,7 +97,7 @@
 - [x] T1/T2/T3 timers — 0G-P3 host-qualified caller-driven monotonic T1 supervision, T2 delayed RR acknowledgement, and T3 idle RR Poll enquiry; all returned actions remain inert and no runtime or RF owner imports the layer
 - [x] retry/MAXFRAME/PACLEN controls — 0G-P2 host-qualified MAXFRAME/PACLEN bounds plus 0G-P3 host-qualified bounded N2 retry policy (0..15) with fail-closed exhaustion
 - [x] connected terminal sessions — 0G-P4 host-qualified one bounded direct-peer command/text session over frozen P3, with explicit CONNECT/COMMAND/CONVERSE/CSTATUS/DISCONNECT behavior, safe received-text rendering, and inert frame actions; transport/runtime integration remains disconnected
-- [ ] multi-session policy — 0G-P5 host candidate bounds registration to eight safe identifiers, grants one exclusive connected-link owner, routes frames/timers only to that owner, rejects contention atomically, and retains ownership through orderly close; all actions remain inert
+- [x] multi-session policy — 0G-P5 host-qualified bounded registration for eight safe identifiers, exactly one exclusive connected-link owner, owner-only frame/timer routing, atomic contention rejection, and ownership retained through orderly close; all actions remain inert
 
 ## 0H — Packet node / mailbox
 
