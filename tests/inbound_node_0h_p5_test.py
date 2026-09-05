@@ -8,7 +8,7 @@ from ywd1278.link.timed_link import LinkTimerConfig
 from ywd1278.node.inbound import InboundNodeSession
 
 LOCAL=Address.parse("KJ6YWD-10")
-REMOTE=Address.parse("KJ6YWD-5")
+REMOTE=Address.parse("KJ6YWD-15")
 TIMERS=LinkTimerConfig(t1_seconds=5,t2_seconds=1,t3_seconds=30,max_retries=2)
 
 def u(name, source=REMOTE, command=True):

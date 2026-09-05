@@ -15,12 +15,12 @@ from ywd1278.node.inbound import InboundNodeSession  # noqa: E402
 from ywd1278.service.appliance import load_product_packet_engine_config  # noqa: E402
 
 EXPECTED_HOST_COMMIT="b666ad2eeb144c30b1e1eee542f0eb2a1983bd85"
-AUTHORIZATION_TOKEN="0H-P5-INBOUND-NODE-145050-KJ6YWD5-ONE"
-ARM_PHRASE="TRANSMIT-0H-P5-INBOUND-NODE-KJ6YWD-5-ONE"
+AUTHORIZATION_TOKEN="0H-P5-INBOUND-NODE-145050-KJ6YWD15-ONE"
+ARM_PHRASE="TRANSMIT-0H-P5-INBOUND-NODE-KJ6YWD-15-ONE"
 TEMP_ROOT=Path("/run/ywd-1278-0h-p5"); TEMP_CONFIG=TEMP_ROOT/"config.toml"
 TEMP_LOG=TEMP_ROOT/"daemon.log"; TEMP_PTY=str(TEMP_ROOT/"tnc")
 TEMP_KISS_PORT=18401; TEMP_CONSOLE_PORT=18410
-LOCAL=Address.parse("KJ6YWD-10"); REMOTE=Address.parse("KJ6YWD-5")
+LOCAL=Address.parse("KJ6YWD-10"); REMOTE=Address.parse("KJ6YWD-15")
 
 def make_temporary_tx_config(original:str)->str:
  text=stage_i.replace_toml_key(original,"radio","tx_power",str(stage_i.TX_POWER))

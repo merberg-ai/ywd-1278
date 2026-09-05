@@ -18,7 +18,7 @@ class InboundNodeP5ContractTests(unittest.TestCase):
    self.assertNotIn(forbidden,t)
  def test_guarded_harness_contract(self):
   t=(ROOT/"tools/qualify_0h_p5_inbound_node.py").read_text()
-  for marker in ("0H-P5-INBOUND-NODE-145050-KJ6YWD5-ONE","TRANSMIT-0H-P5-INBOUND-NODE-KJ6YWD-5-ONE","KJ6YWD-10","KJ6YWD-5","BYE_ACK_BEFORE_DISC=PASS","_restore_service"):
+  for marker in ("0H-P5-INBOUND-NODE-145050-KJ6YWD15-ONE","TRANSMIT-0H-P5-INBOUND-NODE-KJ6YWD-15-ONE","KJ6YWD-10","KJ6YWD-15","BYE_ACK_BEFORE_DISC=PASS","_restore_service"):
    self.assertIn(marker,t)
  def test_no_default_runtime_wiring(self):
   for p in ("src/ywd1278/daemon.py","src/ywd1278/service/appliance.py"):
