@@ -103,7 +103,7 @@
 ## 0H — Packet node / mailbox
 
 - [x] node command layer — 0H-P1 host-qualified bounded fragmented CR/LF command assembly, HELP/INFO/VERSION/BYE, safe ASCII responses, and explicit mailbox/forwarding unavailability without runtime, storage, or RF integration
-- [ ] mailbox/message storage — 0H-P2 host candidate provides schema-versioned mode-0600 SQLite deposits, owner-scoped list/read, caller-supplied timestamps, bounded ASCII content, parameterized SQL, and atomic global/per-recipient quotas; deletion and forwarding remain absent
+- [x] mailbox/message storage — 0H-P2 host-qualified schema-versioned mode-0600 SQLite deposits, inode-protected owner-scoped list/read, caller-supplied timestamps, bounded ASCII content, parameterized SQL, and atomic global/per-recipient quotas; deletion and forwarding remain absent
 - [ ] forwarding policy design
 - [ ] sysop controls
 
