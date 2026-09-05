@@ -1,0 +1,70 @@
+{
+  "schema": 1,
+  "stage": "H",
+  "phase": "fresh-os-stock-to-ax25r4-deployment",
+  "status": "target-pi-firmware-deployment-qualified",
+  "date": "2026-09-04",
+  "timezone": "America/Los_Angeles",
+  "target": {
+    "id": "mmdvm-hs-hat-stm32f103-simplex-14.7456-adf7021",
+    "pre_write_identity": "MMDVM_HS_Hat-v1.6.1 20230526 14.7456MHz ADF7021 FW by CA6JAU GitID #7ff74ed",
+    "pre_write_firmware_class": "STOCK",
+    "post_write_identity": "MMDVM_HS_Hat-YWD-1278-AX25R4-v0.1.0-alpha1 14.7456MHz ADF7021 FW based on CA6JAU GitID #7ff74ed",
+    "post_write_firmware_class": "YWD1278",
+    "bootloader_version": "0x22",
+    "device_id": "0x0410"
+  },
+  "artifact": {
+    "size_bytes": 59892,
+    "sha256": "b06fcbf0baa36e865198091cee27c66e1624ef08117ee685253a7a5613c7c616"
+  },
+  "deployment_backup": {
+    "directory": "/var/lib/ywd-1278/firmware-backups/mmdvm-hs-hat-stm32f103-simplex-14.7456-adf7021/20260904-171733",
+    "flash_size_bytes": 131072,
+    "sha256": "4981b35b2d50ada0b09322d9de19dd58a0cbd49eb005693499d1acae92f9d684",
+    "read_passes": 2,
+    "two_pass_byte_identical": true,
+    "stock_golden_sha256_match": true,
+    "option_bytes_read": false
+  },
+  "write": {
+    "operator_confirmation": "WRITE-FIRMWARE-NOW",
+    "main_flash_write_occurred": true,
+    "programmer_write_verify_passed": true,
+    "programmed_readback_bytes": 59892,
+    "programmed_readback_sha256": "b06fcbf0baa36e865198091cee27c66e1624ef08117ee685253a7a5613c7c616",
+    "programmed_readback_passed": true,
+    "exact_runtime_identity_verified": true,
+    "option_bytes_written": false
+  },
+  "service_eligibility": {
+    "record": "/var/lib/ywd-1278/firmware-ready.json",
+    "write_passed": true,
+    "validation_passed": true,
+    "service_eligible": true,
+    "service_enabled": false
+  },
+  "safety": {
+    "runtime_readiness_ready": true,
+    "tx_enabled": false,
+    "automatic_flash_enabled": false,
+    "rf_transmitted": false,
+    "packet_service_enabled": false,
+    "packet_service_active": false,
+    "option_bytes_written": false
+  },
+  "pre_write_snapshot_note": "A separate shell grep of /etc/ywd-1278/config.toml reported Permission denied because it was not run under sudo. This did not authorize or bypass the deployment: deploy-product-firmware.sh opened the protected config itself as root and requires tx_enabled=false and allow_automatic_flash=false before the write path; the completed deployment emitted TX_ENABLED=NO and SERVICE_ENABLED=NO.",
+  "qualified_claims": {
+    "fresh_os_stock_to_ax25r4_write": true,
+    "protected_stock_backup_before_write": true,
+    "exact_artifact_gate": true,
+    "explicit_operator_write_confirmation": true,
+    "independent_programmed_readback": true,
+    "exact_ax25r4_runtime_identity": true,
+    "service_eligibility_established": true,
+    "service_activation": false,
+    "physical_rx_after_fresh_install": false,
+    "physical_tx": false
+  },
+  "next_action": "Run the guarded service-activation gate on the installed fresh-OS appliance, then prove live 145.050 MHz RX through TCP KISS plus Telnet/PTTY MHEARD with TX still disabled."
+}
