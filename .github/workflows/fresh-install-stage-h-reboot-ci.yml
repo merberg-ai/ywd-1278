@@ -1,0 +1,39 @@
+name: fresh-install-stage-h-reboot-ci
+
+on:
+  push:
+    branches: [dev-fresh-install-stage-h-fresh-os]
+  workflow_dispatch:
+
+jobs:
+  stage-h-reboot:
+    runs-on: ubuntu-latest
+    env:
+      PYTHONPATH: src:tests
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Parse Stage H reboot shell surfaces
+        run: |
+          bash -n tools/stage_h_reboot_prepare.sh
+          bash -n tools/qualify_stage_h_reboot_rx.sh
+      - name: Stage H fresh-OS live RX evidence
+        run: python tests/fresh_os_stage_h_live_rx_evidence_contract_test.py
+      - name: Stage H reboot safety contract
+        run: python tests/fresh_os_stage_h_reboot_contract_test.py
+      - name: Preserve Stage H firmware deployment evidence
+        run: python tests/fresh_os_stage_h_firmware_deploy_evidence_contract_test.py
+      - name: Preserve Stage H stock backup evidence
+        run: python tests/fresh_os_stage_h_stock_backup_evidence_contract_test.py
+      - name: Preserve Stage H deterministic build evidence
+        run: python tests/fresh_os_stage_h_firmware_build_success_evidence_contract_test.py
+      - name: Reuse qualified fresh-MHEARD reboot primitive tests
+        run: python tests/existing_pi_stage_g_reboot_test.py
+      - name: Preserve Stage G final reboot evidence
+        run: python tests/existing_pi_stage_g_reboot_evidence_contract_test.py
+      - name: Preserve Stage F firmware trust behavior
+        run: python tests/firmware_trust_stage_f_test.py
+      - name: Preserve Stage A packet-engine freeze
+        run: python tests/product_packet_engine_stage_a_contract_test.py
