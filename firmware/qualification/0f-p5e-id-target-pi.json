@@ -1,0 +1,81 @@
+{
+  "schema": 1,
+  "stage": "0F-P5e",
+  "phase": "one-shot-manual-id-physical-acceptance",
+  "status": "target-pi-physical-qualified",
+  "date": "2026-09-04",
+  "timezone": "America/Los_Angeles",
+  "operator_observed_time": "2026-09-04T22:03:18-07:00",
+  "authorization": {
+    "pre_rf_checkpoint": "checkpoint/0f-p5e-id-pre-rf-qualified",
+    "pre_rf_sha": "58e64e74faa4389cb0f02d77ce1f4c8a73c7d2df",
+    "host_graph_checkpoint": "checkpoint/0f-p5e-id-host-qualified",
+    "host_graph_sha": "79c249167902256399070482d773b39bda96fdea",
+    "authorization_token": "0F-P5E-ID-145050-ONE",
+    "interactive_arm_phrase": "TRANSMIT-0F-P5E-ID-ONE",
+    "authorization_consumed": true,
+    "authorized_id_commands": 1,
+    "automatic_retry_authorized": false,
+    "beacon_scheduler_authorized": false,
+    "connected_mode_tx_authorized": false,
+    "firmware_write_authorized": false
+  },
+  "product_under_test": {
+    "target": "mmdvm-hs-hat-stm32f103-simplex-14.7456-adf7021",
+    "firmware_identity": "MMDVM_HS_Hat-YWD-1278-AX25R4-v0.1.0-alpha1 14.7456MHz ADF7021 FW based on CA6JAU GitID #7ff74ed",
+    "firmware_sha256": "b06fcbf0baa36e865198091cee27c66e1624ef08117ee685253a7a5613c7c616",
+    "frequency_hz": 145050000,
+    "tx_power": 200,
+    "persistent_config_sha256": "2c073d8f022c7174027a0cf424c6e285ffcb0ff3375f9baf6d4553cab2ff3b76",
+    "persistent_tx_enabled_before": false,
+    "persistent_beacon_enabled_before": false,
+    "service_eligibility_check": "PASS",
+    "hat_detect": "PASS"
+  },
+  "fixed_vector": {
+    "source": "KJ6YWD-10",
+    "destination": "ID",
+    "path": [],
+    "control": "UI",
+    "pid": "F0",
+    "information": "YWD-1278 ID KJ6YWD-10",
+    "information_bytes": 21,
+    "expected_external_decode": "KJ6YWD-10>ID:YWD-1278 ID KJ6YWD-10",
+    "tx_origin": "classic Telnet manual ID command"
+  },
+  "command_and_tx": {
+    "manual_id_commands": 1,
+    "internal_tx_dispatches": 1,
+    "beacon_scheduler_used": false,
+    "no_automatic_retry_after_settle": true,
+    "automatic_tx_retry": false
+  },
+  "independent_over_air_decode": {
+    "operator_confirmed_exact_match": true,
+    "decode_count": 1,
+    "observed_time": "05:03:18",
+    "control": "UI",
+    "pid": "F0(Text)",
+    "information_length": 21,
+    "information": "YWD-1278 ID KJ6YWD-10",
+    "screenshot_provided_in_conversation": true,
+    "raw_screenshot_archived_in_repository": false
+  },
+  "post_tx_rx_recovery": {
+    "resumed": true,
+    "frame_bytes": 36,
+    "source": "KJ6YWD-5",
+    "source_differs_from_tx_source": true
+  },
+  "cleanup_and_safety": {
+    "beacon_scheduler_used": false,
+    "persistent_tx_enabled_final": false,
+    "persistent_config_mutated": false,
+    "normal_service_restored": true,
+    "connected_mode_tx": false,
+    "automatic_tx_retry": false,
+    "flash_written": false,
+    "option_bytes_written": false
+  },
+  "p5e_complete": true
+}

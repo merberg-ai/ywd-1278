@@ -28,6 +28,7 @@ jobs:
         run: |
           python tests/classic_id_0f_p5e_harness_test.py
           python tests/classic_id_0f_p5e_safety_contract_test.py
+          python tests/classic_id_0f_p5e_physical_evidence_contract_test.py
       - name: Preserve P5e host and P5d evidence
         run: |
           python tests/product_id_console_0f_p5e_test.py
