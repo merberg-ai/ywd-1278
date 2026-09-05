@@ -10,6 +10,14 @@ from .modulo8 import (
     sequence_distance,
     sequence_next,
 )
+from .data_link import (
+    DataLinkAction,
+    DataLinkResult,
+    DataLinkSnapshot,
+    Modulo8DataLink,
+    build_i_frame,
+    build_s_frame,
+)
 
 __all__ = [
     "LinkAction",
@@ -20,4 +28,10 @@ __all__ = [
     "build_unnumbered_frame",
     "sequence_distance",
     "sequence_next",
+    "DataLinkAction",
+    "DataLinkResult",
+    "DataLinkSnapshot",
+    "Modulo8DataLink",
+    "build_i_frame",
+    "build_s_frame",
 ]

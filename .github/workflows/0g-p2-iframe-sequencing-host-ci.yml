@@ -1,0 +1,42 @@
+name: 0g-p2-iframe-sequencing-host-ci
+
+on:
+  push:
+    branches: [dev-0g-p2-iframe-sequencing]
+  pull_request:
+    branches: [checkpoint/0g-p1-modulo8-link-host-qualified]
+  workflow_dispatch:
+
+jobs:
+  p2-iframe-sequencing-host:
+    runs-on: ubuntu-latest
+    env:
+      PYTHONPATH: src:tests
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Compile P2 implementation and contracts
+        run: |
+          python -m py_compile src/ywd1278/link/data_link.py
+          python -m py_compile tests/modulo8_data_link_0g_p2_test.py
+          python -m py_compile tests/modulo8_data_link_0g_p2_contract_test.py
+      - name: Qualify I-frame sequencing and supervisory handling
+        run: |
+          python tests/modulo8_data_link_0g_p2_test.py
+          python tests/modulo8_data_link_0g_p2_contract_test.py
+      - name: Preserve P1 and 0F qualification
+        run: |
+          python tests/modulo8_link_0g_p1_test.py
+          python tests/modulo8_link_0g_p1_contract_test.py
+          python tests/product_beacon_access_0f_p6_test.py
+          python tests/product_beacon_access_0f_p6_contract_test.py
+          python tests/classic_id_0f_p5e_physical_evidence_contract_test.py
+          python tests/classic_beacon_0f_p5d_physical_evidence_contract_test.py
+      - name: Preserve lower physical lineage
+        run: |
+          python tests/classic_tx_0f_p4_final_acceptance_contract_test.py
+          python tests/product_fresh_install_appliance_qualified_contract_test.py
+          python tests/fresh_os_stage_i_physical_tx_evidence_contract_test.py
+          python tests/live_p8_r3_physical_evidence_contract_test.py

@@ -92,8 +92,8 @@
 
 - [x] modulo-8 link state machine — 0G-P1 host-qualified explicit disconnected/awaiting-connect/connected/awaiting-release states, frozen V(S)/V(R)/V(A) reset state, and validated modulo-8 arithmetic without timers, queues, runtime integration, or RF
 - [x] SABM/UA/DISC/DM — 0G-P1 host-qualified construction and handling of strictly addressed direct U frames with conventional command/response and Poll/Final semantics; returned response frames remain inert
-- [ ] I frames and V(S)/V(R)/V(A)
-- [ ] RR/RNR/REJ handling
+- [x] I frames and V(S)/V(R)/V(A) — 0G-P2 host-qualified PACLEN-bounded I-frame preparation/delivery, a MAXFRAME 1..7 outstanding window, cumulative N(R), atomic invalid acknowledgements, and exact modulo-8 wrap above frozen P1
+- [x] RR/RNR/REJ handling — 0G-P2 host-qualified receiver-ready/busy flow control, duplicate/out-of-order REJ, Poll/Final responses, and explicitly inert REJ retransmission sets with no timer or automatic execution
 - [ ] T1/T2/T3 timers
 - [ ] retry/MAXFRAME/PACLEN controls
 - [ ] connected terminal sessions
