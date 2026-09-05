@@ -23,6 +23,7 @@ jobs:
           python -m py_compile tests/fresh_os_stage_i_single_tx_contract_test.py
           python -m py_compile tests/fresh_os_stage_i_host_qualification_contract_test.py
           python -m py_compile tests/fresh_os_stage_i_dry_run_evidence_contract_test.py
+          python -m py_compile tests/fresh_os_stage_i_physical_tx_evidence_contract_test.py
 
       - name: Stage I single-shot regression
         run: python tests/fresh_os_stage_i_single_tx_test.py
@@ -30,27 +31,29 @@ jobs:
       - name: Stage I architecture and safety contract
         run: python tests/fresh_os_stage_i_single_tx_contract_test.py
 
-      - name: Mandatory Stage I host qualification evidence
+      - name: Preserve Stage I host qualification evidence
         run: python tests/fresh_os_stage_i_host_qualification_contract_test.py
 
-      - name: Stage I target-Pi pre-RF dry-run evidence
+      - name: Preserve Stage I target-Pi pre-RF dry-run evidence
         run: python tests/fresh_os_stage_i_dry_run_evidence_contract_test.py
 
-      - name: Stage I zero-I/O dry run
+      - name: Stage I physical TX target-Pi evidence
+        run: python tests/fresh_os_stage_i_physical_tx_evidence_contract_test.py
+
+      - name: Stage I zero-I/O dry run remains safe after physical qualification
         run: python tools/qualify_stage_i_single_tx.py
 
-      - name: Parse Stage I staging manifest
+      - name: Parse final Stage I manifest
         run: |
           python - <<'PY'
           import json
           d=json.load(open('firmware/qualification/0b-product-fresh-os-stage-i-tx-acceptance.json',encoding='utf-8'))
           assert d['schema']==1 and d['stage']=='I'
-          assert d['status']=='host-qualified-physical-tx-pending'
+          assert d['status']=='physically-qualified'
+          assert d['stage_i_complete'] is True
           assert d['base_stage_h']['sha']=='e7e203ba6ef76a0465ff6c25ef9671a46a4ab582'
-          assert d['host_qualification']['implementation_head']=='911e7ac7b82de5a57df01ba2939babfe2984d236'
-          assert d['host_qualification']['ci_run_id']==33934803171
-          assert d['host_qualification']['ci_conclusion']=='success'
           assert d['operator_authorization']['stage_i_authorized'] is True
+          assert d['operator_authorization']['authorization_consumed'] is True
           assert d['operator_authorization']['persistent_tx_authorized'] is False
           assert d['operator_authorization']['automatic_tx_authorized'] is False
           assert d['operator_authorization']['firmware_write_authorized'] is False
@@ -58,9 +61,21 @@ jobs:
           assert d['fixed_vector']['maximum_internal_tx_dispatches']==1
           assert d['fixed_vector']['automatic_retry'] is False
           assert d['runtime_policy']['persistent_config_mutation_permitted'] is False
-          assert d['physical']['tx_attempted'] is False
-          assert d['physical']['qualified'] is False
-          print('STAGE_I_HOST_QUALIFIED_MANIFEST=PASS')
+          assert d['physical']['tx_attempted'] is True
+          assert d['physical']['internal_tx_dispatches']==1
+          assert d['physical']['independent_external_decode_count']==1
+          assert d['physical']['post_tx_rx_observed'] is True
+          assert d['physical']['tx_queue_depth_final']==0
+          assert d['physical']['subscriber_drops_final']==0
+          assert d['physical']['tx_access_timeouts_final']==0
+          assert d['physical']['tx_downstream_failures_final']==0
+          assert d['physical']['persistent_tx_enabled_final'] is False
+          assert d['physical']['persistent_config_mutated'] is False
+          assert d['physical']['normal_service_restored'] is True
+          assert d['physical']['flash_written'] is False
+          assert d['physical']['option_bytes_written'] is False
+          assert d['physical']['qualified'] is True
+          print('STAGE_I_PHYSICALLY_QUALIFIED_MANIFEST=PASS')
           PY
 
       - name: Preserve final Stage H target evidence
