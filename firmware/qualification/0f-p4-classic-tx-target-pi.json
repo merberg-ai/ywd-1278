@@ -1,0 +1,112 @@
+{
+  "schema": 1,
+  "stage": "0F-P4",
+  "phase": "classic-unproto-converse-single-shot-physical-tx",
+  "status": "target-pi-physical-tx-qualified",
+  "date": "2026-09-04",
+  "timezone": "America/Los_Angeles",
+  "operator_observed_time": "2026-09-04T19:42:50-07:00",
+  "authorization": {
+    "pre_rf_checkpoint": "checkpoint/0f-classic-unproto-converse-p4-pre-rf-qualified",
+    "pre_rf_sha": "837959a19a51e1a7e97d5fed1ce249c4b414a063",
+    "frozen_0f_capability_base": "3b9bc5c7e212872606ba36d7fa30338b00cd9ce3",
+    "authorization_token": "0F-P4-TX-145050-ONE",
+    "interactive_arm_phrase": "TRANSMIT-0F-P4-ONE",
+    "authorization_consumed": true,
+    "authorized_tx_frames": 1,
+    "persistent_tx_authorized": false,
+    "automatic_tx_authorized": false,
+    "beacon_tx_authorized": false,
+    "connected_mode_tx_authorized": false,
+    "firmware_write_authorized": false
+  },
+  "product_under_test": {
+    "installed_appliance_commit": "2f5299e65add072fea6ee55a54dc421faf00c276",
+    "target": "mmdvm-hs-hat-stm32f103-simplex-14.7456-adf7021",
+    "firmware_identity": "MMDVM_HS_Hat-YWD-1278-AX25R4-v0.1.0-alpha1 14.7456MHz ADF7021 FW based on CA6JAU GitID #7ff74ed",
+    "firmware_sha256": "b06fcbf0baa36e865198091cee27c66e1624ef08117ee685253a7a5613c7c616",
+    "frequency_hz": 145050000,
+    "tx_power": 200,
+    "persistent_config_sha256": "2c073d8f022c7174027a0cf424c6e285ffcb0ff3375f9baf6d4553cab2ff3b76",
+    "persistent_tx_enabled_before": false,
+    "persistent_beacon_enabled_before": false,
+    "service_eligibility_check": "PASS",
+    "hat_detect": "PASS",
+    "firmware_class": "YWD1278"
+  },
+  "fixed_vector": {
+    "source": "KJ6YWD-10",
+    "destination": "YWD127",
+    "path": [],
+    "control": "UI",
+    "pid": "F0",
+    "information": "YWD-1278 0F-P4 CLASSIC TX 1/1",
+    "information_bytes": 29,
+    "expected_external_decode": "KJ6YWD-10>YWD127:YWD-1278 0F-P4 CLASSIC TX 1/1",
+    "tx_origin": "classic Telnet UNPROTO/CONVERSE session"
+  },
+  "classic_console_path": {
+    "unproto_direct": true,
+    "converse_entered": true,
+    "converse_tx_lines": 1,
+    "command_mode_restored_immediately": true,
+    "kiss_tx_messages": 0,
+    "backend_data_admitted": 1
+  },
+  "product_tx_accounting": {
+    "tx_dispatches": 1,
+    "tx_queue_accepted": 1,
+    "tx_queue_dispatched": 1,
+    "automatic_tx_retry": false,
+    "no_second_internal_dispatch_after_hold": true
+  },
+  "independent_over_air_decode": {
+    "operator_confirmed_exact_match": true,
+    "decode_count": 1,
+    "screenshot_provided_in_conversation": true,
+    "screenshot_observed_time": "19:42:50",
+    "screenshot_control": "UI",
+    "screenshot_pid": "F0(Text)",
+    "screenshot_information_length": 29,
+    "screenshot_information": "YWD-1278 0F-P4 CLASSIC TX 1/1",
+    "raw_screenshot_archived_in_repository": false
+  },
+  "post_tx_rx_recovery": {
+    "resumed": true,
+    "frame_bytes": 15,
+    "source": "KJ6YWD-5",
+    "source_differs_from_tx_source": true,
+    "final_tx_dispatches": 1,
+    "tx_queue_depth_final": 0,
+    "subscriber_drops_final": 0,
+    "tx_access_timeouts_final": 0,
+    "tx_downstream_failures_final": 0
+  },
+  "cleanup_and_safety": {
+    "persistent_tx_enabled_final": false,
+    "persistent_config_mutated": false,
+    "normal_service_restored": true,
+    "beacon_tx": false,
+    "connected_mode_tx": false,
+    "automatic_tx_retry": false,
+    "kiss_data_sent_by_harness": false,
+    "flash_written": false,
+    "option_bytes_written": false
+  },
+  "qualified_claims": {
+    "classic_unproto_converse_to_product_tx": true,
+    "classic_console_was_tx_origin": true,
+    "single_dispatch_only": true,
+    "independent_exact_over_air_decode": true,
+    "post_tx_rx_resume": true,
+    "queue_and_subscriber_health_clean": true,
+    "persistent_no_tx_default_restored": true,
+    "persistent_config_unchanged": true,
+    "beacon_not_exercised": true,
+    "connected_mode_not_exercised": true,
+    "firmware_not_written": true,
+    "option_bytes_not_written": true
+  },
+  "p4_complete": true,
+  "next_action": "Seal 0F-P4 physical evidence in CI and freeze the qualified checkpoint. Do not infer BEACON, ID, automatic beaconing, or connected-mode qualification from this test."
+}
