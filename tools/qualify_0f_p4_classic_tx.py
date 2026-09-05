@@ -71,22 +71,17 @@ def _blob(path: Path) -> str:
     return hashlib.sha1(f"blob {len(data)}\0".encode() + data).hexdigest()
 
 
-def validate_checkout() -> str:
-    if stage_i._run(["git", "status", "--porcelain"], cwd=ROOT).stdout.strip():
-        raise RuntimeError("0F-P4 requires a clean checkout")
-    head = stage_i._run(["git", "rev-parse", "HEAD"], cwd=ROOT).stdout.strip()
-    ancestry = stage_i._run(
-        ["git", "merge-base", "--is-ancestor", HOST_QUALIFIED_CHECKPOINT, head],
-        check=False,
-        cwd=ROOT,
-    )
-    if ancestry.returncode != 0:
-        raise RuntimeError("checkout does not descend from the frozen 0F host checkpoint")
+def validate_frozen_capability_blobs() -> None:
+    """Root-side check that every RF-capable 0F owner is still the frozen host build.
+
+    Exact staging-commit verification is intentionally performed outside sudo by
+    the operator preflight.  This avoids root Git safe-directory ambiguity while
+    retaining byte-exact capability checks inside the physical harness.
+    """
     for relative, expected in FROZEN_BLOBS.items():
         actual = _blob(ROOT / relative)
         if actual != expected:
             raise RuntimeError(f"frozen capability blob mismatch: {relative} actual={actual}")
-    return head
 
 
 def make_temporary_tx_config(original: str) -> str:
@@ -214,7 +209,7 @@ def main() -> int:
     if args.post_rx_timeout <= 0:
         raise SystemExit("[FAIL] --post-rx-timeout must be positive")
 
-    head = validate_checkout()
+    validate_frozen_capability_blobs()
     for path in (stage_i.PERSISTENT_CONFIG, stage_i.INSTALLED_COMMIT, stage_i.VENV_PYTHON, stage_i.ELIGIBILITY):
         if not path.exists():
             raise SystemExit(f"[FAIL] required qualified-appliance path missing: {path}")
@@ -232,8 +227,7 @@ def main() -> int:
     stage_i._verify_eligibility(args.firmware)
 
     print("===== 0F-P4 PRE-ARM QUALIFIED STATE =====")
-    print(f"CHECKOUT_HEAD={head}")
-    print(f"HOST_QUALIFIED_ANCESTOR={HOST_QUALIFIED_CHECKPOINT}")
+    print(f"FROZEN_0F_CAPABILITY_BASE={HOST_QUALIFIED_CHECKPOINT}")
     print(f"INSTALLED_APPLIANCE_COMMIT={installed}")
     print(f"PERSISTENT_CONFIG_SHA256={original_hash}")
     print("PERSISTENT_TX_ENABLED=NO")
