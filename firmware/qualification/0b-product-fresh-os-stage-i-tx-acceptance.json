@@ -2,7 +2,7 @@
   "schema": 1,
   "stage": "I",
   "phase": "fresh-os-single-shot-product-tx-acceptance",
-  "status": "host-staging-physical-tx-pending",
+  "status": "host-qualified-physical-tx-pending",
   "date": "2026-09-04",
   "timezone": "America/Los_Angeles",
   "base_stage_h": {
@@ -26,6 +26,25 @@
     "beacon_tx_authorized": false,
     "connected_mode_tx_authorized": false,
     "firmware_write_authorized": false
+  },
+  "host_qualification": {
+    "implementation_head": "911e7ac7b82de5a57df01ba2939babfe2984d236",
+    "ci_run_id": 33934803171,
+    "ci_conclusion": "success",
+    "harness_blob": "1497d7d5b6badad778f3202b8783a24920469615",
+    "regression_blob": "46b6aed22f97c40e7bc72d84263be542e028e505",
+    "safety_contract_blob": "f12dd6351bea39a4a24b10f136d8598098d1a2b9",
+    "implementation_workflow_blob": "8887b63662c08b76a81ca049bef29784a82f99a9",
+    "regression_tests": 5,
+    "dry_run_zero_io": true,
+    "stage_h_final_evidence_preserved": true,
+    "stage_f_firmware_trust_preserved": true,
+    "full_product_daemon_graph_preserved": true,
+    "stage_a_packet_engine_preserved": true,
+    "sustained_physical_packet_evidence_preserved": true,
+    "hardware_uart_opened": false,
+    "rf_transmitted": false,
+    "flash_written": false
   },
   "fixed_vector": {
     "source": "KJ6YWD-10",
@@ -73,5 +92,5 @@
     "post_tx_rx_observed": false,
     "qualified": false
   },
-  "next_action": "Host-qualify and freeze the Stage-I one-shot harness. Only then run its dry-run on the Pi, prepare an independent 145.050 receiver, and execute the explicitly authorized single physical TX acceptance."
+  "next_action": "On the qualified fresh-OS Pi, pull the frozen Stage-I host-qualified checkpoint, run the zero-I/O dry run, prepare an independent 145.050 MHz packet receiver, then execute the explicitly authorized one-shot physical TX harness exactly once."
 }
