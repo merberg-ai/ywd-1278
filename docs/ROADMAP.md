@@ -84,9 +84,9 @@
 
 - [x] UNPROTO destination/path — host and physical P4 qualified
 - [x] CONVERSE mode — host and physical P4 qualified
-- [ ] BTEXT / beacon scheduler — P5a host-only state machine implemented; product composition and physical qualification remain pending
-- [ ] jitter and channel-access integration
-- [ ] no-beacon-until-CSMA safety gate
+- [x] BTEXT / beacon scheduler / ID — P5a through P5e host and physical qualification complete at 145.050 MHz; the one-event beacon and one-shot manual ID each produced exactly one independently decoded frame, recovered RX, restored the normal no-TX service, and left persistent TX disabled
+- [ ] jitter and channel-access integration — 0F-P6 host candidate adds one non-negative 0..10% interval jitter selection (60 s cap) above the frozen P5 coordinator and delegates each released event exactly once to the existing product DATA/CSMA graph
+- [ ] no-beacon-until-CSMA safety gate — 0F-P6 host candidate proves a due beacon cannot reach the fake modem while p-persistent CSMA defers and dispatches exactly once only after CSMA permits it
 
 ## 0G — Native connected-mode AX.25
 
