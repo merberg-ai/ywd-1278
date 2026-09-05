@@ -1,0 +1,50 @@
+name: 0g-p6-connected-pre-rf-ci
+
+on:
+  push:
+    branches: [dev-0g-p6-product-integration-pre-rf]
+  pull_request:
+    branches: [checkpoint/0g-p5-multisession-policy-host-qualified]
+  workflow_dispatch:
+
+jobs:
+  p6-connected-pre-rf:
+    runs-on: ubuntu-latest
+    env:
+      PYTHONPATH: src:tests
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Compile and dry-run guarded P6 harness
+        run: |
+          python -m py_compile tools/qualify_0g_p6_connected.py
+          python -m py_compile tests/connected_physical_0g_p6_safety_contract_test.py
+          python tools/qualify_0g_p6_connected.py
+          python tests/connected_physical_0g_p6_safety_contract_test.py
+          if test -f firmware/qualification/0g-p6-connected-target-pi.json; then
+            python tests/connected_physical_0g_p6_evidence_contract_test.py
+          fi
+      - name: Preserve complete connected host stack
+        run: |
+          python tests/connected_sessions_0g_p5_test.py
+          python tests/connected_sessions_0g_p5_contract_test.py
+          python tests/connected_terminal_0g_p4_test.py
+          python tests/connected_terminal_0g_p4_contract_test.py
+          python tests/timed_link_0g_p3_test.py
+          python tests/timed_link_0g_p3_contract_test.py
+          python tests/modulo8_data_link_0g_p2_test.py
+          python tests/modulo8_data_link_0g_p2_contract_test.py
+          python tests/modulo8_link_0g_p1_test.py
+          python tests/modulo8_link_0g_p1_contract_test.py
+      - name: Preserve product and physical lineage
+        run: |
+          python tests/product_beacon_access_0f_p6_test.py
+          python tests/product_beacon_access_0f_p6_contract_test.py
+          python tests/classic_id_0f_p5e_physical_evidence_contract_test.py
+          python tests/classic_beacon_0f_p5d_physical_evidence_contract_test.py
+          python tests/classic_tx_0f_p4_final_acceptance_contract_test.py
+          python tests/product_fresh_install_appliance_qualified_contract_test.py
+          python tests/fresh_os_stage_i_physical_tx_evidence_contract_test.py
+          python tests/live_p8_r3_physical_evidence_contract_test.py
