@@ -1,0 +1,45 @@
+{
+  "schema": 1,
+  "qualification": "fresh-install-flash-run-appliance",
+  "status": "physically-qualified",
+  "date": "2026-09-04",
+  "timezone": "America/Los_Angeles",
+  "final_stage_h_checkpoint": {
+    "name": "checkpoint/product-fresh-os-stage-h-qualified",
+    "sha": "e7e203ba6ef76a0465ff6c25ef9671a46a4ab582"
+  },
+  "final_stage_i_checkpoint": {
+    "name": "checkpoint/product-fresh-os-stage-i-qualified",
+    "sha": "1f87baa05284fe6268e5c8a2b58b66eb93e82c54"
+  },
+  "final_local_console_gate": {
+    "evidence": "firmware/qualification/0e-product-local-console-target-pi.json",
+    "installed_commit": "2f5299e65add072fea6ee55a54dc421faf00c276",
+    "local_console_blob": "9fed5416ca9123811413f4ef284abff0006a48dd",
+    "interactive": true,
+    "health_ok": true,
+    "mheard_read_only": true,
+    "quit_clean": true
+  },
+  "appliance_claims": {
+    "fresh_os_install": true,
+    "uart_repair_reboot_resume": true,
+    "deterministic_ax25r4_build": true,
+    "protected_stock_backup": true,
+    "real_ax25r4_flash_and_readback": true,
+    "exact_runtime_identity": true,
+    "guarded_service_activation": true,
+    "live_rx_145050": true,
+    "systemd_lifecycle_and_reboot": true,
+    "single_shot_product_tx": true,
+    "independent_over_air_decode_operator_confirmed": true,
+    "post_tx_rx_recovery": true,
+    "local_console_interactive": true,
+    "telnet_console_physical": true,
+    "pty_console_physical": true,
+    "persistent_tx_disabled_by_default": true,
+    "automatic_flash_disabled_by_default": true
+  },
+  "qualified": true,
+  "next_action": "Freeze final appliance qualification checkpoint and close GitHub issue #35 as completed."
+}
