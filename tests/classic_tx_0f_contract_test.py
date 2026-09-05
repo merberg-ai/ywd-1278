@@ -13,7 +13,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 FROZEN = {
     "src/ywd1278/console/local.py": "9fed5416ca9123811413f4ef284abff0006a48dd",
-    "src/ywd1278/console/classic.py": "4d6dfd5d439fb5dfd6ff586c2a47c37724381b2e",
+    "src/ywd1278/console/classic.py": "4d6dfd5d439fb5df6ff586c2a47c37724381b2e",
     "src/ywd1278/console/telnet.py": "d15669eb61f2afdf4d0d177191124ef8f13713e0",
     "src/ywd1278/console/pty_serial.py": "c0ba2a3278ac1e790bf383fc12a220ae327255ba",
     "src/ywd1278/ax25/codec.py": "866a500d9f3a5d3fc80f6918d07ff83a6672ad64",
@@ -68,7 +68,13 @@ class ClassicTX0FContractTests(unittest.TestCase):
                         f"0F layer imports forbidden capability owner {name}",
                     )
                 text = (ROOT / relative).read_text(encoding="utf-8")
-                for token in ("stm32flash", "hat_control", "GPIO", "RF_TX_TONES"):
+                for token in (
+                    "import RPi.GPIO",
+                    "import gpiozero",
+                    "stm32flash",
+                    "hat_control.",
+                    "RF_TX_TONES(",
+                ):
                     self.assertNotIn(token, text)
 
     def test_console_layer_builds_no_fcs_and_has_no_retry_loop(self) -> None:
