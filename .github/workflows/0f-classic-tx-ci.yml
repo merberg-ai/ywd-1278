@@ -1,0 +1,63 @@
+name: 0f-classic-tx-ci
+
+on:
+  push:
+    branches: [dev-0f-classic-tx]
+  workflow_dispatch:
+
+jobs:
+  classic-tx:
+    runs-on: ubuntu-latest
+    env:
+      PYTHONPATH: src:tests
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Compile 0F implementation and tests
+        run: |
+          python -m py_compile src/ywd1278/console/classic_tx.py
+          python -m py_compile src/ywd1278/service/classic_tx_console.py
+          python -m py_compile src/ywd1278/daemon.py
+          python -m py_compile tests/classic_tnc_tx_0f_test.py
+          python -m py_compile tests/product_classic_tx_0f_test.py
+          python -m py_compile tests/product_classic_tx_daemon_0f_test.py
+          python -m py_compile tests/classic_tx_0f_contract_test.py
+
+      - name: 0F P1/P2 UNPROTO and converse regression
+        run: python tests/classic_tnc_tx_0f_test.py
+
+      - name: 0F P3 product adapter regression
+        run: python tests/product_classic_tx_0f_test.py
+
+      - name: 0F P3 full daemon fake-HAT graph
+        run: python tests/product_classic_tx_daemon_0f_test.py
+
+      - name: 0F architecture and preservation contract
+        run: python tests/classic_tx_0f_contract_test.py
+
+      - name: Preserve frozen 0E-P5 vocabulary
+        run: python tests/classic_tnc_vocabulary_test.py
+
+      - name: Preserve Stage D full classic-console graph
+        run: |
+          python tests/product_classic_console_stage_d_test.py
+          python tests/product_full_daemon_stage_d_test.py
+          python tests/product_classic_console_stage_d_contract_test.py
+
+      - name: Preserve Stage B product RX/TX engine
+        run: python tests/product_daemon_stage_b_test.py
+
+      - name: Preserve physically qualified Stage I evidence
+        run: python tests/fresh_os_stage_i_physical_tx_evidence_contract_test.py
+
+      - name: Preserve final fresh-install appliance seal
+        run: python tests/product_fresh_install_appliance_qualified_contract_test.py
+
+      - name: Preserve sustained KISS physical lineage
+        run: |
+          python tests/sustained_kiss_tnc_integration_test.py
+          python tests/live_p7_kiss_one_shot_evidence_contract_test.py
+          python tests/live_p8_r3_physical_evidence_contract_test.py
