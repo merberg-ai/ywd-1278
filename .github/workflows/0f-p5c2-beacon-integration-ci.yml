@@ -1,0 +1,42 @@
+name: 0f-p5c2-beacon-integration-ci
+
+on:
+  push:
+    branches: [dev-0f-p5c2-beacon-integration]
+  pull_request:
+    branches: [checkpoint/0f-p5c-beacon-safety-host-qualified]
+  workflow_dispatch:
+
+jobs:
+  p5c2-host:
+    runs-on: ubuntu-latest
+    env:
+      PYTHONPATH: src:tests
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Compile P5c2
+        run: |
+          python -m py_compile src/ywd1278/service/product_beacon_console.py
+          python -m py_compile src/ywd1278/daemon.py
+          python -m py_compile tests/product_beacon_console_0f_p5c2_test.py
+          python -m py_compile tests/product_beacon_console_0f_p5c2_contract_test.py
+      - name: Shared command and full fake-HAT graph
+        run: |
+          python tests/product_beacon_console_0f_p5c2_test.py
+          python tests/product_beacon_console_0f_p5c2_contract_test.py
+      - name: Preserve P5c scheduler and P4 converse
+        run: |
+          python tests/product_beacon_scheduler_0f_p5c_test.py
+          python tests/product_classic_beacon_0f_p5b_test.py
+          python tests/classic_beacon_0f_p5a_test.py
+          python tests/classic_tnc_tx_0f_test.py
+          python tests/product_classic_tx_daemon_0f_test.py
+          python tests/classic_tx_0f_p4_final_acceptance_contract_test.py
+      - name: Preserve appliance and physical lineage
+        run: |
+          python tests/product_fresh_install_appliance_qualified_contract_test.py
+          python tests/fresh_os_stage_i_physical_tx_evidence_contract_test.py
+          python tests/live_p8_r3_physical_evidence_contract_test.py
