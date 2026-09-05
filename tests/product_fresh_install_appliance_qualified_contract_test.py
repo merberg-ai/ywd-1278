@@ -33,7 +33,9 @@ def main() -> int:
     assert stage_i["post_tx_rx"]["resumed"] is True
 
     stage_h = json.loads(STAGE_H.read_text(encoding="utf-8"))
-    assert stage_h["qualification_result"] == "pass"
+    assert stage_h["status"] == "target-pi-fresh-os-qualified"
+    assert stage_h["stage_h_complete"] is True
+    assert stage_h["fresh_os_chain"]["fresh_post_reboot_rx_145050_qualified"] is True
 
     print("PRODUCT_FRESH_INSTALL_APPLIANCE_QUALIFICATION=PASS")
     print("STAGE_H=PASS")
