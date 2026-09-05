@@ -1,0 +1,47 @@
+{
+  "schema": 1,
+  "stage": "0F-P5d",
+  "status": "pre-rf-staged",
+  "base_checkpoint": {
+    "name": "checkpoint/0f-p5c2-beacon-integration-host-qualified",
+    "sha": "9c9dd3ad30a872b66c7a71e5239c9d85d8948be6"
+  },
+  "authorization": {
+    "operator_authorized_rf_testing": true,
+    "scope_narrowed_to_one_scheduled_beacon": true,
+    "token": "0F-P5D-BEACON-145050-ONE",
+    "interactive_phrase": "TRANSMIT-0F-P5D-BEACON-ONE",
+    "consumed": false
+  },
+  "vector": {
+    "frequency_hz": 145050000,
+    "tx_power": 200,
+    "source": "KJ6YWD-10",
+    "destination": "BEACON",
+    "path": [],
+    "information": "YWD-1278 0F-P5D BEACON 1/1",
+    "interval_seconds": 10,
+    "maximum_beacon_events": 1,
+    "maximum_internal_dispatches": 1,
+    "automatic_retry": false
+  },
+  "acceptance": {
+    "independent_exact_decode_required": true,
+    "independent_decode_count": 1,
+    "beacon_off_after_first_dispatch": true,
+    "no_second_dispatch_hold_seconds": 12,
+    "post_tx_rx_recovery_required": true,
+    "persistent_tx_enabled_final": false,
+    "persistent_beacon_enabled_final": false,
+    "persistent_config_mutated": false,
+    "normal_service_restored": true
+  },
+  "forbidden": {
+    "connected_mode_tx": true,
+    "firmware_write": true,
+    "option_byte_write": true,
+    "second_beacon_event": true,
+    "automatic_retry": true
+  },
+  "physical_result": null
+}

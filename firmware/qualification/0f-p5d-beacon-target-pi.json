@@ -1,0 +1,91 @@
+{
+  "schema": 1,
+  "stage": "0F-P5d",
+  "phase": "one-event-scheduled-beacon-physical-acceptance",
+  "status": "target-pi-physical-qualified",
+  "date": "2026-09-04",
+  "timezone": "America/Los_Angeles",
+  "operator_observed_time": "2026-09-04T21:41:16-07:00",
+  "authorization": {
+    "pre_rf_checkpoint": "checkpoint/0f-p5d-beacon-pre-rf-qualified",
+    "pre_rf_sha": "37feec11a87ba4ad864c61b11d75c0b0631d6a67",
+    "host_graph_checkpoint": "checkpoint/0f-p5c2-beacon-integration-host-qualified",
+    "host_graph_sha": "9c9dd3ad30a872b66c7a71e5239c9d85d8948be6",
+    "authorization_token": "0F-P5D-BEACON-145050-ONE",
+    "interactive_arm_phrase": "TRANSMIT-0F-P5D-BEACON-ONE",
+    "authorization_consumed": true,
+    "authorized_beacon_events": 1,
+    "automatic_retry_authorized": false,
+    "persistent_beacon_authorized": false,
+    "connected_mode_tx_authorized": false,
+    "firmware_write_authorized": false
+  },
+  "product_under_test": {
+    "target": "mmdvm-hs-hat-stm32f103-simplex-14.7456-adf7021",
+    "firmware_identity": "MMDVM_HS_Hat-YWD-1278-AX25R4-v0.1.0-alpha1 14.7456MHz ADF7021 FW based on CA6JAU GitID #7ff74ed",
+    "firmware_sha256": "b06fcbf0baa36e865198091cee27c66e1624ef08117ee685253a7a5613c7c616",
+    "frequency_hz": 145050000,
+    "tx_power": 200,
+    "persistent_config_sha256": "2c073d8f022c7174027a0cf424c6e285ffcb0ff3375f9baf6d4553cab2ff3b76",
+    "persistent_tx_enabled_before": false,
+    "persistent_beacon_enabled_before": false,
+    "service_eligibility_check": "PASS",
+    "hat_detect": "PASS"
+  },
+  "fixed_vector": {
+    "source": "KJ6YWD-10",
+    "destination": "BEACON",
+    "path": [],
+    "control": "UI",
+    "pid": "F0",
+    "information": "YWD-1278 0F-P5D BEACON 1/1",
+    "information_bytes": 26,
+    "interval_seconds": 10,
+    "expected_external_decode": "KJ6YWD-10>BEACON:YWD-1278 0F-P5D BEACON 1/1",
+    "tx_origin": "classic Telnet BTEXT/UNPROTO/BEACON scheduler"
+  },
+  "scheduler_and_tx": {
+    "beacon_runtime_armed": true,
+    "scheduled_beacon_events": 1,
+    "internal_tx_dispatches": 1,
+    "beacon_off_after_first_dispatch": true,
+    "no_second_dispatch_after_full_interval": true,
+    "no_duplicate_hold_seconds": 12,
+    "automatic_tx_retry": false
+  },
+  "independent_over_air_decode": {
+    "operator_confirmed_exact_match": true,
+    "decode_count": 1,
+    "observed_time": "21:41:16",
+    "control": "UI",
+    "pid": "F0(Text)",
+    "information_length": 26,
+    "information": "YWD-1278 0F-P5D BEACON 1/1",
+    "screenshot_provided_in_conversation": true,
+    "raw_screenshot_archived_in_repository": false
+  },
+  "post_tx_rx_recovery": {
+    "resumed": true,
+    "frame_bytes": 254,
+    "source": "KJ6YWD-5",
+    "source_differs_from_tx_source": true
+  },
+  "cleanup_and_safety": {
+    "beacon_enabled_final": false,
+    "persistent_tx_enabled_final": false,
+    "persistent_config_mutated": false,
+    "normal_service_restored": true,
+    "connected_mode_tx": false,
+    "automatic_tx_retry": false,
+    "flash_written": false,
+    "option_bytes_written": false
+  },
+  "operator_shell_note": {
+    "harness_exit": "PASS",
+    "post_harness_wrapper_error": true,
+    "wrapper_error_text": "stray quote/semicolon command after successful child harness",
+    "affects_physical_result": false,
+    "putty_session_survived": true
+  },
+  "p5d_complete": true
+}
