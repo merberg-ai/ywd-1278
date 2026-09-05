@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections import deque
 from dataclasses import dataclass
+from typing import Callable, Protocol
 
 from ywd1278.ax25 import Address, parse_frame
 from ywd1278.link.data_link import DataLinkAction
@@ -49,6 +50,7 @@ class InboundNodeSession:
         self, *, local: Address, remote: Address, alias: str = "YWDNOD",
         maxframe: int = 4, paclen: int = 128,
         timers: LinkTimerConfig = LinkTimerConfig(),
+        session_factory: Callable[[], CommandSession] | None = None,
     ) -> None:
         if not isinstance(local, Address) or not isinstance(remote, Address):
             raise TypeError("local and remote must be AX.25 Address values")
@@ -59,7 +61,10 @@ class InboundNodeSession:
             local=self._local, remote=self._remote, maxframe=maxframe,
             paclen=paclen, timers=timers,
         )
-        self._node = NodeCommandSession(callsign=self._local, alias=alias)
+        self._session_factory = session_factory or (
+            lambda: NodeCommandSession(callsign=self._local, alias=self._alias)
+        )
+        self._node = self._session_factory()
         self._pending: deque[bytes] = deque()
         self._pending_bytes = 0
         self._connections = 0
@@ -92,19 +97,21 @@ class InboundNodeSession:
         actions = list(handled.actions)
 
         if parsed is not None and parsed["frame_type"] == "SABM":
-            self._node = NodeCommandSession(callsign=self._local, alias=self._alias)
+            self._node = self._session_factory()
             self._pending.clear()
             self._pending_bytes = 0
             self._help_seen = self._info_seen = self._bye_seen = False
             self._release_started = False
             if before is LinkState.DISCONNECTED:
                 self._connections += 1
-            self._enqueue(self._node.banner())
+            if not self._enqueue(self._node.banner()):
+                return self._fail_closed("node banner exceeded response queue", actions, now)
 
         for information in handled.delivered:
             response = self._node.feed(information)
             self._observe_command_response(response.responses, response.close_requested)
-            self._enqueue(response.responses)
+            if not self._enqueue(response.responses):
+                return self._fail_closed("node response queue limit exceeded", actions, now)
 
         actions.extend(self._flush(now=now))
         actions.extend(self._release_if_ready(now=now))
@@ -117,14 +124,25 @@ class InboundNodeSession:
         actions.extend(self._release_if_ready(now=now))
         return InboundNodeResult(polled.accepted, polled.reason, tuple(actions))
 
-    def _enqueue(self, responses: tuple[bytes, ...]) -> None:
+    def _enqueue(self, responses: tuple[bytes, ...]) -> bool:
         added_bytes = sum(len(item) for item in responses)
         if len(self._pending) + len(responses) > MAX_PENDING_RESPONSES:
-            raise RuntimeError("inbound node response queue limit exceeded")
+            return False
         if self._pending_bytes + added_bytes > MAX_PENDING_RESPONSE_BYTES:
-            raise RuntimeError("inbound node response byte limit exceeded")
+            return False
         self._pending.extend(responses)
         self._pending_bytes += added_bytes
+        return True
+
+    def _fail_closed(
+        self, reason: str, actions: list[DataLinkAction], now: float,
+    ) -> InboundNodeResult:
+        self._pending.clear()
+        self._pending_bytes = 0
+        if self._link.snapshot.link.state is LinkState.CONNECTED:
+            actions.extend(self._link.disconnect(now=now).actions)
+            self._release_started = True
+        return InboundNodeResult(False, reason, tuple(actions))
 
     def _flush(self, *, now: float) -> tuple[DataLinkAction, ...]:
         actions: list[DataLinkAction] = []
@@ -164,3 +182,8 @@ __all__ = [
     "MAX_PENDING_RESPONSES", "MAX_PENDING_RESPONSE_BYTES",
     "InboundNodeSnapshot", "InboundNodeResult", "InboundNodeSession",
 ]
+class CommandSession(Protocol):
+    @property
+    def snapshot(self): ...  # type: ignore[no-untyped-def]
+    def banner(self) -> tuple[bytes, ...]: ...
+    def feed(self, information: bytes): ...  # type: ignore[no-untyped-def]

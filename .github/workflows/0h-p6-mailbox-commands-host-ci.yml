@@ -1,0 +1,16 @@
+name: 0h-p6-mailbox-commands-host-ci
+on:
+ push: {branches: [dev-0h-p6-mailbox-commands]}
+ pull_request: {branches: [checkpoint/0h-p5-inbound-node-physical-qualified]}
+ workflow_dispatch:
+jobs:
+ mailbox-commands:
+  runs-on: ubuntu-latest
+  env: {PYTHONPATH: "src:tests"}
+  steps:
+   - uses: actions/checkout@v4
+   - uses: actions/setup-python@v5
+     with: {python-version: '3.11'}
+   - run: python -m py_compile src/ywd1278/node/mailbox_commands.py src/ywd1278/node/inbound.py tests/mailbox_commands_0h_p6_test.py tests/mailbox_commands_0h_p6_contract_test.py
+   - run: python tests/mailbox_commands_0h_p6_test.py && python tests/mailbox_commands_0h_p6_contract_test.py
+   - run: python tests/mailbox_storage_0h_p2_test.py && python tests/mailbox_storage_0h_p2_contract_test.py && python tests/node_commands_0h_p1_test.py && python tests/inbound_node_0h_p5_test.py && python tests/inbound_node_0h_p5_evidence_contract_test.py
