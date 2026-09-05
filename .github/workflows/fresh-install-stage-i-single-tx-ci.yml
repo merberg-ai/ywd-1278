@@ -1,0 +1,79 @@
+name: fresh-install-stage-i-single-tx-ci
+
+on:
+  push:
+    branches: [dev-fresh-install-stage-i-tx-acceptance]
+  workflow_dispatch:
+
+jobs:
+  stage-i-single-tx:
+    runs-on: ubuntu-latest
+    env:
+      PYTHONPATH: src:tests
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Compile Stage I harness and tests
+        run: |
+          python -m py_compile tools/qualify_stage_i_single_tx.py
+          python -m py_compile tests/fresh_os_stage_i_single_tx_test.py
+          python -m py_compile tests/fresh_os_stage_i_single_tx_contract_test.py
+
+      - name: Stage I single-shot regression
+        run: python tests/fresh_os_stage_i_single_tx_test.py
+
+      - name: Stage I architecture and safety contract
+        run: python tests/fresh_os_stage_i_single_tx_contract_test.py
+
+      - name: Stage I zero-I/O dry run
+        run: python tools/qualify_stage_i_single_tx.py
+
+      - name: Parse Stage I staging manifest
+        run: |
+          python - <<'PY'
+          import json
+          d=json.load(open('firmware/qualification/0b-product-fresh-os-stage-i-tx-acceptance.json',encoding='utf-8'))
+          assert d['schema']==1 and d['stage']=='I'
+          assert d['status']=='host-staging-physical-tx-pending'
+          assert d['base_stage_h']['sha']=='e7e203ba6ef76a0465ff6c25ef9671a46a4ab582'
+          assert d['operator_authorization']['stage_i_authorized'] is True
+          assert d['operator_authorization']['persistent_tx_authorized'] is False
+          assert d['operator_authorization']['automatic_tx_authorized'] is False
+          assert d['operator_authorization']['firmware_write_authorized'] is False
+          assert d['fixed_vector']['maximum_kiss_data_messages']==1
+          assert d['fixed_vector']['maximum_internal_tx_dispatches']==1
+          assert d['fixed_vector']['automatic_retry'] is False
+          assert d['runtime_policy']['persistent_config_mutation_permitted'] is False
+          assert d['physical']['tx_attempted'] is False
+          assert d['physical']['qualified'] is False
+          print('STAGE_I_STAGING_MANIFEST=PASS')
+          PY
+
+      - name: Preserve final Stage H target evidence
+        run: python tests/fresh_os_stage_h_reboot_evidence_contract_test.py
+
+      - name: Preserve Stage H firmware deployment evidence
+        run: python tests/fresh_os_stage_h_firmware_deploy_evidence_contract_test.py
+
+      - name: Preserve Stage H initial live RX evidence
+        run: python tests/fresh_os_stage_h_live_rx_evidence_contract_test.py
+
+      - name: Preserve Stage F firmware trust behavior
+        run: python tests/firmware_trust_stage_f_test.py
+
+      - name: Replay full product daemon graph
+        run: |
+          python tests/product_full_daemon_stage_d_test.py
+          python tests/product_classic_console_stage_d_contract_test.py
+
+      - name: Preserve Stage A packet-engine freeze
+        run: python tests/product_packet_engine_stage_a_contract_test.py
+
+      - name: Preserve sustained KISS and physical packet evidence
+        run: |
+          python tests/sustained_kiss_tnc_integration_test.py
+          python tests/live_p7_kiss_one_shot_evidence_contract_test.py
+          python tests/live_p8_r3_physical_evidence_contract_test.py
