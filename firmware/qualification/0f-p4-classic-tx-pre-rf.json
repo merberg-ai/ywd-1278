@@ -1,0 +1,87 @@
+{
+  "schema": 1,
+  "stage": "0F-P4",
+  "phase": "classic-unproto-converse-single-shot-physical-staging",
+  "status": "pre-rf-staged-authorized",
+  "date": "2026-09-04",
+  "timezone": "America/Los_Angeles",
+  "base": {
+    "host_checkpoint": "checkpoint/0f-classic-unproto-converse-host-qualified",
+    "host_sha": "3b9bc5c7e212872606ba36d7fa30338b00cd9ce3",
+    "appliance_checkpoint": "checkpoint/product-fresh-install-appliance-qualified",
+    "appliance_sha": "e9fc1c4e3810bb7ed63ffd3417d2f3958cd9d1ca"
+  },
+  "staging": {
+    "branch": "dev-0f-classic-tx-p4-physical",
+    "implementation_head": "22bb40da367b575c0c81e02b604080c1cae67aad",
+    "ci_run_id": 33939208615,
+    "ci_conclusion": "success",
+    "harness_blob": "8ed7ea78b332539e8db48288bc96dfc14c31f23d",
+    "harness_test_blob": "76087b66e18355a3f95b95c8d5937a30350d3c8d",
+    "safety_contract_blob": "b72f205a55809fafa7a6cc056eb3b048d1315910",
+    "workflow_blob": "ea325d0172f944519f5b70c4cab0d0ec606cb14a"
+  },
+  "operator_authorization": {
+    "authorized": true,
+    "scope": "one 0F-P4 classic-console physical TX frame on 145.050 MHz only",
+    "authorization_token": "0F-P4-TX-145050-ONE",
+    "interactive_arm_phrase": "TRANSMIT-0F-P4-ONE",
+    "authorization_consumed": false,
+    "persistent_tx_authorized": false,
+    "automatic_tx_authorized": false,
+    "beacon_tx_authorized": false,
+    "connected_mode_tx_authorized": false,
+    "firmware_write_authorized": false
+  },
+  "fixed_vector": {
+    "source": "KJ6YWD-10",
+    "destination": "YWD127",
+    "path": [],
+    "information": "YWD-1278 0F-P4 CLASSIC TX 1/1",
+    "expected_external_decode": "KJ6YWD-10>YWD127:YWD-1278 0F-P4 CLASSIC TX 1/1",
+    "frequency_hz": 145050000,
+    "tx_power": 200,
+    "classic_converse_tx_lines_max": 1,
+    "kiss_tx_messages": 0,
+    "internal_tx_dispatches_max": 1,
+    "automatic_retry": false
+  },
+  "runtime_policy": {
+    "persistent_config_must_begin_tx_disabled": true,
+    "persistent_config_mutation_permitted": false,
+    "temporary_config": "/run/ywd-1278-0f-p4/config.toml",
+    "temporary_kiss_port": 18101,
+    "temporary_console_port": 18110,
+    "tx_origin": "one persistent classic Telnet UNPROTO/CONVERSE session",
+    "command_mode_restored_immediately_after_payload": true,
+    "independent_exact_decode_required": true,
+    "post_tx_rx_required": true,
+    "normal_no_tx_service_restored_after_test": true,
+    "firmware_flash_permitted": false,
+    "option_bytes_permitted": false,
+    "gpio_reset_permitted": false
+  },
+  "pre_rf_ci": {
+    "zero_io_dry_run": true,
+    "p4_harness_regression": true,
+    "p4_safety_contract": true,
+    "sealed_0f_p1_p2_p3_preserved": true,
+    "stage_i_physical_evidence_preserved": true,
+    "final_appliance_seal_preserved": true,
+    "frozen_classic_console_preserved": true,
+    "frozen_product_tx_graph_preserved": true,
+    "sustained_packet_lineage_preserved": true
+  },
+  "physical": {
+    "target_pi_modified_by_staging": false,
+    "service_mutated_by_staging": false,
+    "modem_uart_opened_by_staging": false,
+    "classic_tx_line_sent": false,
+    "kiss_data_sent": false,
+    "rf_transmitted": false,
+    "firmware_written": false,
+    "option_bytes_written": false,
+    "p4_qualified": false
+  },
+  "next_action": "Run only the frozen evidence-bearing 0F-P4 staging checkpoint on the target Pi. One physical classic-console TX is authorized; no retry or second TX is authorized."
+}
