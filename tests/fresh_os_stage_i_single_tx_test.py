@@ -56,7 +56,7 @@ def test_temp_tx_config_changes_only_bounded_runtime_fields() -> None:
     assert after["radio"]["tx_power"] == 200
     assert after["kiss"]["port"] == 18001
     assert after["console"]["port"] == 18010
-    assert after["console"]["pty_link"] == "/run/ywd-1278/stage-i-tnc"
+    assert after["console"]["pty_link"] == "/run/ywd-1278-stage-i/tnc"
     assert after["radio"]["frequency_mhz"] == before["radio"]["frequency_mhz"]
     assert after["radio"]["device"] == before["radio"]["device"]
     assert after["firmware"] == before["firmware"]
