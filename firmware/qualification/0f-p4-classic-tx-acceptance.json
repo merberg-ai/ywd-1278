@@ -1,0 +1,87 @@
+{
+  "schema": 1,
+  "stage": "0F-P4",
+  "phase": "classic-unproto-converse-physical-acceptance",
+  "status": "physically-qualified",
+  "date": "2026-09-04",
+  "timezone": "America/Los_Angeles",
+  "base": {
+    "host_checkpoint": "checkpoint/0f-classic-unproto-converse-host-qualified",
+    "host_sha": "3b9bc5c7e212872606ba36d7fa30338b00cd9ce3",
+    "pre_rf_checkpoint": "checkpoint/0f-classic-unproto-converse-p4-pre-rf-qualified",
+    "pre_rf_sha": "837959a19a51e1a7e97d5fed1ce249c4b414a063"
+  },
+  "physical_evidence": {
+    "path": "firmware/qualification/0f-p4-classic-tx-target-pi.json",
+    "blob": "89173148c27811b44ee25064f046d62bb83c8440",
+    "contract_blob": "f3a534fdfeac8398b8b614c2f38222c72e2faf40",
+    "operator_observed_time": "2026-09-04T19:42:50-07:00",
+    "independent_decoder_screenshot_observed": true,
+    "raw_screenshot_archived_in_repository": false
+  },
+  "physical_ci": {
+    "head": "8eac85aaefae2ea1abbc9bf15e44f0d3edbc69cd",
+    "run_id": 33940024710,
+    "conclusion": "success",
+    "physical_evidence_contract_passed": true,
+    "pre_rf_evidence_preserved": true,
+    "sealed_0f_p1_p2_p3_preserved": true,
+    "stage_i_physical_evidence_preserved": true,
+    "final_appliance_seal_preserved": true,
+    "frozen_classic_console_preserved": true,
+    "frozen_product_tx_graph_preserved": true,
+    "sustained_packet_lineage_preserved": true
+  },
+  "qualified_vector": {
+    "source": "KJ6YWD-10",
+    "destination": "YWD127",
+    "path": [],
+    "control": "UI",
+    "pid": "F0",
+    "information": "YWD-1278 0F-P4 CLASSIC TX 1/1",
+    "information_bytes": 29,
+    "frequency_hz": 145050000,
+    "tx_power": 200
+  },
+  "qualified_behavior": {
+    "classic_unproto_direct": true,
+    "classic_converse_entered": true,
+    "classic_converse_tx_lines": 1,
+    "classic_command_mode_restored": true,
+    "classic_console_tx_origin": true,
+    "kiss_tx_messages": 0,
+    "internal_tx_dispatches": 1,
+    "automatic_tx_retry": false,
+    "independent_exact_over_air_decode_count": 1,
+    "post_tx_rx_resumed": true,
+    "post_tx_rx_source": "KJ6YWD-5",
+    "post_tx_rx_frame_bytes": 15,
+    "tx_queue_depth_final": 0,
+    "subscriber_drops_final": 0,
+    "tx_access_timeouts_final": 0,
+    "tx_downstream_failures_final": 0
+  },
+  "final_safety_state": {
+    "authorization_consumed": true,
+    "persistent_tx_enabled": false,
+    "persistent_config_mutated": false,
+    "normal_service_restored": true,
+    "beacon_tx_exercised": false,
+    "connected_mode_tx_exercised": false,
+    "firmware_written": false,
+    "option_bytes_written": false
+  },
+  "scope_boundary": {
+    "qualified": "classic UNPROTO + CONVERSE one-line UI transmit through the existing product TX graph, exact over-air decode, and post-TX RX recovery",
+    "not_qualified": [
+      "BEACON",
+      "BTEXT",
+      "ID",
+      "automatic or periodic transmission",
+      "connected-mode CONNECT behavior",
+      "persistent TX enablement"
+    ]
+  },
+  "p4_complete": true,
+  "next_action": "Run the final acceptance contract in CI, freeze checkpoint/0f-classic-unproto-converse-p4-qualified, and keep later 0F transmit features separately staged."
+}
