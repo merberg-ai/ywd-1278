@@ -1,0 +1,57 @@
+{
+  "schema": 1,
+  "stage": "H",
+  "phase": "fresh-os-service-activation-live-rx",
+  "status": "target-pi-live-rx-qualified-reboot-pending",
+  "date": "2026-09-04",
+  "timezone": "America/Los_Angeles",
+  "source_checkout_head": "22fe5325a23801e2c8812dedbc266063dd1aeb03",
+  "installed_product_commit": "2f5299e65add072fea6ee55a54dc421faf00c276",
+  "firmware": {
+    "artifact_sha256": "b06fcbf0baa36e865198091cee27c66e1624ef08117ee685253a7a5613c7c616",
+    "runtime_identity": "MMDVM_HS_Hat-YWD-1278-AX25R4-v0.1.0-alpha1 14.7456MHz ADF7021 FW based on CA6JAU GitID #7ff74ed",
+    "service_eligibility_revalidated": true
+  },
+  "service_activation": {
+    "result": "pass",
+    "main_pid": 4013,
+    "service_enabled": true,
+    "service_active": true,
+    "runtime_identity_verified": true,
+    "tx_enabled": false,
+    "automatic_flash_enabled": false,
+    "flash_written_by_activation": false,
+    "rf_transmitted_by_activation": false
+  },
+  "systemd_lifecycle": {
+    "stop_sigterm": "pass",
+    "pty_cleanup": "pass",
+    "uart_release": "pass",
+    "stopped_main_pid": 4013,
+    "start_main_pid": 4057,
+    "restart_main_pid": 4089,
+    "kiss_loopback_port_8001": "pass",
+    "telnet_loopback_port_8010": "pass"
+  },
+  "live_rx": {
+    "frequency_hz": 145050000,
+    "result": "pass",
+    "kiss_frame_bytes": 69,
+    "ax25_source": "KJ6YWD",
+    "kiss_data_received": true,
+    "telnet_mheard_source_match": true,
+    "pty_mheard_source_match": true,
+    "tx_command_sent": false,
+    "kiss_data_sent": false,
+    "modem_uart_opened_by_qualifier": false,
+    "rf_transmitted_by_qualifier": false
+  },
+  "final_state": {
+    "service_enabled": true,
+    "service_active": true,
+    "tx_enabled": false,
+    "flash_written_by_rx_qualifier": false,
+    "rf_transmitted_by_rx_qualifier": false,
+    "reboot_qualification": "pending"
+  }
+}
