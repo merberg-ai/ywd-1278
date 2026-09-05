@@ -1,0 +1,28 @@
+name: 0h-p2-mailbox-storage-host-ci
+on:
+  push:
+    branches: [dev-0h-p2-mailbox-storage]
+  pull_request:
+    branches: [checkpoint/0h-p1-node-commands-host-qualified]
+  workflow_dispatch:
+jobs:
+  p2-mailbox-storage-host:
+    runs-on: ubuntu-latest
+    env:
+      PYTHONPATH: src:tests
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - name: Qualify mailbox storage
+        run: |
+          python -m py_compile src/ywd1278/node/mailbox.py tests/mailbox_storage_0h_p2_test.py tests/mailbox_storage_0h_p2_contract_test.py
+          python tests/mailbox_storage_0h_p2_test.py
+          python tests/mailbox_storage_0h_p2_contract_test.py
+      - name: Preserve node and connected lineage
+        run: |
+          python tests/node_commands_0h_p1_test.py
+          python tests/node_commands_0h_p1_contract_test.py
+          python tests/connected_physical_0g_p6_evidence_contract_test.py
+          python tests/connected_sessions_0g_p5_test.py
+          python tests/connected_sessions_0g_p5_contract_test.py
