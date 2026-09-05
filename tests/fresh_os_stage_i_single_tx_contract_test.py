@@ -62,7 +62,7 @@ def main() -> int:
     assert 'TEMP_ROOT = Path("/run/ywd-1278-stage-i")' in text
     assert 'TEMP_KISS_PORT = 18001' in text
     assert 'TEMP_CONSOLE_PORT = 18010' in text
-    assert 'TEMP_PTY = "/run/ywd-1278/stage-i-tnc"' in text
+    assert 'TEMP_PTY = "/run/ywd-1278-stage-i/tnc"' in text
     assert 'replace_toml_key(text, "radio", "tx_power", str(TX_POWER))' in text
     assert 'replace_toml_key(text, "radio", "tx_enabled", "true")' in text
     assert "load_product_packet_engine_config(TEMP_CONFIG)" in text
