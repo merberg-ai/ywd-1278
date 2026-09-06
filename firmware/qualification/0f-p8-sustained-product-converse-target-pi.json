@@ -1,0 +1,89 @@
+{
+  "schema": 1,
+  "stage": "0F-P8",
+  "status": "target-pi-physical-sustained-product-converse-qualified",
+  "qualified_on": "2026-09-06",
+  "tested_source": {
+    "branch": "dev-0f-p8-sustained-product-converse",
+    "commit": "ec308286ae5d7ac8de5c45e782b14e3a87db96f6"
+  },
+  "installed_recovery_baseline": {
+    "commit": "b10bae526c9f21ee36d6531dfbb44feb0816fd24",
+    "persistent_config_sha256": "2c073d8f022c7174027a0cf424c6e285ffcb0ff3375f9baf6d4553cab2ff3b76",
+    "persistent_tx_enabled": false,
+    "persistent_beacon_enabled": false
+  },
+  "rf_profile": {
+    "frequency_hz": 145050000,
+    "tx_power": 200,
+    "source": "KJ6YWD-10"
+  },
+  "unproto": {
+    "destination": "JIM",
+    "path": ["YWDNOD"]
+  },
+  "qualified_vectors": [
+    {
+      "information": "YWD-1278 P8 CONVERSE 1/3",
+      "expected_external_decode": "KJ6YWD-10>JIM,YWDNOD:YWD-1278 P8 CONVERSE 1/3"
+    },
+    {
+      "information": "YWD-1278 P8 CONVERSE 2/3",
+      "expected_external_decode": "KJ6YWD-10>JIM,YWDNOD:YWD-1278 P8 CONVERSE 2/3"
+    },
+    {
+      "information": "YWD-1278 P8 CONVERSE 3/3",
+      "expected_external_decode": "KJ6YWD-10>JIM,YWDNOD:YWD-1278 P8 CONVERSE 3/3"
+    }
+  ],
+  "qualified_behavior": {
+    "product_converse_entered": true,
+    "command_prompt_suppressed": true,
+    "live_rx_subscriber_attached": true,
+    "product_converse_tx_lines": 3,
+    "independent_external_decode_confirmed": true,
+    "independent_external_decode_count": 3,
+    "same_session_live_rx": true,
+    "same_session_live_rx_line": "RX KJ6YWD-10>JIM,YWDNOD*:YWD-1278 P8 CONVERSE 2/3",
+    "printable_cmd_escape": true,
+    "command_prompt_restored": true,
+    "tx_dispatches": 3,
+    "tx_queue_accepted": 3,
+    "tx_queue_dispatched": 3,
+    "subscriber_drops": 0,
+    "no_second_internal_dispatch_after_hold": true,
+    "automatic_tx_retry": false,
+    "ctrl_c_escape": true,
+    "ctrl_c_partial_line_discard": true,
+    "ctrl_c_additional_tx": 0
+  },
+  "final_safety_state": {
+    "persistent_tx_enabled": false,
+    "persistent_config_mutated": false,
+    "installed_source_mutated": false,
+    "normal_service_restored": true,
+    "firmware_written": false,
+    "option_bytes_written": false
+  },
+  "scope_boundary": {
+    "qualified": [
+      "three-line sustained permanent product Telnet CONVERSE transmission",
+      "UNPROTO destination JIM with VIA YWDNOD",
+      "three independently decoded over-air frames",
+      "same-session live RX after sustained TX",
+      "printable /CMD return to command mode",
+      "physical raw Ctrl-C escape",
+      "discard of an unfinished partial CONVERSE line on Ctrl-C",
+      "zero additional TX caused by Ctrl-C",
+      "single-dispatch/no-retry behavior for each of the three user lines",
+      "restoration of the persistent RX-safe appliance"
+    ],
+    "not_qualified_by_this_slice": [
+      "persistent TX enablement",
+      "arbitrary unbounded sustained converse operation",
+      "multiple or chained digipeater paths beyond YWDNOD",
+      "BEACON/BTEXT/ID RF behavior",
+      "connected-mode CONNECT behavior"
+    ]
+  }
+}
