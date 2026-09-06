@@ -24,10 +24,12 @@ jobs:
           src/ywd1278/node/persistent_bbs_runtime.py
           tests/persistent_bbs_runtime_0i_p4_test.py
           tests/persistent_bbs_runtime_0i_p4_contract_test.py
+          tests/persistent_bbs_runtime_0i_p4a_qualification_contract_test.py
       - name: 0I-P4 persistent BBS runtime tests
         run: >-
           python tests/persistent_bbs_runtime_0i_p4_test.py &&
-          python tests/persistent_bbs_runtime_0i_p4_contract_test.py
+          python tests/persistent_bbs_runtime_0i_p4_contract_test.py &&
+          python tests/persistent_bbs_runtime_0i_p4a_qualification_contract_test.py
       - name: Frozen P3/P2/P1/connected-link regressions
         run: >-
           python tests/node_mailbox_config_0i_p3_test.py &&
