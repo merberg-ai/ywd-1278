@@ -45,9 +45,9 @@ class ProductConversePhysicalStagingContractTests(unittest.TestCase):
         self.assertIn("stage_i._restore_service(original_hash)", text)
         self.assertIn("PERSISTENT_CONFIG_MUTATED=NO", text)
         self.assertIn("INSTALLED_SOURCE_MUTATED=NO", text)
+        self.assertIn("OPTION_BYTES_WRITTEN=NO", text)
         self.assertNotIn("stm32flash", text)
         self.assertNotIn("deploy-product-firmware", text)
-        self.assertNotIn("OPTION_BYTES", text.split("def main", 1)[0])
 
     def test_product_session_behavior_is_physically_exercised(self) -> None:
         text = TOOL.read_text(encoding="utf-8")
