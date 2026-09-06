@@ -24,10 +24,12 @@ jobs:
           src/ywd1278/service/node_mailbox_config.py
           tests/node_mailbox_config_0i_p3_test.py
           tests/node_mailbox_config_0i_p3_contract_test.py
+          tests/node_mailbox_config_0i_p3_qualification_contract_test.py
       - name: 0I-P3 config tests
         run: >-
           python tests/node_mailbox_config_0i_p3_test.py &&
-          python tests/node_mailbox_config_0i_p3_contract_test.py
+          python tests/node_mailbox_config_0i_p3_contract_test.py &&
+          python tests/node_mailbox_config_0i_p3_qualification_contract_test.py
       - name: Frozen P2/P1/P11 regressions
         run: >-
           python tests/classic_bbs_0i_p2_test.py &&
