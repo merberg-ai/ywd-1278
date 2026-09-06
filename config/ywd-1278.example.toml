@@ -53,6 +53,14 @@ log_frames = true
 [storage]
 database = "/var/lib/ywd-1278/ywd-1278.sqlite3"
 
+[forwarding]
+# 0H-P11 understands forwarding plumbing but live/automatic BBS forwarding is
+# intentionally gated off until a forwarding-capable peer can be physically
+# qualified. Setting enabled=true currently fails closed at daemon startup.
+enabled = false
+interval_seconds = 900
+max_batch = 8
+
 [beacon]
 enabled = false
 interval_seconds = 600
