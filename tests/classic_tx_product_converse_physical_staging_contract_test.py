@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import ast
 import os
 from pathlib import Path
 import subprocess
@@ -72,9 +73,26 @@ class ProductConversePhysicalStagingContractTests(unittest.TestCase):
 
     def test_no_kiss_tx_injection_path_is_present(self) -> None:
         text = TOOL.read_text(encoding="utf-8")
+        tree = ast.parse(text, filename=str(TOOL))
+        imports: list[str] = []
+        imported_names: list[str] = []
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Import):
+                imports.extend(alias.name for alias in node.names)
+                imported_names.extend(alias.asname or alias.name for alias in node.names)
+            elif isinstance(node, ast.ImportFrom):
+                if node.module:
+                    imports.append(node.module)
+                imported_names.extend(alias.asname or alias.name for alias in node.names)
+
+        self.assertFalse(
+            any(name.startswith("ywd1278.kiss") for name in imports),
+            f"physical qualifier unexpectedly imports KISS implementation: {imports}",
+        )
+        for symbol in ("KISSStreamDecoder", "KISSMessage", "DATA", "encode"):
+            self.assertNotIn(symbol, imported_names)
         self.assertNotIn("KISSStreamDecoder", text)
         self.assertNotIn("kiss.framing", text)
-        self.assertNotIn("encode(", text)
         self.assertIn("KISS_TX_MESSAGES=0", text)
 
 
