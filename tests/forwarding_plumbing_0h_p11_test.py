@@ -67,8 +67,8 @@ class P11ForwardingPlumbingTests(unittest.TestCase):
         directory = Path(tempfile.mkdtemp(prefix="ywd-p11-"))
         path = directory / "config.toml"
         path.write_text(text, encoding="ascii")
-        self.addCleanup(lambda: path.unlink(missing_ok=True))
         self.addCleanup(lambda: directory.rmdir())
+        self.addCleanup(lambda: path.unlink(missing_ok=True))
         return path
 
     def test_missing_table_defaults_disabled(self) -> None:
