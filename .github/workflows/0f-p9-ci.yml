@@ -37,6 +37,9 @@ jobs:
       - name: 0F-P9 software-only update contract
         run: python tests/software_update_0f_p9_contract_test.py
 
+      - name: 0F-P9 manual normal-service live staging contract
+        run: python tests/persistent_product_converse_0f_p9_live_staging_contract_test.py
+
       - name: 0F-P9 zero-I/O control dry runs
         run: |
           bash installer/product-tx-control.sh enable --dry-run --expected-installed-commit 0000000000000000000000000000000000000000
