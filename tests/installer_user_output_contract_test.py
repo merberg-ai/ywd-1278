@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+import os
+import subprocess
+import tempfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -9,7 +12,8 @@ install = (ROOT / "installer" / "install.sh").read_text(encoding="utf-8")
 continuation = (ROOT / "installer" / "continue-install.sh").read_text(encoding="utf-8")
 hat = (ROOT / "installer" / "setup-hat.sh").read_text(encoding="utf-8")
 finalizer = (ROOT / "installer" / "finalize-product-service.sh").read_text(encoding="utf-8")
-ui = (ROOT / "installer" / "lib" / "ui.sh").read_text(encoding="utf-8")
+ui_path = ROOT / "installer" / "lib" / "ui.sh"
+ui = ui_path.read_text(encoding="utf-8")
 
 # Normal installation output is human-facing. Exact qualification/evidence
 # markers remain available in the persistent log and optional machine-output
@@ -50,6 +54,40 @@ for token in (
     assert token in ui
 assert 'YWD1278_MACHINE_OUTPUT:-0' in ui
 
+# Human-mode hidden markers are informational helpers, not boolean predicates.
+# Reproduce the real installer mode under `set -e`: markers must be logged,
+# omitted from stdout, and must not terminate the caller when machine output is
+# disabled (the default interactive mode).
+with tempfile.TemporaryDirectory(prefix="ywd1278-ui-test-") as tmp:
+    log_path = Path(tmp) / "install.log"
+    env = os.environ.copy()
+    env.update(
+        {
+            "YWD_LOG_FILE": str(log_path),
+            "YWD1278_MACHINE_OUTPUT": "0",
+            "NO_COLOR": "1",
+        }
+    )
+    proc = subprocess.run(
+        [
+            "bash",
+            "-c",
+            'set -Eeuo pipefail; source "$1"; record_marker "MARKER_ONE=YES"; record_marker "MARKER_TWO=YES"; printf "AFTER_MARKERS\\n"',
+            "bash",
+            str(ui_path),
+        ],
+        cwd=ROOT,
+        env=env,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    assert proc.returncode == 0, proc.stderr
+    assert proc.stdout == "AFTER_MARKERS\n", proc.stdout
+    logged = log_path.read_text(encoding="utf-8")
+    assert "MARKER_ONE=YES\n" in logged
+    assert "MARKER_TWO=YES\n" in logged
+
 # Bootstrap is also quiet and sends clone/package detail into the same log,
 # while preserving the controlling-TTY handoff for interactive questions.
 assert 'INSTALL_LOG="$LOG_DIR/install.log"' in bootstrap
@@ -61,3 +99,4 @@ print("INSTALLER_USER_OUTPUT_CONTRACT=PASS")
 print("INSTALL_LOGGING=PASS")
 print("HUMAN_STDOUT=PASS")
 print("MACHINE_MARKERS_RETAINED=PASS")
+print("HIDDEN_MARKER_ERREXIT=PASS")

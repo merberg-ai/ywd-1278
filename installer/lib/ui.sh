@@ -52,7 +52,12 @@ log_block(){
 record_marker(){
   local marker="$1"
   [[ -z "$YWD_LOG_FILE" ]] || printf '%s\n' "$marker" >>"$YWD_LOG_FILE"
-  [[ "${YWD1278_MACHINE_OUTPUT:-0}" == 1 ]] && printf '%s\n' "$marker"
+  if [[ "${YWD1278_MACHINE_OUTPUT:-0}" == 1 ]]; then
+    printf '%s\n' "$marker"
+  fi
+  # This helper is informational. Hidden human-mode output must never become a
+  # fatal status under callers that intentionally use `set -e`.
+  return 0
 }
 
 run_logged(){
