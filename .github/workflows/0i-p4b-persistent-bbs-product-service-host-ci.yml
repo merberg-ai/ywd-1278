@@ -24,10 +24,12 @@ jobs:
           src/ywd1278/service/persistent_bbs_service.py
           tests/persistent_bbs_service_0i_p4b_test.py
           tests/persistent_bbs_service_0i_p4b_contract_test.py
+          tests/persistent_bbs_service_0i_p4b_qualification_contract_test.py
       - name: 0I-P4b product service tests
         run: >-
           python tests/persistent_bbs_service_0i_p4b_test.py &&
-          python tests/persistent_bbs_service_0i_p4b_contract_test.py
+          python tests/persistent_bbs_service_0i_p4b_contract_test.py &&
+          python tests/persistent_bbs_service_0i_p4b_qualification_contract_test.py
       - name: Frozen P4a/P3/P2/P1 regressions
         run: >-
           python tests/persistent_bbs_runtime_0i_p4_test.py &&
