@@ -27,7 +27,7 @@ assert 'echo "FLASH_WRITTEN=NO"' not in install
 assert 'run_logged "Refreshing package information" apt-get update' in install
 assert 'run_logged "Installing required packages" apt-get install' in install
 assert 'run_logged "Checking installed runtime"' in install
-assert 'log_block "Raspberry Pi UART audit"' in install
+assert 'capture_logged audit "Raspberry Pi UART audit"' in install
 assert 'log_block "HAT detection"' in install
 assert 'log_block "Product runtime readiness"' in install
 assert 'printf \'%s\\n\' "$audit"' not in install
