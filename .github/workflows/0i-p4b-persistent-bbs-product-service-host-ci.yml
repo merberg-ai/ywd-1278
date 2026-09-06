@@ -1,0 +1,37 @@
+name: 0i-p4b-persistent-bbs-product-service-host-ci
+on:
+  push:
+    branches: [dev-0i-p4b-persistent-bbs-product-service-host]
+  pull_request:
+    branches: [checkpoint/0i-p4a-persistent-bbs-runtime-host-qualified]
+  workflow_dispatch:
+
+jobs:
+  host:
+    runs-on: ubuntu-latest
+    env:
+      PYTHONPATH: "src:tools:tests"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Compile P4b product service and contracts
+        run: >-
+          python -m py_compile
+          src/ywd1278/service/persistent_bbs_service.py
+          tests/persistent_bbs_service_0i_p4b_test.py
+          tests/persistent_bbs_service_0i_p4b_contract_test.py
+      - name: 0I-P4b product service tests
+        run: >-
+          python tests/persistent_bbs_service_0i_p4b_test.py &&
+          python tests/persistent_bbs_service_0i_p4b_contract_test.py
+      - name: Frozen P4a/P3/P2/P1 regressions
+        run: >-
+          python tests/persistent_bbs_runtime_0i_p4_test.py &&
+          python tests/persistent_bbs_runtime_0i_p4a_qualification_contract_test.py &&
+          python tests/node_mailbox_config_0i_p3_qualification_contract_test.py &&
+          python tests/classic_bbs_0i_p2_qualification_contract_test.py &&
+          python tests/persistent_mailbox_0i_p1_qualification_contract_test.py
