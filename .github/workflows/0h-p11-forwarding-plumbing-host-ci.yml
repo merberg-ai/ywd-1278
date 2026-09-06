@@ -1,0 +1,36 @@
+name: 0h-p11-forwarding-plumbing-host-ci
+on:
+  push:
+    branches: [dev-0h-p11-forwarding-plumbing-host]
+  pull_request:
+    branches: [checkpoint/0h-p10-linbpq-delivery-physically-qualified]
+  workflow_dispatch:
+
+jobs:
+  host:
+    runs-on: ubuntu-latest
+    env:
+      PYTHONPATH: "src:tools:tests"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Compile P11 plumbing and contracts
+        run: >-
+          python -m py_compile
+          src/ywd1278/service/forwarding_config.py
+          src/ywd1278/node/forwarding_coordinator.py
+          tests/forwarding_plumbing_0h_p11_test.py
+          tests/forwarding_plumbing_0h_p11_contract_test.py
+      - name: P11 host tests
+        run: >-
+          python tests/forwarding_plumbing_0h_p11_test.py &&
+          python tests/forwarding_plumbing_0h_p11_contract_test.py
+      - name: Frozen P10/P9/P8 regressions
+        run: >-
+          python tests/linbpq_delivery_0h_p10_physical_evidence_contract_test.py &&
+          python tests/linbpq_dialogue_0h_p9_test.py &&
+          python tests/linbpq_dialogue_0h_p9_contract_test.py &&
+          python tests/forwarding_integration_0h_p8_test.py &&
+          python tests/forwarding_integration_0h_p8_contract_test.py
