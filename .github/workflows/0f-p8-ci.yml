@@ -1,0 +1,42 @@
+name: 0f-p8-ci
+
+on:
+  push:
+    branches: [dev-0f-p8-sustained-product-converse]
+  workflow_dispatch:
+
+jobs:
+  sustained-product-converse:
+    runs-on: ubuntu-latest
+    env:
+      PYTHONPATH: "src:tools:tests"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Exact checked-out tip
+        run: test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+
+      - name: Compile P8 tree
+        run: python -m compileall -q src firmware tests tools
+
+      - name: Frozen product converse regressions
+        run: |
+          python tests/classic_tx_converse_product_session_test.py
+          python tests/classic_tx_converse_product_session_contract_test.py
+          python tests/classic_tx_product_converse_physical_staging_contract_test.py
+          python tests/classic_tx_product_converse_0f_p7_physical_evidence_contract_test.py
+
+      - name: 0F-P8 sustained product converse host gate
+        run: python tests/classic_tx_converse_0f_p8_session_test.py
+
+      - name: Frozen terminal surface regressions
+        run: |
+          python tests/telnet_tnc_console_test.py
+          python tests/auth_lan_console_test.py
+          python tests/pty_serial_console_test.py
