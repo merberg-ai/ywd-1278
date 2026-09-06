@@ -71,14 +71,16 @@ class PersistentProductConverseP9ContractTests(unittest.TestCase):
         self.assertNotIn("reject_client_message", text)
         self.assertNotIn("TX QUEUED", text)
 
-    def test_control_has_no_firmware_write_or_retry_path(self) -> None:
+    def test_control_has_no_firmware_write_or_retry_implementation(self) -> None:
         text = CONTROL.read_text(encoding="utf-8").lower()
         self.assertNotIn("stm32flash", text)
         self.assertNotIn("deploy-product-firmware", text)
         self.assertNotIn("flash_firmware", text)
         self.assertNotIn("program-option", text)
         self.assertNotIn("write-option", text)
-        self.assertNotIn("retry tx", text)
+        self.assertNotIn("tx_retry_count", text)
+        self.assertNotIn("retry_tx(", text)
+        self.assertNotIn("schedule_tx", text)
         self.assertIn("automatic_tx_retry=no_new_retry", text)
         self.assertIn("firmware_flash=no", text)
         self.assertIn("option_bytes_write=no", text)
