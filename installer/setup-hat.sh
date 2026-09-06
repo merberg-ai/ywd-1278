@@ -17,9 +17,27 @@ PRODUCT_FIRMWARE="$PRODUCT_DIR/qualified-ax25r4.bin"
 HARDWARE_RECORD=/var/lib/ywd-1278/firmware-hardware-qualified.json
 BUILD_ROOT=""
 BUILD_USER="${YWD1278_BUILD_USER:-${SUDO_USER:-}}"
+ALLOW_CANDIDATE_RELEASE=0
 
 cleanup(){ [[ -z "$BUILD_ROOT" || ! -d "$BUILD_ROOT" ]] || rm -rf "$BUILD_ROOT"; }
 trap cleanup EXIT
+
+usage(){
+  cat <<'EOF'
+Usage: sudo ./installer/setup-hat.sh [--allow-candidate-release]
+
+Qualifies the supported MMDVM HAT and exact AX25R4 firmware before station
+configuration. No packet service is enabled and no RF is transmitted.
+EOF
+}
+while (($#)); do
+  case "$1" in
+    --allow-candidate-release) ALLOW_CANDIDATE_RELEASE=1 ;;
+    -h|--help) usage; exit 0 ;;
+    *) die "Unknown option: $1" ;;
+  esac
+  shift
+done
 
 [[ -n "$YWD_LOG_FILE" ]] || init_log /var/log/ywd-1278/install.log
 for path in "$VENV/bin/python" "$PROFILE" "$DETECT" "$DEPLOY"; do
@@ -48,6 +66,16 @@ expected_identity="$(profile_get expected_identity)"
 artifact_rel="$(profile_get artifact_relative_path)"
 authorization_token="$(profile_get flash_authorization_token)"
 
+run_detect(){
+  local out rc
+  local -a args=(--device "$DEVICE")
+  [[ $ALLOW_CANDIDATE_RELEASE -eq 0 ]] || args+=(--allow-candidate-release)
+  if out="$(YWD1278_SOURCE_ROOT="$SOURCE_ROOT" bash "$DETECT" "${args[@]}" 2>&1)"; then rc=0; else rc=$?; fi
+  log_block "Guided HAT detection" "$out"
+  printf '%s\n' "$rc"
+  printf '%s' "$out"
+}
+
 section "Radio HAT setup"
 step "Detecting attached MMDVM HAT"
 if detect_out="$(YWD1278_SOURCE_ROOT="$SOURCE_ROOT" bash "$DETECT" --device "$DEVICE" 2>&1)"; then
@@ -56,6 +84,27 @@ else
   detect_rc=$?
 fi
 log_block "Guided HAT detection" "$detect_out"
+
+if [[ $detect_rc -eq 20 && $ALLOW_CANDIDATE_RELEASE -eq 0 ]]; then
+  warn "The UART is healthy but the HAT did not answer; Raspberry Pi GPIO defaults may be holding it in reset"
+  if confirm_yes_no "Try the supported-HAT GPIO release profile?" yes; then
+    ALLOW_CANDIDATE_RELEASE=1
+    if detect_out="$(YWD1278_SOURCE_ROOT="$SOURCE_ROOT" bash "$DETECT" --device "$DEVICE" --allow-candidate-release 2>&1)"; then
+      detect_rc=0
+    else
+      detect_rc=$?
+    fi
+    log_block "Guided HAT detection after GPIO release" "$detect_out"
+  fi
+elif [[ $ALLOW_CANDIDATE_RELEASE -eq 1 && $detect_rc -ne 0 ]]; then
+  if detect_out="$(YWD1278_SOURCE_ROOT="$SOURCE_ROOT" bash "$DETECT" --device "$DEVICE" --allow-candidate-release 2>&1)"; then
+    detect_rc=0
+  else
+    detect_rc=$?
+  fi
+  log_block "Guided HAT detection with GPIO release" "$detect_out"
+fi
+
 [[ $detect_rc -eq 0 ]] || die "A supported MMDVM HAT could not be identified (rc=$detect_rc)"
 detected_target="$(sed -n 's/^DETECTED_TARGET=//p' <<<"$detect_out" | tail -1)"
 identity="$(sed -n 's/^DETECTED_IDENTITY=//p' <<<"$detect_out" | tail -1)"
@@ -125,7 +174,9 @@ check="$($VENV/bin/python -m ywd1278.install.hardware_trust --profile "$PROFILE"
   --firmware "$PRODUCT_FIRMWARE" --record "$HARDWARE_RECORD" 2>&1)" || die "Radio HAT qualification record did not verify"
 log_block "Hardware qualification recheck" "$check"
 
-post="$(YWD1278_SOURCE_ROOT="$SOURCE_ROOT" bash "$DETECT" --device "$DEVICE" 2>&1)" || die "Radio HAT did not answer after firmware setup"
+post_args=(--device "$DEVICE")
+[[ $ALLOW_CANDIDATE_RELEASE -eq 0 ]] || post_args+=(--allow-candidate-release)
+post="$(YWD1278_SOURCE_ROOT="$SOURCE_ROOT" bash "$DETECT" "${post_args[@]}" 2>&1)" || die "Radio HAT did not answer after firmware setup"
 log_block "Post-setup HAT detection" "$post"
 post_identity="$(sed -n 's/^DETECTED_IDENTITY=//p' <<<"$post" | tail -1)"
 [[ "$post_identity" == "$expected_identity" ]] || die "Radio HAT is not running the exact qualified YWD-1278 firmware after setup"
