@@ -51,7 +51,23 @@ enabled = true
 log_frames = true
 
 [storage]
+# Qualified monitor/frame-log database. Do not reuse this path for the mailbox.
 database = "/var/lib/ywd-1278/ywd-1278.sqlite3"
+
+[node]
+# 0I persistent classic packet node/BBS. Activation remains off by default
+# until the persistent runtime and physical service boundary are qualified.
+enabled = false
+alias = "YWDNOD"
+# The first persistent service intentionally permits one connected owner.
+max_sessions = 1
+
+[mailbox]
+enabled = false
+# Dedicated persistent BBS database, intentionally separate from [storage].
+database = "/var/lib/ywd-1278/mailbox.sqlite3"
+paclen = 128
+info = "YWD-1278 persistent packet BBS"
 
 [forwarding]
 # 0H-P11 understands forwarding plumbing but live/automatic BBS forwarding is
