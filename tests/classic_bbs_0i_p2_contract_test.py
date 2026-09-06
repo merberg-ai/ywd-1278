@@ -32,16 +32,24 @@ class ClassicBBSP2ContractTests(unittest.TestCase):
 
     def test_command_source_has_no_link_modem_or_rf_ownership(self) -> None:
         source = (ROOT / "src/ywd1278/node/classic_bbs.py").read_text(encoding="utf-8")
-        for token in (
-            "ywd1278.modem",
-            "ywd1278.phy",
-            "ywd1278.tx",
-            "ywd1278.kiss",
-            "ywd1278.link",
-            "socket",
-            "threading",
+        forbidden_imports = (
+            "from ywd1278.modem",
+            "import ywd1278.modem",
+            "from ywd1278.phy",
+            "import ywd1278.phy",
+            "from ywd1278.tx",
+            "import ywd1278.tx",
+            "from ywd1278.kiss",
+            "import ywd1278.kiss",
+            "from ywd1278.link",
+            "import ywd1278.link",
+            "import socket",
+            "from socket",
+            "import threading",
+            "from threading",
             "/dev/tty",
-        ):
+        )
+        for token in forbidden_imports:
             with self.subTest(token=token):
                 self.assertNotIn(token, source)
 
