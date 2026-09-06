@@ -1,0 +1,36 @@
+name: 0i-p1-persistent-mailbox-core-host-ci
+on:
+  push:
+    branches: [dev-0i-p1-persistent-mailbox-core-host]
+  pull_request:
+    branches: [checkpoint/0h-p11-forwarding-plumbing-host-qualified]
+  workflow_dispatch:
+
+jobs:
+  host:
+    runs-on: ubuntu-latest
+    env:
+      PYTHONPATH: "src:tools:tests"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Compile persistent mailbox core and contracts
+        run: >-
+          python -m py_compile
+          src/ywd1278/node/persistent_mailbox.py
+          tests/persistent_mailbox_0i_p1_test.py
+          tests/persistent_mailbox_0i_p1_contract_test.py
+      - name: 0I-P1 persistent mailbox tests
+        run: >-
+          python tests/persistent_mailbox_0i_p1_test.py &&
+          python tests/persistent_mailbox_0i_p1_contract_test.py
+      - name: Frozen 0H-P11/P10/P7 regressions
+        run: >-
+          python tests/forwarding_plumbing_0h_p11_test.py &&
+          python tests/forwarding_plumbing_0h_p11_contract_test.py &&
+          python tests/linbpq_delivery_0h_p10_physical_evidence_contract_test.py &&
+          python tests/mailbox_physical_0h_p7_evidence_contract_test.py
