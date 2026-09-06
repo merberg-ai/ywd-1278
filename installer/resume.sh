@@ -5,96 +5,63 @@ SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 SOURCE_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 # shellcheck source=lib/ui.sh
 source "$SCRIPT_DIR/lib/ui.sh"
-
 require_root
+
 STATE_FILE=/var/lib/ywd-1278/install-resume.env
-CONFIG=/etc/ywd-1278/config.toml
-VENV=/opt/ywd-1278/venv
+PENDING_FILE=/var/lib/ywd-1278/install-interactive-pending
+INSTALL_LOG=/var/log/ywd-1278/install.log
 AUTOMATIC=0
 [[ "${1:-}" == --automatic ]] && AUTOMATIC=1
 
-[[ -f "$STATE_FILE" ]] || { info "No interrupted YWD-1278 installation needs resuming."; exit 0; }
-# Root-created state contains only simple installer-owned assignments.
+init_log "$INSTALL_LOG"
+
+[[ -f "$STATE_FILE" ]] || {
+  if [[ $AUTOMATIC -eq 0 ]]; then info "No interrupted YWD-1278 installation needs resuming."; fi
+  exit 0
+}
+# Root-created state contains only installer-owned assignments.
 # shellcheck disable=SC1090
 source "$STATE_FILE"
 DEVICE="${DEVICE:-/dev/ttyAMA0}"
+RUN_SETUP="${RUN_SETUP:-1}"
+BUILD_USER="${BUILD_USER:-}"
 ALLOW_CANDIDATE_RELEASE="${ALLOW_CANDIDATE_RELEASE:-0}"
 
 banner
-section "Resume after reboot"
-info "Continuing the installation from its saved checkpoint."
-
-audit="$(bash "$SCRIPT_DIR/platform.sh" audit)"
-printf '%s\n' "$audit"
+stage "Resume YWD-1278 installation"
+section "Verify Raspberry Pi UART repair"
+if ! capture_logged audit "Post-reboot UART audit" bash "$SOURCE_ROOT/installer/platform.sh" audit; then
+  die "UART audit failed after reboot; installation state has been preserved"
+fi
 grep -q '^RUNTIME_UART_READY=YES$' <<<"$audit" || die "UART is still not ready after reboot; installation state has been preserved"
 grep -q '^SERIAL_CONSOLE_PRESENT=NO$' <<<"$audit" || die "Serial console still owns the modem UART; installation state has been preserved"
+ok "Radio UART repair is complete"
 
-section "Supported HAT detection"
-args=(--device "$DEVICE")
-[[ "$ALLOW_CANDIDATE_RELEASE" == 1 ]] && args+=(--allow-candidate-release)
-set +e
-detect="$(YWD1278_SOURCE_ROOT="$SOURCE_ROOT" bash "$SCRIPT_DIR/hardware-detect.sh" "${args[@]}" 2>&1)"
-rc=$?
-set -e
-printf '%s\n' "$detect"
-[[ $rc -eq 0 ]] || die "HAT detection did not complete after reboot (rc=$rc); run sudo $SCRIPT_DIR/resume.sh after checking the HAT"
-target="$(sed -n 's/^DETECTED_TARGET=//p' <<<"$detect" | tail -1)"
-[[ -n "$target" ]] || die "HAT detection returned no target"
-
-python3 - "$CONFIG" "$target" <<'PY'
-from pathlib import Path
-import re,sys
-p=Path(sys.argv[1]); target=sys.argv[2]
-text=p.read_text(encoding='utf-8') if p.exists() else ''
-if re.search(r'(?m)^\[hardware\]\s*$', text):
-    block=re.compile(r'(?ms)(^\[hardware\]\s*$.*?)(?=^\[|\Z)')
-    def repl(m):
-        b=m.group(1)
-        if re.search(r'(?m)^target\s*=', b):
-            return re.sub(r'(?m)^target\s*=.*$', f'target = "{target}"', b)
-        return b.rstrip()+f'\ntarget = "{target}"\n\n'
-    text=block.sub(repl,text,count=1)
-else:
-    text=text.rstrip()+f'\n\n[hardware]\ntarget = "{target}"\n'
-p.write_text(text,encoding='utf-8')
-PY
-chmod 0640 "$CONFIG"
-ok "Configuration bound to detected HAT target: $target"
-
-section "Final framework verification"
-"$VENV/bin/ywd1278d" --config "$CONFIG" --framework-self-test
-
-section "Product runtime readiness"
-set +e
-readiness="$("$VENV/bin/python" -m ywd1278.install.readiness --config "$CONFIG" 2>&1)"
-readiness_rc=$?
-set -e
-printf '%s\n' "$readiness"
-case "$readiness_rc" in
-  0)
-    ok "Product runtime configuration is coherent and remains no-TX/no-auto-flash"
-    runtime_config_ready=YES
-    ;;
-  10)
-    warn "Product runtime configuration is safely incomplete; packet service remains disabled"
-    runtime_config_ready=NO
-    ;;
-  20)
-    die "Product runtime configuration is unsafe or invalid; installation state has been preserved and packet service remains disabled"
-    ;;
-  *)
-    die "Product runtime readiness check failed unexpectedly (rc=$readiness_rc); installation state has been preserved"
-    ;;
-esac
-
-systemctl disable --now ywd-1278.service >/dev/null 2>&1 || true
+touch "$PENDING_FILE"
+chmod 0600 "$PENDING_FILE"
 systemctl disable ywd-1278-install-resume.service >/dev/null 2>&1 || true
-rm -f "$STATE_FILE"
-date -u +'%Y-%m-%dT%H:%M:%SZ' >/var/lib/ywd-1278/install-complete
-ok "YWD-1278 installation resumed and completed"
-info "The packet service remains disabled pending guarded firmware verification and explicit service-enable qualification."
-echo "YWD1278_INSTALL_RESUME=PASS"
-echo "YWD1278_RUNTIME_CONFIG_READY=$runtime_config_ready"
-echo "SERVICE_ENABLED=NO"
-echo "RF_TRANSMITTED=NO"
-echo "FLASH_WRITTEN=NO"
+systemctl disable --now ywd-1278.service >/dev/null 2>&1 || true
+
+if [[ $AUTOMATIC -eq 1 ]]; then
+  warn "Interactive radio HAT and station setup is still required"
+  info "Reconnect to this Raspberry Pi and run: sudo $SOURCE_ROOT/installer/resume.sh"
+  record_marker "YWD1278_INSTALL_RESUME_PLATFORM=PASS"
+  record_marker "INTERACTIVE_CONTINUATION_REQUIRED=YES"
+  record_marker "SERVICE_ENABLED=NO"
+  record_marker "RF_TRANSMITTED=NO"
+  record_marker "FLASH_WRITTEN=NO"
+  exit 0
+fi
+
+section "Continue interactive setup"
+info "Continuing at radio HAT qualification; no firmware write occurred during boot resume"
+continue_args=()
+[[ "$RUN_SETUP" == 1 ]] && continue_args+=(--setup) || continue_args+=(--no-setup)
+[[ -z "$BUILD_USER" ]] || continue_args+=(--build-user "$BUILD_USER")
+[[ "$ALLOW_CANDIDATE_RELEASE" == 1 ]] && continue_args+=(--allow-candidate-release)
+
+YWD1278_SOURCE_ROOT="$SOURCE_ROOT" bash "$SOURCE_ROOT/installer/continue-install.sh" "${continue_args[@]}"
+
+rm -f "$STATE_FILE" "$PENDING_FILE"
+ok "Saved installation continuation completed"
+record_marker "YWD1278_INSTALL_RESUME=PASS"
