@@ -1,0 +1,37 @@
+name: 0i-p2-classic-bbs-commands-host-ci
+on:
+  push:
+    branches: [dev-0i-p2-classic-bbs-commands-host]
+  pull_request:
+    branches: [checkpoint/0i-p1-persistent-mailbox-core-host-qualified]
+  workflow_dispatch:
+
+jobs:
+  host:
+    runs-on: ubuntu-latest
+    env:
+      PYTHONPATH: "src:tools:tests"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Compile P2 BBS personality and contracts
+        run: >-
+          python -m py_compile
+          src/ywd1278/node/classic_bbs.py
+          tests/classic_bbs_0i_p2_test.py
+          tests/classic_bbs_0i_p2_contract_test.py
+      - name: 0I-P2 classic BBS tests
+        run: >-
+          python tests/classic_bbs_0i_p2_test.py &&
+          python tests/classic_bbs_0i_p2_contract_test.py
+      - name: Frozen P1 and 0H regressions
+        run: >-
+          python tests/persistent_mailbox_0i_p1_test.py &&
+          python tests/persistent_mailbox_0i_p1_contract_test.py &&
+          python tests/persistent_mailbox_0i_p1_qualification_contract_test.py &&
+          python tests/forwarding_plumbing_0h_p11_contract_test.py &&
+          python tests/linbpq_delivery_0h_p10_physical_evidence_contract_test.py
