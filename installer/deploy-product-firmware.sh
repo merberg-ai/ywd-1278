@@ -15,12 +15,16 @@ TARGETS="$SOURCE_ROOT/firmware/targets.json"
 HAT_CONTROL="$SOURCE_ROOT/firmware/hat_control.py"
 HARDWARE_DETECT="$SOURCE_ROOT/installer/hardware-detect.sh"
 LEGACY_FLASH="$SOURCE_ROOT/firmware/flash.sh"
+HARDWARE_RECORD=/var/lib/ywd-1278/firmware-hardware-qualified.json
 FIRMWARE=""
 STOCK_BACKUP_DIR=""
 AUTHORIZE=""
+DEVICE_OVERRIDE=""
 READBACK_TMP=""
 BOOTLOADER_ACTIVE=0
 FLASH_WRITTEN=NO
+HARDWARE_ONLY=0
+PRECONFIRMED_WRITE=0
 
 cleanup(){
   if [[ $BOOTLOADER_ACTIVE -eq 1 && -n "${target:-}" ]]; then
@@ -37,10 +41,19 @@ Usage:
   sudo ./installer/deploy-product-firmware.sh --firmware FILE \
     --authorize FLASH-QUALIFIED-AX25R4 [--stock-backup-dir DIR] [--config FILE]
 
-This is the explicit Stage-F product firmware gate. It never enables or starts
-ywd-1278.service and it never enables RF TX. If the exact qualified AX25R4
-firmware is already installed, the tool performs a programmed readback and
-identity verification without rewriting flash.
+  sudo ./installer/deploy-product-firmware.sh --hardware-only --device DEVICE \
+    --firmware FILE --authorize FLASH-QUALIFIED-AX25R4 \
+    [--stock-backup-dir DIR] [--preconfirmed-write]
+
+Default mode preserves the qualified Stage-F behavior: full runtime readiness is
+required and a SERVICE-ELIGIBLE record is written after exact firmware proof.
+
+--hardware-only is the guided-installer pre-configuration mode. It requires the
+same exact artifact, target, protected stock backup, bootloader, programmed
+readback and runtime-identity gates, but writes only a HARDWARE-QUALIFIED record.
+It never claims service eligibility and never enables/starts ywd-1278.service or
+RF TX. --preconfirmed-write is valid only with --hardware-only and means the
+friendly outer installer already obtained the operator's flash confirmation.
 EOF
 }
 
@@ -50,16 +63,23 @@ while (($#)); do
     --stock-backup-dir) STOCK_BACKUP_DIR="${2:?missing --stock-backup-dir value}"; shift ;;
     --authorize) AUTHORIZE="${2:?missing --authorize value}"; shift ;;
     --config) CONFIG="${2:?missing --config value}"; shift ;;
+    --hardware-only) HARDWARE_ONLY=1 ;;
+    --device) DEVICE_OVERRIDE="${2:?missing --device value}"; shift ;;
+    --preconfirmed-write) PRECONFIRMED_WRITE=1 ;;
     -h|--help) usage; exit 0 ;;
     *) die "Unknown argument: $1" ;;
   esac
   shift
 done
 
+[[ $PRECONFIRMED_WRITE -eq 0 || $HARDWARE_ONLY -eq 1 ]] || die "--preconfirmed-write is valid only with --hardware-only"
 [[ -x "$VENV/bin/python" ]] || die "Installed YWD-1278 venv not found: $VENV"
-for path in "$PROFILE" "$TARGETS" "$HAT_CONTROL" "$HARDWARE_DETECT" "$LEGACY_FLASH" "$CONFIG"; do
-  [[ -f "$path" ]] || die "Required Stage-F file missing: $path"
+for path in "$PROFILE" "$TARGETS" "$HAT_CONTROL" "$HARDWARE_DETECT" "$LEGACY_FLASH"; do
+  [[ -f "$path" ]] || die "Required firmware-deployment file missing: $path"
 done
+if [[ $HARDWARE_ONLY -eq 0 ]]; then
+  [[ -f "$CONFIG" ]] || die "Required Stage-F configuration missing: $CONFIG"
+fi
 [[ -n "$FIRMWARE" && -f "$FIRMWARE" ]] || die "--firmware must name the exact prepared AX25R4 artifact"
 command_exists stm32flash || die "stm32flash is required"
 command_exists fuser || die "fuser is required"
@@ -89,16 +109,23 @@ eligibility_record="$(profile_get service_eligibility_record)"
 
 [[ "$AUTHORIZE" == "$authorization_token" ]] || die "Product firmware operation requires --authorize $authorization_token"
 
-section "Stage-F runtime readiness"
-set +e
-readiness="$($VENV/bin/python -m ywd1278.install.readiness --config "$CONFIG" 2>&1)"
-readiness_rc=$?
-set -e
-printf '%s\n' "$readiness"
-[[ $readiness_rc -eq 0 ]] || die "Product runtime configuration must be READY before firmware deployment"
-grep -q '^YWD1278_INSTALL_RUNTIME_READINESS=READY$' <<<"$readiness" || die "Runtime readiness marker missing"
+if [[ $HARDWARE_ONLY -eq 1 ]]; then
+  section "Hardware-only firmware readiness"
+  device="${DEVICE_OVERRIDE:-/dev/ttyAMA0}"
+  [[ -n "$device" && -e "$device" ]] || die "Modem UART does not exist: $device"
+  systemctl disable --now ywd-1278.service >/dev/null 2>&1 || true
+  ok "Pre-configuration hardware mode; service is stopped and runtime eligibility is deferred"
+else
+  section "Stage-F runtime readiness"
+  set +e
+  readiness="$($VENV/bin/python -m ywd1278.install.readiness --config "$CONFIG" 2>&1)"
+  readiness_rc=$?
+  set -e
+  printf '%s\n' "$readiness"
+  [[ $readiness_rc -eq 0 ]] || die "Product runtime configuration must be READY before firmware deployment"
+  grep -q '^YWD1278_INSTALL_RUNTIME_READINESS=READY$' <<<"$readiness" || die "Runtime readiness marker missing"
 
-mapfile -t configured < <("$VENV/bin/python" - "$CONFIG" <<'PY'
+  mapfile -t configured < <("$VENV/bin/python" - "$CONFIG" <<'PY'
 import sys,tomllib
 with open(sys.argv[1],'rb') as f: d=tomllib.load(f)
 print(d.get('hardware',{}).get('target',''))
@@ -107,14 +134,15 @@ print('true' if d.get('radio',{}).get('tx_enabled',False) is True else 'false')
 print('true' if d.get('firmware',{}).get('allow_automatic_flash',False) is True else 'false')
 PY
 )
-configured_target="${configured[0]:-}"
-device="${configured[1]:-}"
-tx_enabled="${configured[2]:-true}"
-auto_flash="${configured[3]:-true}"
-[[ "$configured_target" == "$target" ]] || die "Configured HAT target does not exactly match product profile"
-[[ -n "$device" && -e "$device" ]] || die "Configured modem UART does not exist: $device"
-[[ "$tx_enabled" == false ]] || die "RF TX must remain disabled during Stage-F firmware deployment"
-[[ "$auto_flash" == false ]] || die "Automatic firmware flashing must remain disabled"
+  configured_target="${configured[0]:-}"
+  device="${configured[1]:-}"
+  tx_enabled="${configured[2]:-true}"
+  auto_flash="${configured[3]:-true}"
+  [[ "$configured_target" == "$target" ]] || die "Configured HAT target does not exactly match product profile"
+  [[ -n "$device" && -e "$device" ]] || die "Configured modem UART does not exist: $device"
+  [[ "$tx_enabled" == false ]] || die "RF TX must remain disabled during Stage-F firmware deployment"
+  [[ "$auto_flash" == false ]] || die "Automatic firmware flashing must remain disabled"
+fi
 
 section "Exact product artifact gate"
 artifact_check="$($VENV/bin/python -m ywd1278.install.firmware_trust --profile "$PROFILE" artifact --firmware "$FIRMWARE")" || die "Product artifact trust check failed"
@@ -126,14 +154,16 @@ actual_sha="$(sha256sum "$FIRMWARE" | awk '{print $1}')"
 section "Service/UART precondition"
 systemctl disable --now ywd-1278.service >/dev/null 2>&1 || true
 if fuser "$device" >/dev/null 2>&1; then
-  fail "UART is busy; Stage F refuses to stop an unknown owner automatically: $device"
+  fail "UART is busy; firmware deployment refuses to stop an unknown owner automatically: $device"
   fuser -v "$device" >&2 || true
   exit 4
 fi
 
 section "Exact HAT identity gate"
+detect_args=(--device "$device")
+[[ $HARDWARE_ONLY -eq 1 ]] || detect_args+=(--config "$CONFIG")
 set +e
-detect="$(YWD1278_SOURCE_ROOT="$SOURCE_ROOT" bash "$HARDWARE_DETECT" --device "$device" --config "$CONFIG" 2>&1)"
+detect="$(YWD1278_SOURCE_ROOT="$SOURCE_ROOT" bash "$HARDWARE_DETECT" "${detect_args[@]}" 2>&1)"
 detect_rc=$?
 set -e
 printf '%s\n' "$detect"
@@ -244,7 +274,11 @@ if [[ "$identity" == "$expected_identity" ]]; then
   echo "EXISTING_PRODUCT_FIRMWARE_VERIFIED=YES"
 else
   warn "A main-flash write is about to be possible. The verified stock rollback backup is preserved at: $STOCK_BACKUP_DIR"
-  confirm_exact "WRITE-FIRMWARE-NOW" "Write the exact qualified AX25R4 image now?" || die "Product flash cancelled"
+  if [[ $PRECONFIRMED_WRITE -eq 0 ]]; then
+    confirm_exact "WRITE-FIRMWARE-NOW" "Write the exact qualified AX25R4 image now?" || die "Product flash cancelled"
+  else
+    info "Outer guided installer already received explicit operator confirmation for this write"
+  fi
   enter_bootloader
   stm32flash -b 115200 -w "$FIRMWARE" -v "$device"
   FLASH_WRITTEN=YES
@@ -254,8 +288,10 @@ else
 fi
 
 section "Exact runtime identity after programmed readback"
+post_args=(--device "$device")
+[[ $HARDWARE_ONLY -eq 1 ]] || post_args+=(--config "$CONFIG")
 set +e
-post="$(YWD1278_SOURCE_ROOT="$SOURCE_ROOT" bash "$HARDWARE_DETECT" --device "$device" --config "$CONFIG" 2>&1)"
+post="$(YWD1278_SOURCE_ROOT="$SOURCE_ROOT" bash "$HARDWARE_DETECT" "${post_args[@]}" 2>&1)"
 post_rc=$?
 set -e
 printf '%s\n' "$post"
@@ -265,6 +301,40 @@ post_identity="$(sed -n 's/^DETECTED_IDENTITY=//p' <<<"$post" | tail -1)"
 [[ "$post_target" == "$target" ]] || die "Post-flash target mismatch"
 [[ "$post_identity" == "$expected_identity" ]] || die "Post-flash identity does not exactly match qualified AX25R4 identity: $post_identity"
 ok "Exact qualified AX25R4 runtime identity verified"
+
+if [[ $HARDWARE_ONLY -eq 1 ]]; then
+  section "Write pre-configuration hardware qualification"
+  rm -f "$HARDWARE_RECORD"
+  hardware="$($VENV/bin/python -m ywd1278.install.hardware_trust --profile "$PROFILE" write-hardware \
+    --firmware "$FIRMWARE" \
+    --readback-sha256 "$PROGRAMMED_READBACK_SHA256" \
+    --runtime-identity "$post_identity" \
+    --stock-backup-dir "$STOCK_BACKUP_DIR" \
+    --flash-written "$([[ "$FLASH_WRITTEN" == YES ]] && echo yes || echo no)" \
+    --output "$HARDWARE_RECORD")" || die "Could not write hardware qualification evidence"
+  printf '%s\n' "$hardware"
+  chmod 0600 "$HARDWARE_RECORD"
+  "$VENV/bin/python" -m ywd1278.install.hardware_trust --profile "$PROFILE" check-hardware \
+    --firmware "$FIRMWARE" --record "$HARDWARE_RECORD" || die "Hardware qualification record did not verify"
+
+  section "Hardware-only firmware qualification complete"
+  echo "YWD1278_PRODUCT_FIRMWARE_DEPLOY=PASS"
+  echo "YWD1278_HAT_READY=YES"
+  echo "TARGET_ID=$target"
+  echo "PRODUCT_FIRMWARE_SHA256=$actual_sha"
+  echo "PROGRAMMED_READBACK_SHA256=$PROGRAMMED_READBACK_SHA256"
+  echo "PRODUCT_RUNTIME_IDENTITY_VERIFIED=YES"
+  echo "STOCK_BACKUP_DIR=$STOCK_BACKUP_DIR"
+  echo "STOCK_ROLLBACK_VERIFIED=YES"
+  echo "OPTION_BYTES_WRITTEN=NO"
+  echo "RF_TRANSMITTED=NO"
+  echo "TX_ENABLED=NO"
+  echo "FLASH_WRITTEN=$FLASH_WRITTEN"
+  echo "SERVICE_ELIGIBLE=NO"
+  echo "SERVICE_ENABLED=NO"
+  echo "HARDWARE_RECORD=$HARDWARE_RECORD"
+  exit 0
+fi
 
 section "Write service-eligibility evidence"
 rm -f "$eligibility_record"
