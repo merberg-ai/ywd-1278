@@ -20,7 +20,6 @@ from .service.classic_console import (
 )
 from .service.classic_tx_console import (
     ProductClassicTXConfigurationError,
-    ProductClassicTXConsole,
     load_product_classic_tx_config,
     make_product_backend_submitter,
 )
@@ -30,7 +29,10 @@ from .service.forwarding_config import (
     ProductForwardingConfigurationError,
     load_product_forwarding_config,
 )
-from .service.product_id_console import ProductClassicIDConsole
+from .service.product_converse_console import (
+    ProductClassicConverseConsole,
+    open_live_only_monitor,
+)
 
 
 def run_daemon(
@@ -49,14 +51,17 @@ def run_daemon(
     Normal CLI/systemd execution supplies neither and therefore uses the private
     POSIX serial transport plus runtime randomness owned by the appliance layer.
 
-    0F extends only the console personality.  When ``[station]`` identity is
+    0F extends only the console personality. When ``[station]`` identity is
     configured, per-session UNPROTO/converse UI frame bodies are handed to the
-    exact live ``ProductTNCBackend`` KISS DATA admission boundary.  The console
-    does not gain a second queue, CSMA engine, modem owner, UART path, or retry
-    loop.  ``radio.tx_enabled=false`` remains the construction-time product TX
-    gate and the 0F shell fails closed before invoking its submit callback.
+    exact live ``ProductTNCBackend`` KISS DATA admission boundary. Converse RX
+    borrows one existing bounded backend PacketEvent subscription per active
+    console session and discards only its pre-subscription history snapshot.
+    The console does not gain a second queue, CSMA engine, modem owner, UART
+    path, retry loop, or scheduler. ``radio.tx_enabled=false`` remains the
+    construction-time product TX gate and the 0F shell fails closed before
+    invoking its submit callback.
 
-    0H-P11 adds only a parsed product forwarding gate.  Forwarding remains
+    0H-P11 adds only a parsed product forwarding gate. Forwarding remains
     physically unqualified and therefore must be disabled; no forwarding
     coordinator, scheduler, mailbox mutation, link owner, or RF path is wired
     into this daemon.
@@ -103,7 +108,7 @@ def run_daemon(
             poll_interval_seconds=beacon_poll_interval_seconds,
             clock=shared_beacon_clock,
         )
-        console: ProductClassicConsole = ProductClassicIDConsole(
+        console: ProductClassicConsole = ProductClassicConverseConsole(
             console_config,
             tx_config=classic_tx_config,
             tx_enabled=packet_config.tx_enabled,
@@ -112,6 +117,7 @@ def run_daemon(
             clock=shared_beacon_clock,
             diagnostics_snapshot=engine.diagnostics_snapshot,
             mheard_db=engine.mheard_db,
+            live_monitor_factory=lambda: open_live_only_monitor(engine.backend),
         )
         classic_0f = "ENABLED" if packet_config.tx_enabled else "TX-DISABLED"
     else:
@@ -164,7 +170,7 @@ def run_daemon(
             engine.check_health()
             console.check_health()
     finally:
-        # Command sessions consume Stage-C diagnostics/MHEARD.  Revoke those
+        # Command sessions consume Stage-C diagnostics/MHEARD. Revoke those
         # observers before the packet engine tears their sources down.
         try:
             console.stop()
