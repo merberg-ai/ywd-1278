@@ -26,6 +26,7 @@ jobs:
         run: |
           python -m compileall -q src firmware tests tools
           bash -n installer/product-tx-control.sh
+          bash -n installer/update-installed-software.sh
 
       - name: 0F-P9 host configuration qualification
         run: python tests/persistent_product_converse_0f_p9_test.py
@@ -33,10 +34,14 @@ jobs:
       - name: 0F-P9 persistent service activation contract
         run: python tests/persistent_product_converse_0f_p9_contract_test.py
 
+      - name: 0F-P9 software-only update contract
+        run: python tests/software_update_0f_p9_contract_test.py
+
       - name: 0F-P9 zero-I/O control dry runs
         run: |
           bash installer/product-tx-control.sh enable --dry-run --expected-installed-commit 0000000000000000000000000000000000000000
           bash installer/product-tx-control.sh disable --dry-run
+          bash installer/update-installed-software.sh --dry-run
 
       - name: Frozen P8 sustained converse qualification remains green
         run: |
