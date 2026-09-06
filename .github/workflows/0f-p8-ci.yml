@@ -53,4 +53,4 @@ jobs:
         run: |
           python tests/telnet_tnc_console_test.py
           python tests/auth_lan_console_test.py
-          python tests/pty_serial_console_test.py
+          python tests/pty_serial_tnc_console_test.py
