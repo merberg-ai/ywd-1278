@@ -112,12 +112,15 @@
 - [x] forwarding integration — 0H-P8 host-qualified exact-route planning for explicit destination-owned stored-message envelopes, immutable 128-byte-chunked work, and unique ordered batches capped at eight; it does not enumerate, schedule, connect, dispatch, acknowledge, mutate storage, or transmit
 - [x] LinBPQ delivery dialogue — 0H-P9 host-qualified recognition of the observed BPQ SID and exact BBS prompt, with bounded inert classic `SP`/title/body/`/EX` actions, byte-preserving body fragments, returned-prompt completion, and explicit terminal failures
 - [x] LinBPQ physical delivery — **0H-P10 physically qualified by R3** at 145.050 MHz / RF power `200/255`. `KJ6YWD-10` connected to LinBPQ listener `KJ6YWD-5`, entered BBS `KJ6YWD-1`, drove the frozen P9 sequence `SP,TITLE,BODY,BODY_END,END`, and submitted exactly one `P10 TEST` / `YWD-1278 0H-P10 LINBPQ DELIVERY 1/1` message. LinBPQ stored message `464` (`464_KJ6YWD`, 37 bytes), returned its no-forwarding-route warning plus exact `de KJ6YWD>` prompt, and the link completed orderly DISC/UA with 13 submitted link actions. R3 retained stop-and-wait MAXFRAME 1 and widened only receive PACLEN to 256 while outbound information remained capped at 128. Normal service was restored, persistent TX remained disabled, config hash was unchanged, and no flash or option-byte write occurred. R1/R2 partial attempts remain preserved as historical evidence.
+- [x] forwarding coordinator plumbing — **0H-P11 host-qualified** bounded caller-driven composition over frozen P8 work with an injected delivery driver. Disabled mode performs no planning or delivery; active host tests process at most eight messages sequentially, emit inert commit intents only after explicit ACCEPTED receipts, stop fail-closed on REJECTED/UNCERTAIN results, and never automatically retry. Product configuration now includes `[forwarding]` with safe defaults `enabled=false`, `interval_seconds=900`, `max_batch=8`; the daemon reports forwarding disabled/deferred and rejects `enabled=true` until physical qualification. No scheduler, mailbox mutation, link owner, modem/UART, or RF path is wired.
+- [ ] physical/automatic BBS forwarding qualification — **0H-P12 DEFERRED** until a forwarding-capable peer/test system is available. Future work must prove configured peer routing, stored-message selection, real forwarding acceptance, exact-once delivery-state commit, restart/backoff behavior, and no duplicate retransmission before the product gate may permit `forwarding.enabled=true`.
 
 ## Later product work
 
 - WebUI/API
 - GitHub update channels and protected rollback
 - backup/restore UI
+- deferred 0H-P12 physical/automatic BBS forwarding qualification when a forwarding-capable peer is available
 - additional physically-qualified MMDVM HAT targets
 - flashable Raspberry Pi image
 - first stable release
