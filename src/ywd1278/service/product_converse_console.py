@@ -6,10 +6,17 @@ engine, retry loop, scheduler, or RF path. Each converse session borrows one
 already-bounded PacketEvent subscriber queue from the product backend and
 deliberately discards the pre-subscription history snapshot so only traffic
 observed after entering converse mode is displayed.
+
+The frozen 0D MonitorSubscription remains unchanged. Its ``read_available``
+helper is history-oriented and a zero-timeout read does not inspect the live
+queue. Product converse therefore wraps the same already-bounded subscriber
+queue directly, drains it with ``get_nowait()``, and reuses the frozen 0D event
+decoder. No additional packet queue is created.
 """
 
 from __future__ import annotations
 
+from queue import Empty, Queue
 import threading
 import time
 from typing import Any, Callable
@@ -21,8 +28,9 @@ from ywd1278.console.product_session import (
     ProductTelnetTNCServer,
     ProductVirtualPTYTNC,
 )
+from ywd1278.kiss.server import PacketEvent, RXOnlyBackend
 from ywd1278.monitor.policy import MonitorPolicyState
-from ywd1278.monitor.stream import MonitorSubscription
+from ywd1278.monitor.stream import MonitorRecord, _decode_event
 from ywd1278.service.classic_console import ProductClassicConsoleError
 from ywd1278.service.product_id_console import (
     ProductClassicIDConsole,
@@ -30,23 +38,82 @@ from ywd1278.service.product_id_console import (
 )
 
 
-LiveMonitorFactory = Callable[[], MonitorSubscription]
+class LiveOnlyMonitorSubscription:
+    """Non-blocking decoder over one existing bounded backend subscriber queue."""
+
+    def __init__(
+        self,
+        backend: RXOnlyBackend,
+        live_queue: Queue[PacketEvent],
+        *,
+        clock_ns: Callable[[], int],
+    ) -> None:
+        if not callable(clock_ns):
+            raise TypeError("clock_ns must be callable")
+        self._backend = backend
+        self._live_queue = live_queue
+        self._clock_ns = clock_ns
+        self._closed = False
+        self._sequence = 0
+        self._decode_failures = 0
+
+    @property
+    def decode_failures(self) -> int:
+        return self._decode_failures
+
+    def read_available(self, *, maximum: int | None = None) -> list[MonitorRecord]:
+        """Drain valid live records already queued, without waiting or replaying history."""
+        if self._closed:
+            raise RuntimeError("live monitor subscription is closed")
+        if maximum is not None and (
+            isinstance(maximum, bool) or not isinstance(maximum, int) or maximum < 0
+        ):
+            raise ValueError("maximum must be a non-negative integer when provided")
+
+        records: list[MonitorRecord] = []
+        while maximum is None or len(records) < maximum:
+            try:
+                event = self._live_queue.get_nowait()
+            except Empty:
+                break
+            candidate = self._sequence + 1
+            try:
+                record = _decode_event(
+                    event,
+                    sequence=candidate,
+                    observed_at_ns=self._clock_ns(),
+                    history_replay=False,
+                )
+            except (TypeError, ValueError):
+                self._decode_failures += 1
+                continue
+            self._sequence = candidate
+            records.append(record)
+        return records
+
+    def close(self) -> None:
+        if self._closed:
+            return
+        self._backend.close_stream(self._live_queue)
+        self._closed = True
+
+
+LiveMonitorFactory = Callable[[], LiveOnlyMonitorSubscription]
 
 
 def open_live_only_monitor(
-    backend: Any,
+    backend: RXOnlyBackend,
     *,
     clock_ns: Callable[[], int] = time.time_ns,
-) -> MonitorSubscription:
+) -> LiveOnlyMonitorSubscription:
     """Open one bounded backend subscriber while intentionally dropping history."""
     if not callable(clock_ns):
         raise TypeError("clock_ns must be callable")
     history, live_queue = backend.open_stream()
     del history
     try:
-        return MonitorSubscription(
+        return LiveOnlyMonitorSubscription(
             backend,
-            [],
             live_queue,
             clock_ns=clock_ns,
         )
@@ -68,7 +135,7 @@ class ProductConverseCommandShell(ProductIDCommandShell):
             raise TypeError("live_monitor_factory must be callable")
         super().__init__(**kwargs)
         self._live_monitor_factory = live_monitor_factory
-        self._live_monitor: MonitorSubscription | None = None
+        self._live_monitor: LiveOnlyMonitorSubscription | None = None
 
     def execute(self, line: str) -> CommandResult:
         if not isinstance(line, str):
@@ -236,6 +303,7 @@ class ProductClassicConverseConsole(ProductClassicIDConsole):
 
 __all__ = [
     "LiveMonitorFactory",
+    "LiveOnlyMonitorSubscription",
     "ProductClassicConverseConsole",
     "ProductConverseCommandShell",
     "open_live_only_monitor",
