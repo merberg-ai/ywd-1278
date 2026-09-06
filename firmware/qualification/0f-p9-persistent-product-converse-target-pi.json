@@ -1,0 +1,89 @@
+{
+  "schema": 1,
+  "stage": "0F-P9",
+  "status": "target-pi-persistent-product-converse-qualified",
+  "qualified_on": "2026-09-06",
+  "evidence_kind": "operator-live-test-plus-independent-monitor-screenshot",
+  "tested_source": {
+    "branch": "dev-0f-p9-persistent-product-converse",
+    "commit": "130f76ffbdf4e77b398e33d63814be3c965dce6e"
+  },
+  "installation_boundary": {
+    "normal_installed_source": true,
+    "normal_systemd_service": "ywd-1278.service",
+    "persistent_tx_authority_used": true,
+    "temporary_qualification_daemon_used": false,
+    "operator_reported_full_staging_sequence_success": true
+  },
+  "rf_profile": {
+    "frequency_hz": 145050000,
+    "tx_power": 200,
+    "source": "KJ6YWD-10"
+  },
+  "qualified_unproto_paths": [
+    {
+      "destination": "JIM",
+      "path": ["YWDNOD"],
+      "operator_result": "PASS",
+      "observed_source_frames": [
+        "KJ6YWD-10>JIM,YWDNOD:hello test 123",
+        "KJ6YWD-10>JIM,YWDNOD:hello test"
+      ]
+    },
+    {
+      "destination": "JIM",
+      "path": ["YWDNOD", "KRDG"],
+      "operator_result": "PASS",
+      "observed_source_frames": [
+        "KJ6YWD-10>JIM,YWDNOD,KRDG:hello test"
+      ],
+      "observed_repeated_frames": [
+        "KJ6YWD-10>JIM,YWDNOD*,KRDG*:hello test"
+      ]
+    }
+  ],
+  "additional_observed_monitor_lines": [
+    "KJ6YWD-10>JIM,YWDNOD:unproto JIM VIA KRDG",
+    "KJ6YWD-10>JIM,KRDG:hello test test 123",
+    "KE6CHO-5>W7VW-1"
+  ],
+  "qualified_behavior": {
+    "normal_service_product_converse_tx": true,
+    "unproto_destination_applied": true,
+    "single_digipeater_path_applied": true,
+    "two_digipeater_path_applied": true,
+    "independent_over_air_decode": true,
+    "returned_digipeated_copy_observed": true,
+    "same_live_packet_environment_remained_operational": true,
+    "operator_reported_expected_behavior": true
+  },
+  "safety_and_architecture": {
+    "existing_p8_product_converse_backend_used": true,
+    "new_modem_path_introduced": false,
+    "new_scheduler_introduced": false,
+    "new_automatic_tx_retry_introduced": false,
+    "firmware_write_required_for_p9": false,
+    "option_byte_write_required_for_p9": false,
+    "persistent_tx_disable_cleanup_required_by_staging": true,
+    "operator_reported_full_cleanup_sequence_success": true
+  },
+  "scope_boundary": {
+    "qualified": [
+      "software-only installation of the P9 productization layer over the already-qualified AX25R4 appliance",
+      "explicit persistent product TX authority through the normal installed systemd service",
+      "normal product Telnet UNPROTO/CONVERSE RF operation at 145.050 MHz / power 200",
+      "UNPROTO JIM VIA YWDNOD",
+      "UNPROTO JIM VIA YWDNOD,KRDG",
+      "independent over-air source-frame observation",
+      "returned repeated YWDNOD*,KRDG* frame observation",
+      "reuse of the physically-qualified P8 converse/modem/channel-access composition"
+    ],
+    "not_qualified_by_this_slice": [
+      "arbitrary digipeater paths other than the specifically observed paths",
+      "BEACON/BTEXT/ID RF behavior",
+      "connected-mode CONNECT behavior",
+      "automatic TX retry",
+      "scheduled transmissions"
+    ]
+  }
+}
