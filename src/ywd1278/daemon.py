@@ -26,6 +26,10 @@ from .service.classic_tx_console import (
 )
 from .service.beacon_scheduler import ProductBeaconScheduler
 from .service.beacon_access_policy import JitteredThreadSafeProductBeaconCoordinator
+from .service.forwarding_config import (
+    ProductForwardingConfigurationError,
+    load_product_forwarding_config,
+)
 from .service.product_id_console import ProductClassicIDConsole
 
 
@@ -52,13 +56,19 @@ def run_daemon(
     loop.  ``radio.tx_enabled=false`` remains the construction-time product TX
     gate and the 0F shell fails closed before invoking its submit callback.
 
-    Historical host fixtures with no ``[station]`` table retain the exact
-    frozen P5 personality so earlier qualification remains replayable.
+    0H-P11 adds only a parsed product forwarding gate.  Forwarding remains
+    physically unqualified and therefore must be disabled; no forwarding
+    coordinator, scheduler, mailbox mutation, link owner, or RF path is wired
+    into this daemon.
+
+    Historical host fixtures with no ``[station]`` or ``[forwarding]`` table
+    retain their frozen behavior.
     """
 
     packet_config = load_product_packet_engine_config(config_path)
     console_config = load_product_classic_console_config(config_path)
     classic_tx_config = load_product_classic_tx_config(config_path)
+    forwarding_config = load_product_forwarding_config(config_path)
     shared_beacon_clock = time.monotonic if beacon_clock is None else beacon_clock
     if not callable(shared_beacon_clock):
         raise TypeError("beacon_clock must be callable or None")
@@ -123,6 +133,12 @@ def run_daemon(
         print(f"FIRMWARE_IDENTITY={snapshot.firmware_identity}", flush=True)
         print(f"PRODUCT_TX={'ENABLED' if snapshot.tx_enabled else 'DISABLED'}", flush=True)
         print(f"CLASSIC_0F={classic_0f}", flush=True)
+        print("FORWARDING=DISABLED", flush=True)
+        print(
+            f"FORWARDING_CONFIG=interval:{forwarding_config.interval_seconds},batch:{forwarding_config.max_batch}",
+            flush=True,
+        )
+        print("FORWARDING_PHYSICAL_QUALIFICATION=DEFERRED", flush=True)
         if snapshot.kiss_listener is None:
             print("KISS_LISTENER=DISABLED", flush=True)
         else:
@@ -199,6 +215,7 @@ def main() -> int:
         ProductConfigurationError,
         ProductClassicConsoleConfigurationError,
         ProductClassicTXConfigurationError,
+        ProductForwardingConfigurationError,
         RuntimeError,
         OSError,
     ) as exc:
