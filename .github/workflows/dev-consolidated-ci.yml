@@ -1,0 +1,196 @@
+name: dev-consolidated-ci
+
+on:
+  push:
+    branches: [dev, cleanup/repo-consolidation]
+  pull_request:
+    branches: [dev]
+  workflow_dispatch:
+
+jobs:
+  integrated:
+    runs-on: ubuntu-latest
+    env:
+      PYTHONPATH: "src:tools:tests"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Exact checked-out tip
+        run: test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+
+      - name: Shell syntax
+        run: |
+          set -euo pipefail
+          while IFS= read -r -d '' file; do
+            bash -n "$file"
+          done < <(find installer firmware tests tools -type f -name '*.sh' -print0)
+
+      - name: Compile current tree
+        run: python -m compileall -q src firmware tests tools
+
+      - name: Core packet modem and channel-access regressions
+        run: |
+          python tests/ax25_codec_test.py
+          python tests/bell202_tx_test.py
+          python tests/bell202_rx_test.py
+          python tests/modem_protocol_test.py
+          python tests/rx_config_test.py
+          python tests/modem_owner_test.py
+          python tests/tx_qualification_profile_test.py
+          python tests/tx_broker_test.py
+          python tests/tx_broker_contract_test.py
+          python tests/csma_policy_test.py
+          python tests/csma_policy_contract_test.py
+          python tests/rssi_telemetry_test.py
+          python tests/rssi_firmware_build_contract_test.py
+          python tests/rssi_live_activation_contract_test.py
+          python tests/rssi_readback_stdout_contract_test.py
+          python tests/rssi_analysis_test.py
+          python tests/rssi_packet_correlation_contract_test.py
+          python tests/channel_busy_test.py
+          python tests/channel_busy_contract_test.py
+          python tests/channel_access_integration_test.py
+          python tests/live_channel_access_sampler_test.py
+          python tests/channel_access_live_contract_test.py
+          python tests/live_shadow_channel_access_contract_test.py
+          python tests/access_queue_test.py
+          python tests/access_queue_contract_test.py
+          python tests/access_queue_manifest_test.py
+          python tests/access_queue_broker_integration_test.py
+          python tests/access_queue_broker_contract_test.py
+          python tests/access_queue_tx_owner_integration_test.py
+          python tests/access_queue_tx_owner_contract_test.py
+          python tests/half_duplex_test.py
+          python tests/half_duplex_tx_owner_integration_test.py
+          python tests/half_duplex_contract_test.py
+          python tests/txdelay_test.py
+          python tests/txdelay_contract_test.py
+          python tests/kiss_control_plane_test.py
+          python tests/kiss_control_plane_server_test.py
+          python tests/kiss_control_plane_contract_test.py
+          python tests/kiss_data_admission_test.py
+          python tests/kiss_data_full_graph_integration_test.py
+          python tests/kiss_data_admission_contract_test.py
+          python tests/sustained_kiss_queue_concurrency_test.py
+          python tests/sustained_live_fifo_drain_regression_test.py
+          python tests/sustained_kiss_tnc_integration_test.py
+
+      - name: Firmware packaging and RX product contracts
+        run: |
+          python tests/single_tx_qualification_contract_test.py
+          python tests/three_tx_qualification_contract_test.py
+          python tests/three_tx_r2_qualification_contract_test.py
+          python tests/modem_serial_transport_test.py
+          python tests/kiss_framing_test.py
+          python tests/kiss_server_test.py
+          python tests/rx_product_runtime_test.py
+          python tests/firmware_identity_test.py
+          python tests/firmware_build_contract_test.py
+          python tests/packet_firmware_build_contract_test.py
+          python tests/vendored_engineering_contract_test.py
+          python tests/packet_engineering_fetch_contract_test.py
+          python tests/firmware_backup_contract_test.py
+          python tests/firmware_roundtrip_contract_test.py
+          python tests/packet_firmware_roundtrip_contract_test.py
+          python tests/packet_live_rx_activation_contract_test.py
+          python tests/live_rx_kiss_contract_test.py
+
+      - name: 0D and 0E current console and observability lineage
+        run: |
+          python tests/classic_tnc_vocabulary_test.py
+          python tests/classic_tnc_vocabulary_contract_test.py
+          python tests/classic_tnc_vocabulary_qualification_contract_test.py
+          python tests/classic_tnc_vocabulary_target_pi_evidence_contract_test.py
+          python tests/pty_serial_tnc_console_test.py
+          python tests/pty_serial_tnc_console_contract_test.py
+          python tests/pty_serial_tnc_console_qualification_contract_test.py
+          python tests/pty_serial_tnc_console_target_pi_evidence_contract_test.py
+          python tests/auth_lan_console_test.py
+          python tests/auth_lan_console_contract_test.py
+          python tests/auth_lan_console_qualification_contract_test.py
+          python tests/auth_lan_console_target_pi_evidence_contract_test.py
+          python tests/telnet_tnc_console_test.py
+          python tests/telnet_tnc_console_contract_test.py
+          python tests/telnet_tnc_console_qualification_contract_test.py
+          python tests/telnet_tnc_console_target_pi_evidence_contract_test.py
+          python tests/local_tnc_console_test.py
+          python tests/local_tnc_console_contract_test.py
+          python tests/local_tnc_console_qualification_contract_test.py
+          python tests/diagnostics_status_test.py
+          python tests/diagnostics_status_contract_test.py
+          python tests/diagnostics_status_qualification_contract_test.py
+          python tests/diagnostics_status_target_pi_evidence_contract_test.py
+          python tests/retention_target_pi_evidence_contract_test.py
+          python tests/retention_qualification_contract_test.py
+          python tests/mheard_target_pi_evidence_contract_test.py
+          python tests/mheard_qualification_contract_test.py
+          python tests/sqlite_frame_log_target_pi_evidence_contract_test.py
+          python tests/sqlite_frame_log_qualification_contract_test.py
+          python tests/monitor_policy_qualification_contract_test.py
+          python tests/monitor_stream_qualification_contract_test.py
+          python tests/live_p8_r3_physical_evidence_contract_test.py
+
+      - name: 0F and 0G product TX and connected-mode lineage
+        run: |
+          python tools/qualify_0g_p6_connected.py
+          python tests/connected_physical_0g_p6_safety_contract_test.py
+          if test -f firmware/qualification/0g-p6-connected-target-pi.json; then
+            python tests/connected_physical_0g_p6_evidence_contract_test.py
+          fi
+          python tests/connected_sessions_0g_p5_test.py
+          python tests/connected_sessions_0g_p5_contract_test.py
+          python tests/connected_terminal_0g_p4_test.py
+          python tests/connected_terminal_0g_p4_contract_test.py
+          python tests/timed_link_0g_p3_test.py
+          python tests/timed_link_0g_p3_contract_test.py
+          python tests/modulo8_data_link_0g_p2_test.py
+          python tests/modulo8_data_link_0g_p2_contract_test.py
+          python tests/modulo8_link_0g_p1_test.py
+          python tests/modulo8_link_0g_p1_contract_test.py
+          python tests/product_beacon_access_0f_p6_test.py
+          python tests/product_beacon_access_0f_p6_contract_test.py
+          python tests/classic_id_0f_p5e_physical_evidence_contract_test.py
+          python tests/classic_beacon_0f_p5d_physical_evidence_contract_test.py
+          python tests/classic_tx_0f_p4_final_acceptance_contract_test.py
+
+      - name: 0H forwarding and LinBPQ lineage
+        run: |
+          python tests/forwarding_plumbing_0h_p11_test.py
+          python tests/forwarding_plumbing_0h_p11_contract_test.py
+          python tests/forwarding_plumbing_0h_p11_qualification_contract_test.py
+          python tests/linbpq_delivery_0h_p10_physical_evidence_contract_test.py
+          python tests/linbpq_dialogue_0h_p9_test.py
+          python tests/linbpq_dialogue_0h_p9_contract_test.py
+          python tests/forwarding_integration_0h_p8_test.py
+          python tests/forwarding_integration_0h_p8_contract_test.py
+
+      - name: 0I persistent BBS lineage through P4b
+        run: |
+          python tests/persistent_bbs_service_0i_p4b_test.py
+          python tests/persistent_bbs_service_0i_p4b_contract_test.py
+          python tests/persistent_bbs_service_0i_p4b_qualification_contract_test.py
+          python tests/persistent_bbs_runtime_0i_p4_test.py
+          python tests/persistent_bbs_runtime_0i_p4a_qualification_contract_test.py
+          python tests/node_mailbox_config_0i_p3_qualification_contract_test.py
+          python tests/classic_bbs_0i_p2_qualification_contract_test.py
+          python tests/persistent_mailbox_0i_p1_qualification_contract_test.py
+
+      - name: Deployment and physical-evidence preservation
+        run: |
+          python tests/product_fresh_install_appliance_qualified_contract_test.py
+          python tests/fresh_os_stage_i_physical_tx_evidence_contract_test.py
+          python tests/fresh_os_stage_h_prior_stage_preservation_test.py
+          python tests/live_p8_r3_physical_evidence_contract_test.py
+
+      - name: Install package and framework self-test
+        run: |
+          python -m venv .venv
+          .venv/bin/python -m pip install --disable-pip-version-check .
+          .venv/bin/ywd1278 --version
+          .venv/bin/ywd1278d --config config/ywd-1278.example.toml --framework-self-test
