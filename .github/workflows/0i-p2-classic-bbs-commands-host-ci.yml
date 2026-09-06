@@ -24,10 +24,12 @@ jobs:
           src/ywd1278/node/classic_bbs.py
           tests/classic_bbs_0i_p2_test.py
           tests/classic_bbs_0i_p2_contract_test.py
+          tests/classic_bbs_0i_p2_qualification_contract_test.py
       - name: 0I-P2 classic BBS tests
         run: >-
           python tests/classic_bbs_0i_p2_test.py &&
-          python tests/classic_bbs_0i_p2_contract_test.py
+          python tests/classic_bbs_0i_p2_contract_test.py &&
+          python tests/classic_bbs_0i_p2_qualification_contract_test.py
       - name: Frozen P1 and 0H regressions
         run: >-
           python tests/persistent_mailbox_0i_p1_test.py &&
