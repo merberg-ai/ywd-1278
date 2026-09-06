@@ -19,9 +19,12 @@ Usage:
   sudo ./installer/enable-product-service.sh --firmware FILE \
     --expected-installed-commit SHA [--config FILE]
 
-Stage-G service activation gate.  It revalidates the Stage-F eligibility record,
-exact live AX25R4 identity, installed source/unit identity, and no-TX/no-auto-
-flash configuration before systemd may enable/start ywd-1278.service.
+RX-safe product service activation gate. It revalidates the service-eligibility
+record, exact live AX25R4 identity, installed source/unit identity, and the
+no-TX/no-auto-flash runtime policy before systemd may enable/start the service.
+The configured receive frequency is validated by the qualified runtime
+readiness/product configuration loaders rather than a historical test-frequency
+constant.
 EOF
 }
 
@@ -41,7 +44,7 @@ done
 for path in "$VENV/bin/python" "$PROFILE" "$ELIGIBILITY" "$HARDWARE_DETECT" "$UNIT_SOURCE" "$UNIT_INSTALLED" "$CONFIG"; do
   [[ -e "$path" ]] || { echo "[FAIL] required installed appliance path missing: $path" >&2; exit 3; }
 done
-[[ -n "$FIRMWARE" && -f "$FIRMWARE" ]] || { echo "[FAIL] --firmware must name the exact Stage-F AX25R4 artifact" >&2; exit 3; }
+[[ -n "$FIRMWARE" && -f "$FIRMWARE" ]] || { echo "[FAIL] --firmware must name the exact qualified AX25R4 artifact" >&2; exit 3; }
 [[ "$EXPECTED_COMMIT" =~ ^[0-9a-f]{40}$ ]] || { echo "[FAIL] --expected-installed-commit must be a full lowercase Git SHA" >&2; exit 3; }
 
 installed_commit="$(tr -d '[:space:]' </opt/ywd-1278/installed-commit 2>/dev/null || true)"
@@ -62,17 +65,14 @@ print(d.get('hardware',{}).get('target',''))
 print(d.get('radio',{}).get('device',''))
 print('true' if d.get('radio',{}).get('tx_enabled',False) is True else 'false')
 print('true' if d.get('firmware',{}).get('allow_automatic_flash',False) is True else 'false')
-print(d.get('radio',{}).get('frequency_mhz',''))
 PY
 )
 target="${config_state[0]:-}"
 device="${config_state[1]:-}"
 tx_enabled="${config_state[2]:-true}"
 auto_flash="${config_state[3]:-true}"
-frequency_mhz="${config_state[4]:-}"
-[[ "$tx_enabled" == false ]] || { echo "[FAIL] TX must remain disabled for Stage G" >&2; exit 5; }
-[[ "$auto_flash" == false ]] || { echo "[FAIL] automatic flash must remain disabled for Stage G" >&2; exit 5; }
-[[ "$frequency_mhz" == "145.05" || "$frequency_mhz" == "145.050" ]] || { echo "[FAIL] Stage G rehearsal requires 145.050 MHz" >&2; exit 5; }
+[[ "$tx_enabled" == false ]] || { echo "[FAIL] TX must remain disabled for service activation" >&2; exit 5; }
+[[ "$auto_flash" == false ]] || { echo "[FAIL] automatic flash must remain disabled for service activation" >&2; exit 5; }
 [[ -n "$device" && -e "$device" ]] || { echo "[FAIL] configured UART does not exist: $device" >&2; exit 5; }
 
 profile_target="$($VENV/bin/python - "$PROFILE" <<'PY'
@@ -89,13 +89,13 @@ expected_identity="$(sed -n '2p' <<<"$profile_target")"
 eligibility_out="$($VENV/bin/python -m ywd1278.install.firmware_trust \
   --profile "$PROFILE" check-eligibility \
   --config "$CONFIG" --firmware "$FIRMWARE" --record "$ELIGIBILITY")" || {
-    echo "[FAIL] Stage-F SERVICE-ELIGIBLE record no longer validates" >&2
+    echo "[FAIL] SERVICE-ELIGIBLE record no longer validates" >&2
     exit 6
   }
 printf '%s\n' "$eligibility_out"
 grep -q '^SERVICE_ELIGIBLE=YES$' <<<"$eligibility_out" || { echo "[FAIL] eligibility marker missing" >&2; exit 6; }
 
-echo "===== STAGE G LIVE HAT IDENTITY RECHECK ====="
+echo "===== LIVE HAT IDENTITY RECHECK ====="
 systemctl disable --now ywd-1278.service >/dev/null 2>&1 || true
 if fuser "$device" >/dev/null 2>&1; then
   echo "[FAIL] UART is already owned before service activation: $device" >&2
