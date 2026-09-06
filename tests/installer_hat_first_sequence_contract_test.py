@@ -34,7 +34,7 @@ assert "After reboot, reconnect and run:" in install
 # Boot-time resume is intentionally noninteractive and must never reach HAT
 # setup, station setup, firmware programming, or product service activation.
 auto_start = resume.index('if [[ $AUTOMATIC -eq 1 ]]')
-auto_end = resume.index("fi", auto_start)
+auto_end = resume.index("\nfi\n", auto_start)
 auto_block = resume[auto_start:auto_end]
 assert "continue-install.sh" not in auto_block
 assert "setup-hat.sh" not in auto_block
@@ -45,13 +45,16 @@ assert "INTERACTIVE_CONTINUATION_REQUIRED=YES" in auto_block
 assert "SERVICE_ENABLED=NO" in auto_block
 assert "RF_TRANSMITTED=NO" in auto_block
 assert "FLASH_WRITTEN=NO" in auto_block
-assert resume.index("continue-install.sh") > auto_end
+assert resume.index('bash "$SOURCE_ROOT/installer/continue-install.sh"') > auto_end
 
 # Both direct/manual interactive flows use the same order: prove the HAT first,
 # configure station identity second, then promote and activate RX-safe service.
-hat_pos = continuation.index("setup-hat.sh")
-setup_pos = continuation.index('bash "$SOURCE_ROOT/installer/setup.sh"')
-final_pos = continuation.index("finalize-product-service.sh")
+hat_call = 'bash "$SOURCE_ROOT/installer/setup-hat.sh"'
+setup_call = 'bash "$SOURCE_ROOT/installer/setup.sh"'
+final_call = 'bash "$SOURCE_ROOT/installer/finalize-product-service.sh"'
+hat_pos = continuation.index(hat_call)
+setup_pos = continuation.index(setup_call)
+final_pos = continuation.index(final_call)
 assert hat_pos < setup_pos < final_pos
 assert "YWD1278_HAT_READY=YES" in continuation
 assert "RF_TRANSMITTED=NO" in continuation
@@ -74,7 +77,7 @@ assert 'echo "RF_TRANSMITTED=NO"' in deploy
 
 # Finalization is a promotion of already-verified evidence, not a second flash.
 promote_pos = finalizer.index("hardware_trust --profile")
-enable_pos = finalizer.index("enable-product-service.sh")
+enable_pos = finalizer.index('bash "$ENABLE_SERVICE"')
 assert promote_pos < enable_pos
 assert "deploy-product-firmware.sh" not in finalizer
 assert "stm32flash" not in finalizer
