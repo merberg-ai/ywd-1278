@@ -33,10 +33,30 @@ fail(){ _ywd_printf "${YWD_RED}[FAIL]${YWD_RESET} $*" >&2; }
 die(){ fail "$*"; exit 1; }
 step(){ _ywd_printf "${YWD_SILVER}  •${YWD_RESET} $*"; }
 
+# Interactive installers may be launched by the supported `curl | sudo bash`
+# bootstrap. In that case stdin is the curl pipe, not the operator terminal.
+# Prefer normal stdin when it is a TTY; otherwise use the controlling terminal
+# when available. Non-interactive callers without a controlling terminal still
+# fall back to stdin and therefore retain the previous fail-closed behavior.
+_ywd_read(){
+  local __var="$1" rc
+  if [[ -t 0 ]]; then
+    IFS= read -r "$__var"
+    return
+  fi
+  if { exec 9</dev/tty; } 2>/dev/null; then
+    IFS= read -r "$__var" <&9
+    rc=$?
+    exec 9<&-
+    return "$rc"
+  fi
+  IFS= read -r "$__var"
+}
+
 prompt_default(){
   local prompt="$1" default="$2" value
   printf '%b' "${YWD_SILVER}${prompt}${YWD_RESET} [${default}]: " >&2
-  IFS= read -r value
+  _ywd_read value || value=''
   printf '%s' "${value:-$default}"
 }
 
@@ -44,7 +64,7 @@ confirm_yes_no(){
   local prompt="$1" default="${2:-yes}" answer suffix
   [[ "$default" == yes ]] && suffix='Y/n' || suffix='y/N'
   printf '%b' "${YWD_AMBER}${prompt}${YWD_RESET} [${suffix}]: " >&2
-  IFS= read -r answer || answer=''
+  _ywd_read answer || answer=''
   answer="${answer,,}"
   if [[ -z "$answer" ]]; then [[ "$default" == yes ]]; return; fi
   [[ "$answer" == y || "$answer" == yes ]]
@@ -53,7 +73,7 @@ confirm_yes_no(){
 confirm_exact(){
   local expected="$1" prompt="$2" answer
   printf '%b' "${YWD_AMBER}${prompt}${YWD_RESET}\nType ${YWD_BOLD}${expected}${YWD_RESET} to continue: "
-  IFS= read -r answer
+  _ywd_read answer || return 1
   [[ "$answer" == "$expected" ]]
 }
 

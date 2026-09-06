@@ -48,4 +48,16 @@ git clone --depth 1 --branch "$BRANCH" "$REPO_URL" "$tmp/repo"
 [[ -x "$tmp/repo/installer/install.sh" ]] || { echo "Fetched source has no installer/install.sh" >&2; exit 4; }
 
 printf '%b\n' "${G}[ OK ]${R} Source fetched; starting full installer"
+
+# With the supported `curl | sudo bash` entry point, stdin belongs to curl.
+# Reattach the full interactive installer to the caller's controlling terminal
+# when one exists. This preserves prompt input while keeping non-interactive
+# callers fail-closed if no terminal is available.
+if { exec 3</dev/tty; } 2>/dev/null; then
+  bash "$tmp/repo/installer/install.sh" "${FORWARD[@]}" <&3
+  rc=$?
+  exec 3<&-
+  exit "$rc"
+fi
+
 bash "$tmp/repo/installer/install.sh" "${FORWARD[@]}"

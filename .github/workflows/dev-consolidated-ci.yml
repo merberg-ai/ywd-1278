@@ -178,6 +178,7 @@ jobs:
 
       - name: Deployment and physical-evidence preservation
         run: |
+          python tests/installer_piped_prompt_contract_test.py
           python tests/product_fresh_install_appliance_qualified_contract_test.py
           python tests/fresh_os_stage_i_physical_tx_evidence_contract_test.py
           python tests/fresh_os_stage_h_prior_stage_preservation_test.py
