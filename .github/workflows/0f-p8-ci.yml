@@ -25,12 +25,26 @@ jobs:
       - name: Compile P8 tree
         run: python -m compileall -q src firmware tests tools
 
-      - name: Frozen product converse regressions
+      - name: Frozen product converse regressions and P7 evidence
         run: |
           python tests/classic_tx_converse_product_session_test.py
           python tests/classic_tx_converse_product_session_contract_test.py
-          python tests/classic_tx_product_converse_physical_staging_contract_test.py
           python tests/classic_tx_product_converse_0f_p7_physical_evidence_contract_test.py
+
+      - name: Frozen P7 staging harness remains pinned and refuses P8 source
+        run: |
+          python - <<'PY'
+          import subprocess, sys
+          proc = subprocess.run(
+              [sys.executable, "tools/qualify_0f_product_converse.py"],
+              text=True,
+              stdout=subprocess.PIPE,
+              stderr=subprocess.STDOUT,
+          )
+          assert proc.returncode != 0, proc.stdout
+          assert "product capability blob mismatch: src/ywd1278/console/product_session.py" in proc.stdout, proc.stdout
+          print("FROZEN_0F_P7_STAGING_REJECTS_P8_SOURCE=PASS")
+          PY
 
       - name: 0F-P8 sustained product converse host gate
         run: python tests/classic_tx_converse_0f_p8_session_test.py
