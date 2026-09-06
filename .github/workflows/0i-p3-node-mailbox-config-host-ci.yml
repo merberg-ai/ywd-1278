@@ -1,0 +1,37 @@
+name: 0i-p3-node-mailbox-config-host-ci
+on:
+  push:
+    branches: [dev-0i-p3-node-mailbox-config-host]
+  pull_request:
+    branches: [checkpoint/0i-p2-classic-bbs-commands-host-qualified]
+  workflow_dispatch:
+
+jobs:
+  host:
+    runs-on: ubuntu-latest
+    env:
+      PYTHONPATH: "src:tools:tests"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Compile P3 config and contracts
+        run: >-
+          python -m py_compile
+          src/ywd1278/service/node_mailbox_config.py
+          tests/node_mailbox_config_0i_p3_test.py
+          tests/node_mailbox_config_0i_p3_contract_test.py
+      - name: 0I-P3 config tests
+        run: >-
+          python tests/node_mailbox_config_0i_p3_test.py &&
+          python tests/node_mailbox_config_0i_p3_contract_test.py
+      - name: Frozen P2/P1/P11 regressions
+        run: >-
+          python tests/classic_bbs_0i_p2_test.py &&
+          python tests/classic_bbs_0i_p2_qualification_contract_test.py &&
+          python tests/persistent_mailbox_0i_p1_test.py &&
+          python tests/persistent_mailbox_0i_p1_qualification_contract_test.py &&
+          python tests/forwarding_plumbing_0h_p11_contract_test.py
