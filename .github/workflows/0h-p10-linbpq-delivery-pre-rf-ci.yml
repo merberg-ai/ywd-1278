@@ -21,13 +21,16 @@ jobs:
           python -m py_compile
           tools/qualify_0h_p10_linbpq_delivery.py
           tools/qualify_0h_p10_linbpq_delivery_r2.py
+          tools/qualify_0h_p10_linbpq_delivery_r3.py
           tests/linbpq_delivery_0h_p10_pre_rf_test.py
           tests/linbpq_delivery_0h_p10_r2_stop_wait_test.py
+          tests/linbpq_delivery_0h_p10_r3_receive_paclen_test.py
           tests/linbpq_delivery_0h_p10_contract_test.py
       - name: P10 pre-RF tests
         run: >-
           python tests/linbpq_delivery_0h_p10_pre_rf_test.py &&
           python tests/linbpq_delivery_0h_p10_r2_stop_wait_test.py &&
+          python tests/linbpq_delivery_0h_p10_r3_receive_paclen_test.py &&
           python tests/linbpq_delivery_0h_p10_contract_test.py
       - name: Frozen P9/P8/P7 regressions
         run: >-
