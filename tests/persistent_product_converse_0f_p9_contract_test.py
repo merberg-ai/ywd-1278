@@ -76,9 +76,12 @@ class PersistentProductConverseP9ContractTests(unittest.TestCase):
         self.assertNotIn("stm32flash", text)
         self.assertNotIn("deploy-product-firmware", text)
         self.assertNotIn("flash_firmware", text)
-        self.assertNotIn("option byte", text)
+        self.assertNotIn("program-option", text)
+        self.assertNotIn("write-option", text)
         self.assertNotIn("retry tx", text)
         self.assertIn("automatic_tx_retry=no_new_retry", text)
+        self.assertIn("firmware_flash=no", text)
+        self.assertIn("option_bytes_write=no", text)
 
     def test_normal_daemon_is_already_the_p8_product_composition(self) -> None:
         text = DAEMON.read_text(encoding="utf-8")
