@@ -219,8 +219,14 @@ def _serve_product_telnet_session(
             if etx_result is None:
                 if not feed_bytes(b"\x03"):
                     return
-            elif not emit_result(etx_result, count_command=False):
-                return
+            else:
+                # Ctrl-C is a line-cancel operation in product CONVERSE mode.
+                # Preserve all frozen Telnet negotiation/fatal state while
+                # discarding only the unfinished user line and oversize latch.
+                decoder._line.clear()
+                decoder._discard_oversize = False
+                if not emit_result(etx_result, count_command=False):
+                    return
 
 
 class _ProductTelnetRequestHandler(socketserver.BaseRequestHandler):
@@ -432,6 +438,10 @@ class ProductVirtualPTYTNC(VirtualPTYTNC):
                     for event in self._decoder.feed(b"\x03"):
                         self._handle_event(event)
                 else:
+                    # Match the Telnet product boundary: Ctrl-C cancels the
+                    # unfinished PTY line before command-mode input resumes.
+                    self._decoder._line.clear()
+                    self._decoder._line_error = None
                     self._handle_result(result, count_command=False)
 
     def _handle_event(self, event: SerialLineEvent) -> None:
