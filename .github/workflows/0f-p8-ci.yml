@@ -54,6 +54,9 @@ jobs:
           python tests/classic_tx_converse_0f_p8_physical_staging_contract_test.py
           python tools/qualify_0f_p8_sustained_converse.py
 
+      - name: 0F-P8 frozen physical evidence
+        run: python tests/classic_tx_converse_0f_p8_physical_evidence_contract_test.py
+
       - name: Frozen terminal surface regressions
         run: |
           python tests/telnet_tnc_console_test.py
