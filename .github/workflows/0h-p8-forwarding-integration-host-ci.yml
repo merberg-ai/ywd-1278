@@ -1,0 +1,16 @@
+name: 0h-p8-forwarding-integration-host-ci
+on:
+ push: {branches: [dev-0h-p8-forwarding-integration]}
+ pull_request: {branches: [checkpoint/0h-p7-mailbox-physical-qualified]}
+ workflow_dispatch:
+jobs:
+ forwarding-integration:
+  runs-on: ubuntu-latest
+  env: {PYTHONPATH: "src:tests"}
+  steps:
+   - uses: actions/checkout@v4
+   - uses: actions/setup-python@v5
+     with: {python-version: '3.11'}
+   - run: python -m py_compile src/ywd1278/node/forwarding_integration.py tests/forwarding_integration_0h_p8_test.py tests/forwarding_integration_0h_p8_contract_test.py
+   - run: python tests/forwarding_integration_0h_p8_test.py && python tests/forwarding_integration_0h_p8_contract_test.py
+   - run: python tests/forwarding_policy_0h_p3_test.py && python tests/forwarding_policy_0h_p3_contract_test.py && python tests/mailbox_storage_0h_p2_test.py && python tests/mailbox_physical_0h_p7_evidence_contract_test.py
