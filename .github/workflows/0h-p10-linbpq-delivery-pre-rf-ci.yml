@@ -1,0 +1,35 @@
+name: 0h-p10-linbpq-delivery-pre-rf-ci
+on:
+  push:
+    branches: [dev-0h-p10-linbpq-delivery-physical]
+  pull_request:
+    branches: [checkpoint/0h-p9-linbpq-dialogue-host-qualified]
+  workflow_dispatch:
+
+jobs:
+  pre-rf:
+    runs-on: ubuntu-latest
+    env:
+      PYTHONPATH: "src:tools:tests"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Compile P10 harness and contracts
+        run: >-
+          python -m py_compile
+          tools/qualify_0h_p10_linbpq_delivery.py
+          tests/linbpq_delivery_0h_p10_pre_rf_test.py
+          tests/linbpq_delivery_0h_p10_contract_test.py
+      - name: P10 pre-RF tests
+        run: >-
+          python tests/linbpq_delivery_0h_p10_pre_rf_test.py &&
+          python tests/linbpq_delivery_0h_p10_contract_test.py
+      - name: Frozen P9/P8/P7 regressions
+        run: >-
+          python tests/linbpq_dialogue_0h_p9_test.py &&
+          python tests/linbpq_dialogue_0h_p9_contract_test.py &&
+          python tests/forwarding_integration_0h_p8_test.py &&
+          python tests/forwarding_integration_0h_p8_contract_test.py &&
+          python tests/mailbox_physical_0h_p7_evidence_contract_test.py
