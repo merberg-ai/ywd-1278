@@ -23,10 +23,12 @@ jobs:
           src/ywd1278/node/forwarding_coordinator.py
           tests/forwarding_plumbing_0h_p11_test.py
           tests/forwarding_plumbing_0h_p11_contract_test.py
+          tests/forwarding_plumbing_0h_p11_qualification_contract_test.py
       - name: P11 host tests
         run: >-
           python tests/forwarding_plumbing_0h_p11_test.py &&
-          python tests/forwarding_plumbing_0h_p11_contract_test.py
+          python tests/forwarding_plumbing_0h_p11_contract_test.py &&
+          python tests/forwarding_plumbing_0h_p11_qualification_contract_test.py
       - name: Frozen P10/P9/P8 regressions
         run: >-
           python tests/linbpq_delivery_0h_p10_physical_evidence_contract_test.py &&
