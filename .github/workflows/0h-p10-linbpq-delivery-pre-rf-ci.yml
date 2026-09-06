@@ -26,12 +26,14 @@ jobs:
           tests/linbpq_delivery_0h_p10_r2_stop_wait_test.py
           tests/linbpq_delivery_0h_p10_r3_receive_paclen_test.py
           tests/linbpq_delivery_0h_p10_contract_test.py
-      - name: P10 pre-RF tests
+          tests/linbpq_delivery_0h_p10_physical_evidence_contract_test.py
+      - name: P10 qualification and evidence tests
         run: >-
           python tests/linbpq_delivery_0h_p10_pre_rf_test.py &&
           python tests/linbpq_delivery_0h_p10_r2_stop_wait_test.py &&
           python tests/linbpq_delivery_0h_p10_r3_receive_paclen_test.py &&
-          python tests/linbpq_delivery_0h_p10_contract_test.py
+          python tests/linbpq_delivery_0h_p10_contract_test.py &&
+          python tests/linbpq_delivery_0h_p10_physical_evidence_contract_test.py
       - name: Frozen P9/P8/P7 regressions
         run: >-
           python tests/linbpq_dialogue_0h_p9_test.py &&
