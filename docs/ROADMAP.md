@@ -109,7 +109,7 @@
 - [x] inbound node product integration — 0H-P5 physically qualified at 145.050 MHz against the deployed LinBPQ node's exact `KJ6YWD-15` outgoing downlink identity (`KJ6YWD-5` remains its listener): SABM/UA, exact banner and HELP/INFO/VERSION/BYE responses, acknowledged BYE before DISC/UA, 12 link actions, and unchanged persistent no-TX service restoration
 - [x] mailbox command integration — 0H-P6 host-qualified peer-owned LIST/READ/SP, listings capped at 12, 512-byte paged reads in PACLEN-safe chunks, injected message time, bounded `/EX` or `/ABORT` composition, and fail-closed queue overflow; runtime, persistent service, and RF integration remain absent
 - [x] mailbox RF round trip — 0H-P7 physically qualified with a disposable `/run` database: HELP, empty/populated LIST, exact self-addressed SP deposit, owner READ, acknowledged BYE and DISC/UA against LinBPQ `KJ6YWD-15`, 25 link actions, exact content, database removal, and unchanged persistent no-TX service
-- [ ] forwarding integration — 0H-P8 host candidate applies the frozen exact-route policy to explicit stored-message envelopes and prepares immutable 128-byte-chunked work in unique batches of at most eight; it does not enumerate, schedule, connect, dispatch, acknowledge, mutate storage, or transmit
+- [x] forwarding integration — 0H-P8 host-qualified exact-route planning for explicit destination-owned stored-message envelopes, immutable 128-byte-chunked work, and unique ordered batches capped at eight; it does not enumerate, schedule, connect, dispatch, acknowledge, mutate storage, or transmit
 
 ## Later product work
 
