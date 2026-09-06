@@ -1,0 +1,16 @@
+name: 0h-p9-linbpq-dialogue-host-ci
+on:
+ push: {branches: [dev-0h-p9-linbpq-dialogue]}
+ pull_request: {branches: [checkpoint/0h-p8-forwarding-integration-host-qualified]}
+ workflow_dispatch:
+jobs:
+ linbpq-dialogue:
+  runs-on: ubuntu-latest
+  env: {PYTHONPATH: "src:tests"}
+  steps:
+   - uses: actions/checkout@v4
+   - uses: actions/setup-python@v5
+     with: {python-version: '3.11'}
+   - run: python -m py_compile src/ywd1278/node/linbpq_dialogue.py tests/linbpq_dialogue_0h_p9_test.py tests/linbpq_dialogue_0h_p9_contract_test.py
+   - run: python tests/linbpq_dialogue_0h_p9_test.py && python tests/linbpq_dialogue_0h_p9_contract_test.py
+   - run: python tests/forwarding_integration_0h_p8_test.py && python tests/forwarding_integration_0h_p8_contract_test.py && python tests/mailbox_physical_0h_p7_evidence_contract_test.py
