@@ -24,10 +24,12 @@ jobs:
           src/ywd1278/node/persistent_mailbox.py
           tests/persistent_mailbox_0i_p1_test.py
           tests/persistent_mailbox_0i_p1_contract_test.py
+          tests/persistent_mailbox_0i_p1_qualification_contract_test.py
       - name: 0I-P1 persistent mailbox tests
         run: >-
           python tests/persistent_mailbox_0i_p1_test.py &&
-          python tests/persistent_mailbox_0i_p1_contract_test.py
+          python tests/persistent_mailbox_0i_p1_contract_test.py &&
+          python tests/persistent_mailbox_0i_p1_qualification_contract_test.py
       - name: Frozen 0H-P11/P10/P7 regressions
         run: >-
           python tests/forwarding_plumbing_0h_p11_test.py &&
