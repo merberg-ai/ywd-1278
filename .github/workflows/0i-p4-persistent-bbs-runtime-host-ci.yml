@@ -1,0 +1,39 @@
+name: 0i-p4-persistent-bbs-runtime-host-ci
+on:
+  push:
+    branches: [dev-0i-p4-persistent-bbs-runtime-host]
+  pull_request:
+    branches: [checkpoint/0i-p3-node-mailbox-config-host-qualified]
+  workflow_dispatch:
+
+jobs:
+  host:
+    runs-on: ubuntu-latest
+    env:
+      PYTHONPATH: "src:tools:tests"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Compile P4 runtime and contracts
+        run: >-
+          python -m py_compile
+          src/ywd1278/node/persistent_bbs_runtime.py
+          tests/persistent_bbs_runtime_0i_p4_test.py
+          tests/persistent_bbs_runtime_0i_p4_contract_test.py
+      - name: 0I-P4 persistent BBS runtime tests
+        run: >-
+          python tests/persistent_bbs_runtime_0i_p4_test.py &&
+          python tests/persistent_bbs_runtime_0i_p4_contract_test.py
+      - name: Frozen P3/P2/P1/connected-link regressions
+        run: >-
+          python tests/node_mailbox_config_0i_p3_test.py &&
+          python tests/node_mailbox_config_0i_p3_qualification_contract_test.py &&
+          python tests/classic_bbs_0i_p2_test.py &&
+          python tests/classic_bbs_0i_p2_qualification_contract_test.py &&
+          python tests/persistent_mailbox_0i_p1_test.py &&
+          python tests/persistent_mailbox_0i_p1_qualification_contract_test.py &&
+          python tests/inbound_node_0h_p5_test.py
