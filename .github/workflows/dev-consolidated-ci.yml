@@ -138,6 +138,8 @@ jobs:
 
       - name: 0F and 0G current product TX and connected-mode behavior
         run: |
+          python tests/classic_tx_converse_product_session_test.py
+          python tests/classic_tx_converse_product_session_contract_test.py
           python tools/qualify_0g_p6_connected.py
           python tests/connected_physical_0g_p6_safety_contract_test.py
           if test -f firmware/qualification/0g-p6-connected-target-pi.json; then
