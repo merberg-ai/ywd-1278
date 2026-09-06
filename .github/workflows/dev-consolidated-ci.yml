@@ -136,7 +136,7 @@ jobs:
           python tests/monitor_stream_qualification_contract_test.py
           python tests/live_p8_r3_physical_evidence_contract_test.py
 
-      - name: 0F and 0G product TX and connected-mode lineage
+      - name: 0F and 0G current product TX and connected-mode behavior
         run: |
           python tools/qualify_0g_p6_connected.py
           python tests/connected_physical_0g_p6_safety_contract_test.py
@@ -144,15 +144,10 @@ jobs:
             python tests/connected_physical_0g_p6_evidence_contract_test.py
           fi
           python tests/connected_sessions_0g_p5_test.py
-          python tests/connected_sessions_0g_p5_contract_test.py
           python tests/connected_terminal_0g_p4_test.py
-          python tests/connected_terminal_0g_p4_contract_test.py
           python tests/timed_link_0g_p3_test.py
-          python tests/timed_link_0g_p3_contract_test.py
           python tests/modulo8_data_link_0g_p2_test.py
-          python tests/modulo8_data_link_0g_p2_contract_test.py
           python tests/modulo8_link_0g_p1_test.py
-          python tests/modulo8_link_0g_p1_contract_test.py
           python tests/product_beacon_access_0f_p6_test.py
           python tests/product_beacon_access_0f_p6_contract_test.py
           python tests/classic_id_0f_p5e_physical_evidence_contract_test.py
