@@ -1,0 +1,76 @@
+{
+  "schema": 1,
+  "stage": "0F-P7",
+  "status": "target-pi-physical-product-converse-qualified",
+  "qualified_on": "2026-09-06",
+  "tested_source": {
+    "commit": "4971a0d332cd154ea0d5fdfc8e23949496549f94",
+    "tree": "d7452afdf855dc34c0705dcad15b48af6dff9f79",
+    "branch_at_test": "dev"
+  },
+  "installed_recovery_baseline": {
+    "commit": "b10bae526c9f21ee36d6531dfbb44feb0816fd24",
+    "persistent_config_sha256": "2c073d8f022c7174027a0cf424c6e285ffcb0ff3375f9baf6d4553cab2ff3b76",
+    "persistent_tx_enabled": false,
+    "persistent_beacon_enabled": false
+  },
+  "rf_profile": {
+    "frequency_hz": 145050000,
+    "tx_power": 200,
+    "source": "KJ6YWD-10"
+  },
+  "qualified_vector": {
+    "source": "KJ6YWD-10",
+    "destination": "YWD127",
+    "path": [],
+    "control": "UI",
+    "pid": "F0",
+    "information": "YWD-1278 PRODUCT CONVERSE 1/1",
+    "expected_external_decode": "KJ6YWD-10>YWD127:YWD-1278 PRODUCT CONVERSE 1/1",
+    "independent_exact_decode_count": 1,
+    "independent_decoder_screenshot_observed": true,
+    "raw_screenshot_archived_in_repository": false
+  },
+  "qualified_behavior": {
+    "product_telnet_converse_entered": true,
+    "command_prompt_suppressed_while_conversing": true,
+    "classic_converse_tx_lines": 1,
+    "tx_origin": "PRODUCT_TELNET_CONVERSE",
+    "kiss_tx_messages": 0,
+    "tx_dispatches": 1,
+    "tx_queue_accepted": 1,
+    "tx_queue_dispatched": 1,
+    "subscriber_drops": 0,
+    "no_second_internal_dispatch_after_hold": true,
+    "automatic_tx_retry": false,
+    "same_session_live_rx": true,
+    "same_session_live_rx_line": "RX KJ6YWD>JIM:yooooooooo hellooooooo",
+    "printable_cmd_escape": true,
+    "command_prompt_restored": true
+  },
+  "final_safety_state": {
+    "persistent_tx_enabled": false,
+    "persistent_config_mutated": false,
+    "installed_source_mutated": false,
+    "normal_service_restored": true,
+    "firmware_written": false,
+    "option_bytes_written": false
+  },
+  "scope_boundary": {
+    "qualified": [
+      "one direct UNPROTO UI frame from the permanent product Telnet converse session",
+      "same-session live RX rendering after TX",
+      "printable /CMD return to command mode",
+      "single-dispatch/no-retry behavior",
+      "restoration of the persistent RX-safe appliance"
+    ],
+    "not_qualified_by_this_slice": [
+      "persistent TX enablement",
+      "multi-line sustained converse RF operation",
+      "physical Ctrl-C escape",
+      "VIA/digipeater product-session RF path",
+      "BEACON/BTEXT/ID RF behavior",
+      "connected-mode CONNECT behavior"
+    ]
+  }
+}
