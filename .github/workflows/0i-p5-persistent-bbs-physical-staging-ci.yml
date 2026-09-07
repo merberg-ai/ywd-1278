@@ -1,0 +1,73 @@
+name: 0i-p5-persistent-bbs-physical-staging-ci
+
+on:
+  push:
+    branches: [dev-0i-p5-persistent-bbs-physical-staging]
+  workflow_dispatch:
+
+jobs:
+  pre-live:
+    runs-on: ubuntu-latest
+    env:
+      PYTHONPATH: "src:tools:tests"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Exact checked-out tip
+        run: test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+
+      - name: Compile tree and shell syntax
+        run: |
+          python -m compileall -q src tests tools
+          bash -n installer/persistent-bbs-physical-control.sh
+          bash -n installer/product-tx-control.sh
+          bash -n installer/update-installed-software.sh
+
+      - name: 0I-P5 physical staging safety contract
+        run: python tests/persistent_bbs_physical_staging_0i_p5_contract_test.py
+
+      - name: 0I-P5 zero-I/O helper dry runs
+        run: |
+          bash installer/persistent-bbs-physical-control.sh stage --dry-run
+          bash installer/persistent-bbs-physical-control.sh cleanup --dry-run
+          bash installer/persistent-bbs-physical-control.sh status --dry-run
+          bash installer/product-tx-control.sh enable --dry-run --expected-installed-commit 0000000000000000000000000000000000000000
+          bash installer/product-tx-control.sh disable --dry-run
+          bash installer/update-installed-software.sh --dry-run
+
+      - name: Frozen 0I-P4c2 host qualification remains green
+        run: |
+          python tests/product_mailbox_console_0i_p4c2_test.py
+          python tests/persistent_bbs_product_composition_0i_p4c2_test.py
+          python tests/persistent_bbs_product_composition_0i_p4c2_contract_test.py
+          python tests/persistent_bbs_product_composition_0i_p4c2_pre_rf_contract_test.py
+          python tests/persistent_bbs_product_composition_0i_p4c2_qualification_contract_test.py
+
+      - name: Frozen P4b P4a P3 P2 P1 regressions
+        run: |
+          python tests/persistent_bbs_service_0i_p4b_test.py
+          python tests/persistent_bbs_service_0i_p4b_qualification_contract_test.py
+          python tests/persistent_bbs_runtime_0i_p4_test.py
+          python tests/persistent_bbs_runtime_0i_p4a_qualification_contract_test.py
+          python tests/node_mailbox_config_0i_p3_qualification_contract_test.py
+          python tests/classic_bbs_0i_p2_qualification_contract_test.py
+          python tests/persistent_mailbox_0i_p1_qualification_contract_test.py
+
+      - name: Frozen product terminal regressions
+        run: |
+          python tests/classic_tx_converse_product_session_test.py
+          python tests/telnet_tnc_console_test.py
+          python tests/auth_lan_console_test.py
+          python tests/pty_serial_tnc_console_test.py
+
+      - name: Package install and framework self-test
+        run: |
+          python -m venv .venv
+          .venv/bin/python -m pip install --disable-pip-version-check .
+          .venv/bin/ywd1278d --config config/ywd-1278.example.toml --framework-self-test
