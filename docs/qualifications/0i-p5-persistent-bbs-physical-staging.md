@@ -46,10 +46,38 @@ or RF transmission.
 
 The normal product service remains `ywd-1278.service`.
 
+## Legacy config bootstrap
+
+A persistent config installed before 0I may legitimately have no `[node]` or
+`[mailbox]` tables. The one-time
+`installer/persistent-bbs-config-bootstrap.sh` helper exists only for that exact
+upgrade case.
+
+It requires BOTH tables to be absent. A partial state fails closed. It also
+requires the exact KJ6YWD-10 / 145.050 MHz / qualified-HAT profile, persistent
+TX disabled, beacon disabled, forwarding disabled, and automatic firmware flash
+disabled.
+
+The bootstrap appends only the exact disabled profile:
+
+- `[node].enabled=false`
+- `[node].alias="YWDNOD"`
+- `[node].max_sessions=1`
+- `[mailbox].enabled=false`
+- `[mailbox].database="/var/lib/ywd-1278/mailbox.sqlite3"`
+- `[mailbox].paclen=128`
+- `[mailbox].info="YWD-1278 persistent packet BBS"`
+
+The complete candidate is validated through the installed packet-engine and
+node/mailbox configuration loaders before atomic installation. The original
+persistent config is backed up. Bootstrap does not restart or stop the service,
+does not enable node/mailbox/TX, opens no modem UART, transmits no RF, and
+performs no firmware or option-byte operation.
+
 ## Bounded configuration staging
 
-`installer/persistent-bbs-physical-control.sh stage` is the only new staging
-helper. It:
+After the disabled tables exist, `installer/persistent-bbs-physical-control.sh
+stage` remains the bounded staging helper. It:
 
 1. requires an exact installed commit;
 2. requires the exact KJ6YWD-10 / 145.050 MHz / qualified-HAT profile;
@@ -74,21 +102,23 @@ order:
 1. update `~/ywd-1278` to the exact staging tip;
 2. explicitly revoke persistent TX if necessary;
 3. software-only update `/opt/ywd-1278` to the exact same tip;
-4. run P5 staging control and confirm TX remains disabled / service stopped;
-5. run the existing guarded 0F-P9 TX enable operation;
-6. verify normal `ywd-1278.service` reports:
+4. if both `[node]` and `[mailbox]` are absent, run the one-time legacy config
+   bootstrap and confirm they now exist disabled while TX remains disabled;
+5. run P5 staging control and confirm TX remains disabled / service stopped;
+6. run the existing guarded 0F-P9 TX enable operation;
+7. verify normal `ywd-1278.service` reports:
    - `PRODUCT_TX=ENABLED`
    - `PERSISTENT_BBS=ENABLED`
    - `MBOX=ENABLED`
    - `FORWARDING=DISABLED`;
-7. exercise local MBOX from the normal product terminal;
-8. establish one **direct** AX.25 connection from an independent station to
+8. exercise local MBOX from the normal product terminal;
+9. establish one **direct** AX.25 connection from an independent station to
    `KJ6YWD-10` on 145.050 MHz;
-9. observe the connected BBS banner and prompt;
-10. deposit/read at least one persistent message and prove the same mailbox is
+10. observe the connected BBS banner and prompt;
+11. deposit/read at least one persistent message and prove the same mailbox is
     visible through local MBOX after the RF session;
-11. exit the remote BBS with `BYE` and confirm the link closes normally;
-12. run P5 cleanup and verify TX/node/mailbox are disabled while the mailbox
+12. exit the remote BBS with `BYE` and confirm the link closes normally;
+13. run P5 cleanup and verify TX/node/mailbox are disabled while the mailbox
     SQLite database remains present.
 
 ## Expected remote BBS behavior
@@ -132,6 +162,7 @@ restarting service.
 Capture the following from the same physical session:
 
 - exact staging source commit and installed commit;
+- legacy bootstrap PASS markers when the older config form was encountered;
 - P5 stage PASS markers;
 - 0F-P9 TX-enable PASS markers and live firmware identity verification;
 - normal service startup markers showing BBS/MBOX enabled;
