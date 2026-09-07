@@ -1,0 +1,153 @@
+{
+  "schema": 1,
+  "stage": "0I-P5",
+  "status": "target-pi-persistent-bbs-physically-qualified",
+  "qualified_on": "2026-09-07",
+  "evidence_kind": "operator-live-rf-test-plus-independent-packet-monitor-and-local-mbox-proof",
+  "tested_source": {
+    "branch": "dev-0i-p5-persistent-bbs-physical-staging",
+    "commit": "9c02f01515a0ae3a933c4471409673c7c67425c9",
+    "tree": "f6893210da62cdee00559085d850678f599b5e28"
+  },
+  "host_qualified_base": {
+    "checkpoint": "checkpoint/0i-p4c2-mailbox-product-composition-host-qualified",
+    "commit": "dd2f96f27050bf24c57e24a9b2b3a2ba86688b27",
+    "tree": "e6cd8d7081990cd435f92db0c578b6f14de5cc5a"
+  },
+  "installation_boundary": {
+    "development_clone": "~/ywd-1278",
+    "installed_source": "/opt/ywd-1278/source",
+    "installed_commit_during_test": "9c02f01515a0ae3a933c4471409673c7c67425c9",
+    "normal_systemd_service": "ywd-1278.service",
+    "software_only_update_passed": true,
+    "legacy_node_mailbox_config_bootstrap_used": true,
+    "persistent_tx_authority_gate_used": true,
+    "temporary_qualification_daemon_used": false
+  },
+  "hardware": {
+    "target_id": "mmdvm-hs-hat-stm32f103-simplex-14.7456-adf7021",
+    "runtime_identity_verified": true,
+    "firmware_identity": "MMDVM_HS_Hat-YWD-1278-AX25R4-v0.1.0-alpha1 14.7456MHz ADF7021 FW based on CA6JAU GitID #7ff74ed",
+    "firmware_write_during_p5": false,
+    "option_byte_write_during_p5": false
+  },
+  "rf_profile": {
+    "frequency_hz": 145050000,
+    "tx_power": 200,
+    "bbs_station": "KJ6YWD-10",
+    "direct_peer": "KJ6YWD",
+    "connected_mode_digipeater_path": []
+  },
+  "activation": {
+    "p5_stage_passed": true,
+    "node_enabled": true,
+    "mailbox_enabled": true,
+    "p9_tx_enable_passed": true,
+    "service_active": true,
+    "service_enabled": true,
+    "forwarding_enabled": false,
+    "beacon_enabled": false
+  },
+  "connected_bbs": {
+    "direct_connection_passed": true,
+    "observed_banner_lines": [
+      "YWDNOD:KJ6YWD-10} Connected to BBS",
+      "YWD BBS:KJ6YWD-10",
+      "Hello KJ6YWD - 0 new / 0 visible message(s)",
+      "de KJ6YWD-10>"
+    ],
+    "help_passed": true,
+    "empty_list_passed": true,
+    "bulletin_saved": {
+      "message_number": 1,
+      "topic": "ALL",
+      "subject": "HELLO WORLD!",
+      "body": "HELLO PACKET WORLD!"
+    },
+    "personal_message_saved": {
+      "message_number": 2,
+      "to": "KJ6YWD",
+      "subject": "IT WORKS!",
+      "body": "This is a test of my custom firmware and os for the raspberry pi with mmdvm hat on 2 meters."
+    },
+    "list_passed": true,
+    "read_message_1_passed": true,
+    "read_message_2_passed": true,
+    "info_passed": true,
+    "info_reported_forwarding_disabled": true,
+    "bye_passed": true,
+    "orderly_disconnect_observed": true
+  },
+  "independent_rf_monitor": {
+    "observed_ua": "KJ6YWD-10 to KJ6YWD ctl UA-",
+    "observed_connected_banner_iframe": "KJ6YWD-10 to KJ6YWD ctl I00^ pid=F0(Text): YWDNOD:KJ6YWD-10} Connected to BBS",
+    "observed_message_1_read": true,
+    "observed_message_2_read": true,
+    "observed_disconnect": "KJ6YWD-10 to KJ6YWD ctl DISC+",
+    "other_live_145050_packet_activity_remained_visible": true
+  },
+  "local_mbox_shared_store": {
+    "local_console": "127.0.0.1:8010",
+    "entry_passed": true,
+    "visible_count": 2,
+    "message_1_subject": "HELLO WORLD!",
+    "message_2_subject": "IT WORKS!",
+    "read_message_1_passed": true,
+    "read_message_2_passed": true,
+    "command_return_passed": true,
+    "same_rf_created_messages_visible": true
+  },
+  "cleanup": {
+    "initial_helper_attempt_encountered_non_executable_product_tx_control": true,
+    "failure_occurred_after_service_stop_before_tx_config_revocation": true,
+    "service_was_inactive_during_interruption": true,
+    "tx_was_explicitly_revoked_with_bash_product_tx_control": true,
+    "cleanup_then_completed_successfully": true,
+    "final_tx_enabled": false,
+    "final_node_enabled": false,
+    "final_mailbox_enabled": false,
+    "final_service_active": true,
+    "final_service_enabled": true,
+    "final_stage_state_present": false,
+    "mailbox_database_preserved": true,
+    "mailbox_database_path": "/var/lib/ywd-1278/mailbox.sqlite3",
+    "mailbox_database_size_bytes_observed": 40960
+  },
+  "post_test_staging_helper_fix": {
+    "runtime_behavior_changed": false,
+    "fix": "invoke product-tx-control.sh through bash during P5 cleanup",
+    "fix_commit": "7bb9d973e129c93c263fa12ed39157884a59aa29",
+    "contract_fix_commit": "962cbafc4563abe04b30ed9cf99a2eecc50d46fd",
+    "ci_run": 34129834195,
+    "ci_conclusion": "success"
+  },
+  "qualified_behavior": {
+    "normal_product_service_connected_bbs": true,
+    "real_ax25_connected_session": true,
+    "persistent_bulletin_deposit": true,
+    "persistent_personal_message_deposit": true,
+    "persistent_list_and_read": true,
+    "shared_rf_and_local_mbox_store": true,
+    "local_mbox_command_return": true,
+    "orderly_remote_bye_disconnect": true,
+    "cleanup_returns_product_to_rx_safe_state": true
+  },
+  "scope_boundary": {
+    "qualified": [
+      "direct connected-mode BBS access to KJ6YWD-10 on 145.050 MHz at power 200",
+      "classic BBS H/L/SB/SP/R/I/BYE behavior exercised over real RF",
+      "persistent SQLite mailbox storage across the RF session",
+      "local MBOX visibility of the exact RF-created messages",
+      "normal product service and existing ProductTNCBackend/channel-access path",
+      "bounded staging and final RX-safe cleanup"
+    ],
+    "not_qualified_by_this_slice": [
+      "connected BBS through digipeater paths",
+      "more than one simultaneous connected BBS owner",
+      "mailbox forwarding",
+      "beacon scheduling",
+      "arbitrary hardware targets",
+      "automatic TX retry beyond existing AX.25 connected-link semantics"
+    ]
+  }
+}
