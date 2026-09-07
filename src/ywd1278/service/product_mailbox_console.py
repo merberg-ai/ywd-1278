@@ -14,6 +14,7 @@ or synthetic caller.
 """
 from __future__ import annotations
 
+import time
 from typing import Callable
 
 from ywd1278.console.local import CommandResult
@@ -39,7 +40,7 @@ def _terminal_lines(actions: tuple[ClassicBBSAction, ...]) -> tuple[str, ...]:
         text = payload.decode("ascii")
     except UnicodeDecodeError as exc:
         return (f"ERROR MBOX OUTPUT UnicodeDecodeError: {exc}",)
-    # P2 emits CR records and may include CR/LF message bodies.  Normalize all
+    # P2 emits CR records and may include CR/LF message bodies. Normalize all
     # record separators only after joining PACLEN chunks so a logical line is
     # never split merely because the BBS output was packet-sized.
     text = text.replace("\r\n", "\r").replace("\n", "\r")
@@ -135,7 +136,7 @@ class ProductMailboxCommandShell(ProductConverseCommandShell):
             peer=config.local,
             store=store,
             paclen=config.mailbox_paclen,
-            now_ns=__import__("time").time_ns,
+            now_ns=time.time_ns,
             info=config.mailbox_info,
         )
         self._mailbox_session = session
@@ -161,7 +162,7 @@ class ProductMailboxCommandShell(ProductConverseCommandShell):
         result = session.feed(information)
         lines = _terminal_lines(result.actions)
         if result.close_requested:
-            # BYE is a BBS-link close over RF.  In a local MBOX personality it
+            # BYE is a BBS-link close over RF. In a local MBOX personality it
             # only leaves MBOX; the enclosing Telnet/PTTY session remains open.
             self._mailbox_session = None
         return CommandResult(lines)
