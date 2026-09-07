@@ -12,6 +12,7 @@ CONTROL = ROOT / "installer/product-tx-control.sh"
 RX_SAFE = ROOT / "installer/enable-product-service.sh"
 DAEMON = ROOT / "src/ywd1278/daemon.py"
 APPLIANCE = ROOT / "src/ywd1278/service/appliance.py"
+MAILBOX_CONSOLE = ROOT / "src/ywd1278/service/product_mailbox_console.py"
 P8_EVIDENCE = ROOT / "firmware/qualification/0f-p8-sustained-product-converse-target-pi.json"
 
 
@@ -85,10 +86,15 @@ class PersistentProductConverseP9ContractTests(unittest.TestCase):
         self.assertIn("firmware_flash=no", text)
         self.assertIn("option_bytes_write=no", text)
 
-    def test_normal_daemon_is_already_the_p8_product_composition(self) -> None:
+    def test_normal_daemon_preserves_p8_converse_composition_via_mailbox_superset(self) -> None:
         text = DAEMON.read_text(encoding="utf-8")
-        self.assertIn("ProductClassicConverseConsole", text)
-        self.assertIn("make_product_backend_submitter", text)
+        mailbox_text = MAILBOX_CONSOLE.read_text(encoding="utf-8")
+        self.assertIn("ProductClassicMailboxConsole", text)
+        self.assertIn(
+            "class ProductClassicMailboxConsole(ProductClassicConverseConsole):",
+            mailbox_text,
+        )
+        self.assertIn("make_product_backend_submitter(lambda: engine.backend)", text)
         self.assertIn("live_monitor_factory=lambda: open_live_only_monitor(engine.backend)", text)
         self.assertIn('classic_0f = "ENABLED" if packet_config.tx_enabled else "TX-DISABLED"', text)
 
