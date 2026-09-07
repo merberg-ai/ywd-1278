@@ -86,7 +86,7 @@ class PersistentBBSPhysicalStagingP5Contract(unittest.TestCase):
             "MBOX=ENABLED",
             "FORWARDING=DISABLED",
             "RF-created message is visible in local MBOX",
-            "mailbox SQLite database remains present",
+            "mailbox database still present",
         ):
             with self.subTest(required=required):
                 self.assertIn(required, text)
