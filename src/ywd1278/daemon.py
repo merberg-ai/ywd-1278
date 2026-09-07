@@ -29,10 +29,13 @@ from .service.forwarding_config import (
     ProductForwardingConfigurationError,
     load_product_forwarding_config,
 )
-from .service.product_converse_console import (
-    ProductClassicConverseConsole,
-    open_live_only_monitor,
+from .service.node_mailbox_config import (
+    ProductNodeMailboxConfigurationError,
+    load_product_node_mailbox_config,
 )
+from .service.persistent_bbs_service import ProductPersistentBBSService
+from .service.product_converse_console import open_live_only_monitor
+from .service.product_mailbox_console import ProductClassicMailboxConsole
 
 
 def run_daemon(
@@ -45,35 +48,33 @@ def run_daemon(
     beacon_jitter_byte_source=None,  # type: ignore[no-untyped-def]
     beacon_poll_interval_seconds: float = 0.1,
 ) -> int:
-    """Run one product packet engine plus the qualified classic console stack.
+    """Run the product packet engine, terminal stack, and optional persistent BBS.
 
     The injectable transport/randomness arguments are host-qualification seams.
     Normal CLI/systemd execution supplies neither and therefore uses the private
     POSIX serial transport plus runtime randomness owned by the appliance layer.
 
-    0F extends only the console personality. When ``[station]`` identity is
-    configured, per-session UNPROTO/converse UI frame bodies are handed to the
-    exact live ``ProductTNCBackend`` KISS DATA admission boundary. Converse RX
-    borrows one existing bounded backend PacketEvent subscription per active
-    console session and discards only its pre-subscription history snapshot.
-    The console does not gain a second queue, CSMA engine, modem owner, UART
-    path, retry loop, or scheduler. ``radio.tx_enabled=false`` remains the
-    construction-time product TX gate and the 0F shell fails closed before
-    invoking its submit callback.
+    0F console UNPROTO/converse traffic and 0I persistent connected-BBS traffic
+    both reuse the exact live ``ProductTNCBackend`` KISS DATA admission boundary.
+    The BBS subscribes to one existing bounded PacketEvent stream, discards its
+    history snapshot, and submits connected-mode responses through that same
+    product backend.  No second decoder, CSMA engine, TX queue, modem owner, UART
+    path, or RF implementation is introduced by 0I.
 
-    0H-P11 adds only a parsed product forwarding gate. Forwarding remains
-    physically unqualified and therefore must be disabled; no forwarding
-    coordinator, scheduler, mailbox mutation, link owner, or RF path is wired
-    into this daemon.
+    The terminal ``MBOX`` personality reuses the exact P1 store owned by the BBS
+    service and the frozen P2 BBS command personality.  It performs no packet
+    submission; local /CMD, COMMAND, Ctrl-C, or BYE returns to ``cmd:``.
 
-    Historical host fixtures with no ``[station]`` or ``[forwarding]`` table
-    retain their frozen behavior.
+    0H-P11 forwarding remains physically unqualified and therefore disabled.
+    Historical fixtures with node/mailbox disabled retain their prior packet and
+    console behavior, with MBOX present only as a fail-closed local command.
     """
 
     packet_config = load_product_packet_engine_config(config_path)
     console_config = load_product_classic_console_config(config_path)
     classic_tx_config = load_product_classic_tx_config(config_path)
     forwarding_config = load_product_forwarding_config(config_path)
+    node_mailbox_config = load_product_node_mailbox_config(config_path)
     shared_beacon_clock = time.monotonic if beacon_clock is None else beacon_clock
     if not callable(shared_beacon_clock):
         raise TypeError("beacon_clock must be callable or None")
@@ -81,11 +82,20 @@ def run_daemon(
         beacon_poll_interval_seconds, (int, float)
     ) or not 0.01 <= float(beacon_poll_interval_seconds) <= 1.0:
         raise ValueError("beacon_poll_interval_seconds must be 0.01..1.0")
+
     engine = ProductPacketEngine(
         packet_config,
         transport_factory=transport_factory,
         random_byte_source=random_byte_source,
     )
+    bbs_service: ProductPersistentBBSService | None = None
+    if node_mailbox_config.node_enabled:
+        bbs_service = ProductPersistentBBSService(
+            node_mailbox_config,
+            backend_getter=lambda: engine.backend,
+            tx_enabled=packet_config.tx_enabled,
+        )
+
     engine.start()
     beacon_scheduler: ProductBeaconScheduler | None = None
 
@@ -108,7 +118,7 @@ def run_daemon(
             poll_interval_seconds=beacon_poll_interval_seconds,
             clock=shared_beacon_clock,
         )
-        console: ProductClassicConsole = ProductClassicConverseConsole(
+        console: ProductClassicConsole = ProductClassicMailboxConsole(
             console_config,
             tx_config=classic_tx_config,
             tx_enabled=packet_config.tx_enabled,
@@ -118,6 +128,10 @@ def run_daemon(
             diagnostics_snapshot=engine.diagnostics_snapshot,
             mheard_db=engine.mheard_db,
             live_monitor_factory=lambda: open_live_only_monitor(engine.backend),
+            mailbox_config=node_mailbox_config,
+            mailbox_store_getter=(
+                lambda: None if bbs_service is None else bbs_service.store
+            ),
         )
         classic_0f = "ENABLED" if packet_config.tx_enabled else "TX-DISABLED"
     else:
@@ -129,6 +143,8 @@ def run_daemon(
         classic_0f = "UNCONFIGURED"
 
     try:
+        if bbs_service is not None:
+            bbs_service.start()
         console.start()
         if beacon_scheduler is not None:
             beacon_scheduler.start()
@@ -139,6 +155,14 @@ def run_daemon(
         print(f"FIRMWARE_IDENTITY={snapshot.firmware_identity}", flush=True)
         print(f"PRODUCT_TX={'ENABLED' if snapshot.tx_enabled else 'DISABLED'}", flush=True)
         print(f"CLASSIC_0F={classic_0f}", flush=True)
+        if bbs_service is None:
+            print("PERSISTENT_BBS=DISABLED", flush=True)
+            print("MBOX=DISABLED", flush=True)
+        else:
+            print("PERSISTENT_BBS=ENABLED", flush=True)
+            print(f"PERSISTENT_BBS_DATABASE={node_mailbox_config.mailbox_database}", flush=True)
+            print("MBOX=ENABLED", flush=True)
+        print("PERSISTENT_BBS_PHYSICAL_QUALIFICATION=DEFERRED", flush=True)
         print("FORWARDING=DISABLED", flush=True)
         print(
             f"FORWARDING_CONFIG=interval:{forwarding_config.interval_seconds},batch:{forwarding_config.max_batch}",
@@ -169,9 +193,11 @@ def run_daemon(
         while not stop_event.wait(0.25):
             engine.check_health()
             console.check_health()
+            if bbs_service is not None:
+                bbs_service.check_health()
     finally:
-        # Command sessions consume Stage-C diagnostics/MHEARD. Revoke those
-        # observers before the packet engine tears their sources down.
+        # Revoke terminal observers and the BBS PacketEvent subscriber before
+        # the packet engine tears down their shared backend and diagnostics.
         try:
             console.stop()
         finally:
@@ -179,7 +205,11 @@ def run_daemon(
                 if beacon_scheduler is not None:
                     beacon_scheduler.stop()
             finally:
-                engine.stop()
+                try:
+                    if bbs_service is not None:
+                        bbs_service.stop()
+                finally:
+                    engine.stop()
         print("YWD1278_PRODUCT_PACKET_ENGINE=STOPPED", flush=True)
     return 0
 
@@ -222,11 +252,12 @@ def main() -> int:
         ProductClassicConsoleConfigurationError,
         ProductClassicTXConfigurationError,
         ProductForwardingConfigurationError,
+        ProductNodeMailboxConfigurationError,
         RuntimeError,
         OSError,
     ) as exc:
         print(
-            f"YWD-1278 {__version__}: packet-engine/console startup/runtime failure: {exc}",
+            f"YWD-1278 {__version__}: packet-engine/console/BBS startup/runtime failure: {exc}",
             file=sys.stderr,
         )
         return 78
