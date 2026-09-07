@@ -37,6 +37,9 @@ jobs:
       - name: 0I-P4c2 host-only pre-RF staging contract
         run: python tests/persistent_bbs_product_composition_0i_p4c2_pre_rf_contract_test.py
 
+      - name: 0I-P4c2 frozen host qualification evidence
+        run: python tests/persistent_bbs_product_composition_0i_p4c2_qualification_contract_test.py
+
       - name: Frozen P4b behavior and qualification remain green
         run: |
           python tests/persistent_bbs_service_0i_p4b_test.py
