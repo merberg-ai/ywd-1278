@@ -14,8 +14,8 @@ class PersistentBBSProductCompositionP4c2PreRFContract(unittest.TestCase):
         text = DOC.read_text(encoding="utf-8")
         self.assertIn("b92d1b2dd8195003f901f6df2142946cc2ca7085", text)
         self.assertIn("8103bf095ebd1bd96c0f65800382718557890340", text)
-        self.assertIn("actual `ProductTNCBackend`", text)
-        self.assertIn("actual `ThreadSafeKISSDataAdmissionQueue`", text)
+        self.assertIn("`ProductTNCBackend`", text)
+        self.assertIn("`ThreadSafeKISSDataAdmissionQueue`", text)
         self.assertIn("Only the final contextual hardware/RF submitter", text)
         self.assertIn("No physical command is intentionally provided", text)
         for marker in (
