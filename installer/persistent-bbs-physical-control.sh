@@ -362,7 +362,7 @@ systemctl stop "$SERVICE" >/dev/null 2>&1 || true
 
 # Revoke persistent TX while the service is stopped.  The frozen 0F-P9 disable
 # operation does not restart an inactive service and never performs firmware/RF I/O.
-"$TX_CONTROL" disable --expected-installed-commit "$installed_commit"
+bash "$TX_CONTROL" disable --expected-installed-commit "$installed_commit"
 
 candidate="$(mktemp "$STATE_DIR/0i-p5-bbs-cleanup.XXXXXX")"
 trap 'rm -f "$candidate"' EXIT
