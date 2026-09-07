@@ -6,21 +6,33 @@ from __future__ import annotations
 import hashlib
 import json
 from pathlib import Path
+import subprocess
 import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
 EVIDENCE = ROOT / "firmware/qualification/0f-p8-sustained-product-converse-target-pi.json"
 DOC = ROOT / "docs/qualifications/0f-p8-sustained-product-converse-physical-qualified-2026-09-06.md"
 TOOL = ROOT / "tools/qualify_0f_p8_sustained_converse.py"
-STAGING_CONTRACT = ROOT / "tests/classic_tx_converse_0f_p8_physical_staging_contract_test.py"
 P7_EVIDENCE = ROOT / "firmware/qualification/0f-p7-product-converse-target-pi.json"
 P7_CONTRACT = ROOT / "tests/classic_tx_product_converse_0f_p7_physical_evidence_contract_test.py"
 P7_DOC = ROOT / "docs/qualifications/0f-p7-product-converse-physical-qualified-2026-09-06.md"
+
+P8_CHECKPOINT = "5158d58aec84b9ca31994423d0d94ded23e73a5b"
+P8_STAGING_CONTRACT_PATH = "tests/classic_tx_converse_0f_p8_physical_staging_contract_test.py"
+P8_STAGING_CONTRACT_BLOB = "13ddde075f3cab4b70a6db67b166f64a85e73135"
 
 
 def blob(path: Path) -> str:
     data = path.read_bytes()
     return hashlib.sha1(f"blob {len(data)}\0".encode() + data).hexdigest()
+
+
+def historical_blob(commit: str, path: str) -> str:
+    return subprocess.check_output(
+        ["git", "rev-parse", f"{commit}:{path}"],
+        cwd=ROOT,
+        text=True,
+    ).strip()
 
 
 class SustainedProductConverse0FP8PhysicalEvidenceTests(unittest.TestCase):
@@ -98,7 +110,10 @@ class SustainedProductConverse0FP8PhysicalEvidenceTests(unittest.TestCase):
         self.assertEqual(blob(EVIDENCE), "2a60963f0809cb01b5dd52486be79145dcff768d")
         self.assertEqual(blob(DOC), "de46bf80275547a43668c08a333a0d5a5207ac8d")
         self.assertEqual(blob(TOOL), "985990dd4395804f605d9c4bde2b8864c46fc05d")
-        self.assertEqual(blob(STAGING_CONTRACT), "13ddde075f3cab4b70a6db67b166f64a85e73135")
+        self.assertEqual(
+            historical_blob(P8_CHECKPOINT, P8_STAGING_CONTRACT_PATH),
+            P8_STAGING_CONTRACT_BLOB,
+        )
         self.assertEqual(blob(P7_EVIDENCE), "0dbb37953e50d6e7c4ae6a2064e1197794207eef")
         self.assertEqual(blob(P7_CONTRACT), "a8cdf768d46e6be3bfcd9a6c50506fce42f85659")
         self.assertEqual(blob(P7_DOC), "72f24a241a30e09e85a3c2626ec4e7b218c87489")
