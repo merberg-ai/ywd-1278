@@ -201,8 +201,13 @@ jobs:
           python tests/forwarding_integration_0h_p8_test.py
           python tests/forwarding_integration_0h_p8_contract_test.py
 
-      - name: 0I persistent BBS lineage through P4b
+      - name: 0I persistent BBS lineage through physically qualified P5
         run: |
+          python tests/product_mailbox_console_0i_p4c2_test.py
+          python tests/persistent_bbs_product_composition_0i_p4c2_test.py
+          python tests/persistent_bbs_product_composition_0i_p4c2_contract_test.py
+          python tests/persistent_bbs_product_composition_0i_p4c2_pre_rf_contract_test.py
+          python tests/persistent_bbs_product_composition_0i_p4c2_qualification_contract_test.py
           python tests/persistent_bbs_service_0i_p4b_test.py
           python tests/persistent_bbs_service_0i_p4b_contract_test.py
           python tests/persistent_bbs_service_0i_p4b_qualification_contract_test.py
@@ -211,6 +216,13 @@ jobs:
           python tests/node_mailbox_config_0i_p3_qualification_contract_test.py
           python tests/classic_bbs_0i_p2_qualification_contract_test.py
           python tests/persistent_mailbox_0i_p1_qualification_contract_test.py
+          python tests/persistent_bbs_config_bootstrap_0i_p5_contract_test.py
+          python tests/persistent_bbs_physical_staging_0i_p5_contract_test.py
+          python tests/persistent_bbs_physical_0i_p5_qualification_contract_test.py
+          bash installer/persistent-bbs-config-bootstrap.sh --dry-run
+          bash installer/persistent-bbs-physical-control.sh stage --dry-run
+          bash installer/persistent-bbs-physical-control.sh cleanup --dry-run
+          bash installer/persistent-bbs-physical-control.sh status --dry-run
 
       - name: Deployment and physical-evidence preservation
         run: |
@@ -223,6 +235,7 @@ jobs:
           python tests/fresh_os_stage_h_prior_stage_preservation_test.py
           python tests/live_p8_r3_physical_evidence_contract_test.py
           python tests/persistent_product_converse_0f_p9_physical_evidence_contract_test.py
+          python tests/persistent_bbs_physical_0i_p5_qualification_contract_test.py
 
       - name: Install package and framework self-test
         run: |
