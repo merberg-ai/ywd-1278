@@ -36,6 +36,9 @@ jobs:
       - name: 0I-P5 physical staging safety contract
         run: python tests/persistent_bbs_physical_staging_0i_p5_contract_test.py
 
+      - name: 0I-P5 physical qualification evidence contract
+        run: python tests/persistent_bbs_physical_0i_p5_qualification_contract_test.py
+
       - name: 0I-P5 zero-I/O helper dry runs
         run: |
           bash installer/persistent-bbs-config-bootstrap.sh --dry-run
