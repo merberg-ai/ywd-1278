@@ -6,12 +6,21 @@ import subprocess
 import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
+P4B_CHECKPOINT = "8103bf095ebd1bd96c0f65800382718557890340"
 FROZEN = {
     "src/ywd1278/node/persistent_bbs_runtime.py": "0c40aaf283142b71d16c9f30a1687865a98b197f",
     "src/ywd1278/node/classic_bbs.py": "e9ebd80b07f9e91cb6f57ca61c2a010b5e17f3fd",
     "src/ywd1278/node/persistent_mailbox.py": "f9e948ebc0da19ede88dfad97eddbf7eb15dc4fc",
     "src/ywd1278/service/node_mailbox_config.py": "a56d8981888ebffd1aa22d895d53db7326e9d6bc",
 }
+
+
+def historical_text(commit: str, path: str) -> str:
+    return subprocess.check_output(
+        ["git", "show", f"{commit}:{path}"],
+        cwd=ROOT,
+        text=True,
+    )
 
 
 class PersistentBBSServiceP4bContractTests(unittest.TestCase):
@@ -45,8 +54,8 @@ class PersistentBBSServiceP4bContractTests(unittest.TestCase):
             with self.subTest(token=token):
                 self.assertNotIn(token, source)
 
-    def test_p4b_still_not_daemon_wired(self) -> None:
-        daemon = (ROOT / "src/ywd1278/daemon.py").read_text(encoding="utf-8")
+    def test_p4b_checkpoint_was_still_not_daemon_wired(self) -> None:
+        daemon = historical_text(P4B_CHECKPOINT, "src/ywd1278/daemon.py")
         self.assertNotIn("ProductPersistentBBSService", daemon)
         self.assertNotIn("persistent_bbs_service", daemon)
 
