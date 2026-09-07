@@ -121,7 +121,7 @@ class PersistentBBSPhysicalP5QualificationContract(unittest.TestCase):
             "KJ6YWD-10",
             "HELLO WORLD!",
             "IT WORKS!",
-            "shared persistent mailbox store",
+            "share the same persistent mailbox store",
             "CONFIG_TX_ENABLED=FALSE",
             "CONFIG_NODE_ENABLED=FALSE",
             "CONFIG_MAILBOX_ENABLED=FALSE",
