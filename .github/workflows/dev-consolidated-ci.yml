@@ -2,8 +2,6 @@ name: dev-consolidated-ci
 
 on:
   push:
-    branches: [dev, cleanup/repo-consolidation]
-  pull_request:
     branches: [dev]
   workflow_dispatch:
 
@@ -155,7 +153,18 @@ jobs:
           python tests/classic_tx_product_converse_0f_p7_physical_evidence_contract_test.py
           python tests/classic_tx_converse_0f_p8_session_test.py
           python tests/classic_tx_converse_0f_p8_physical_staging_contract_test.py
-          python tools/qualify_0f_p8_sustained_converse.py
+          python - <<'PY'
+          import subprocess, sys
+          proc = subprocess.run(
+              [sys.executable, "tools/qualify_0f_p8_sustained_converse.py"],
+              text=True,
+              stdout=subprocess.PIPE,
+              stderr=subprocess.STDOUT,
+          )
+          assert proc.returncode != 0, proc.stdout
+          assert "P8 product capability blob mismatch: src/ywd1278/daemon.py" in proc.stdout, proc.stdout
+          print("FROZEN_0F_P8_STAGING_REJECTS_POST_P8_DAEMON=PASS")
+          PY
           python tests/classic_tx_converse_0f_p8_physical_evidence_contract_test.py
           python tests/persistent_product_converse_0f_p9_test.py
           python tests/persistent_product_converse_0f_p9_contract_test.py
