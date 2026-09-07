@@ -12,6 +12,7 @@ import unittest
 ROOT = Path(__file__).resolve().parents[1]
 DAEMON = ROOT / "src/ywd1278/daemon.py"
 CONVERSE = ROOT / "src/ywd1278/service/product_converse_console.py"
+MAILBOX_CONSOLE = ROOT / "src/ywd1278/service/product_mailbox_console.py"
 SESSION = ROOT / "src/ywd1278/console/product_session.py"
 MONITOR_STREAM = ROOT / "src/ywd1278/monitor/stream.py"
 FROZEN_MONITOR_STREAM_BLOB = "703b7e803d39d915b60d79c30c154151e3820098"
@@ -25,8 +26,13 @@ def git_blob(path: Path) -> str:
 class ProductConverseCompositionContractTests(unittest.TestCase):
     def test_daemon_reuses_one_product_backend_for_tx_and_live_rx(self) -> None:
         text = DAEMON.read_text(encoding="utf-8")
+        mailbox_text = MAILBOX_CONSOLE.read_text(encoding="utf-8")
         self.assertIn("make_product_backend_submitter(lambda: engine.backend)", text)
-        self.assertIn("ProductClassicConverseConsole(", text)
+        self.assertIn("ProductClassicMailboxConsole(", text)
+        self.assertIn(
+            "class ProductClassicMailboxConsole(ProductClassicConverseConsole):",
+            mailbox_text,
+        )
         self.assertIn(
             "live_monitor_factory=lambda: open_live_only_monitor(engine.backend)",
             text,
