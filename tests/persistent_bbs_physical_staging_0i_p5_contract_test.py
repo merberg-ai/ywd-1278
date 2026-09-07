@@ -33,12 +33,13 @@ class PersistentBBSPhysicalStagingP5Contract(unittest.TestCase):
 
     def test_control_stages_only_node_mailbox_and_reuses_tx_gate(self) -> None:
         text = CONTROL.read_text(encoding="utf-8")
+        lines = [line.strip() for line in text.splitlines()]
         self.assertIn("replace_bool(text,'node','enabled',enabled)", text)
         self.assertIn("replace_bool(text,'mailbox','enabled',enabled)", text)
         self.assertNotIn("replace_bool(text,'radio'", text)
-        self.assertIn('bash "$TX_CONTROL" disable --expected-installed-commit "$installed_commit"', text)
+        self.assertIn('bash "$TX_CONTROL" disable --expected-installed-commit "$installed_commit"', lines)
         self.assertNotIn('bash "$TX_CONTROL" enable', text)
-        self.assertNotIn('"$TX_CONTROL" disable --expected-installed-commit "$installed_commit"', text)
+        self.assertNotIn('"$TX_CONTROL" disable --expected-installed-commit "$installed_commit"', lines)
         self.assertIn("NEXT_STEP=RUN_EXISTING_0F_P9_TX_ENABLE_CONTROL", text)
         self.assertIn("PERSISTENT_TX_ENABLED=NO", text)
         self.assertIn("SERVICE_ACTIVE=NO", text)
