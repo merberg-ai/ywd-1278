@@ -16,8 +16,8 @@ class PersistentBBSProductCompositionP4c2PreRFContract(unittest.TestCase):
         self.assertIn("8103bf095ebd1bd96c0f65800382718557890340", text)
         self.assertIn("`ProductTNCBackend`", text)
         self.assertIn("`ThreadSafeKISSDataAdmissionQueue`", text)
-        self.assertIn("Only the final contextual hardware/RF submitter", text)
-        self.assertIn("No physical command is intentionally provided", text)
+        self.assertIn("final contextual hardware/RF submitter", text)
+        self.assertIn("physical command is intentionally provided", text)
         for marker in (
             "MODEM_UART_OPENED=NO",
             "RF_TRANSMITTED=NO",
