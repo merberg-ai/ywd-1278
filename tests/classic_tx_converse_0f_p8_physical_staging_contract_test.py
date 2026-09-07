@@ -46,12 +46,20 @@ class P8PhysicalStagingContractTests(unittest.TestCase):
         actual = [p8.expected_external_decode(line) for line in p8.INFORMATION]
         self.assertEqual(actual, expected)
 
-    def test_current_product_runtime_is_blob_pinned(self) -> None:
+    def test_historical_product_runtime_is_blob_pinned_and_rejects_newer_dev(self) -> None:
         self.assertEqual(
             p8.FROZEN_P8_BLOBS["src/ywd1278/console/product_session.py"],
             "21528919b0014c75ce98fff328b8c0830e6925b9",
         )
-        p8.validate_product_blobs()
+        self.assertEqual(
+            p8.FROZEN_P8_BLOBS["src/ywd1278/daemon.py"],
+            "dddf39c4a45ae542f618cbf649fd5b10746c1555",
+        )
+        with self.assertRaisesRegex(
+            RuntimeError,
+            r"P8 product capability blob mismatch: src/ywd1278/daemon.py",
+        ):
+            p8.validate_product_blobs()
 
     def test_source_keeps_staging_and_restore_guards(self) -> None:
         text = TOOL.read_text(encoding="utf-8")
