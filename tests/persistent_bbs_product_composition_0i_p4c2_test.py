@@ -105,6 +105,11 @@ class PersistentBBSProductCompositionP4c2Tests(unittest.TestCase):
             time.sleep(0.005)
         raise AssertionError("condition not reached before timeout")
 
+    @staticmethod
+    def identity(address: Address) -> tuple[str, int]:
+        # AX.25 command/response C/H bits are frame semantics, not peer identity.
+        return address.callsign, address.ssid
+
     def dispatch_one(self, admission: ThreadSafeKISSDataAdmissionQueue) -> None:
         before = len(self.final_edge.calls)
         self.clock.advance(1.0)
@@ -182,8 +187,8 @@ class PersistentBBSProductCompositionP4c2Tests(unittest.TestCase):
         banner = parse_frame(banner_with_fcs[:-2], has_fcs=False)
         self.assertEqual(ua["frame_type"], "UA")
         self.assertEqual(banner["frame_type"], "I")
-        self.assertEqual(ua["destination"], REMOTE)
-        self.assertEqual(banner["destination"], REMOTE)
+        self.assertEqual(self.identity(ua["destination"]), self.identity(REMOTE))
+        self.assertEqual(self.identity(banner["destination"]), self.identity(REMOTE))
         self.assertIn(b"YWDNOD:KJ6YWD-10} Connected to BBS", banner["info"])
 
         service.stop()
